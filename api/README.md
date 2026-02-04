@@ -1,18 +1,9 @@
-# FieldLink API - Backend
-
-REST API for Field Service Management (FSM) system.
-
-## Requirements
-
-- Python 3.10+
-- PostgreSQL 14+
-
 ## Installation
 
 1. Create virtual environment:
 ```bash
 python -m venv venv
-venv\Scripts\activate  # Windows
+venv\Scripts\activate
 ```
 
 2. Install dependencies:
@@ -29,7 +20,7 @@ CREATE DATABASE fieldlink;
 ```powershell
 $env:DB_NAME="fieldlink"
 $env:DB_USER="postgres"
-$env:DB_PASSWORD="your_password"
+$env:DB_PASSWORD=""
 $env:DB_HOST="localhost"
 $env:DB_PORT="5432"
 ```
