@@ -1,48 +1,48 @@
 from rest_framework import serializers
-from .models import OrdenServicio, Evidencia, Firma, SimulacionEvento
+from .models import WorkOrder, Evidence, Signature, SimulationEvent
 
 
-class EvidenciaSerializer(serializers.ModelSerializer):
+class EvidenceSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Evidencia
+        model = Evidence
         fields = '__all__'
         read_only_fields = ['id']
 
 
-class FirmaSerializer(serializers.ModelSerializer):
+class SignatureSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Firma
+        model = Signature
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_firma']
+        read_only_fields = ['id', 'signed_at']
 
 
-class OrdenServicioSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.CharField(source='cliente.nombre', read_only=True)
-    tecnico_nombre = serializers.CharField(source='tecnico.nombre', read_only=True)
-    evidencias = EvidenciaSerializer(many=True, read_only=True)
-    firma = FirmaSerializer(read_only=True)
-
-    class Meta:
-        model = OrdenServicio
-        fields = ['id', 'cliente', 'cliente_nombre', 'tecnico', 'tecnico_nombre',
-                  'solicitud', 'estado', 'prioridad', 'fecha_programada',
-                  'fecha_inicio', 'fecha_fin', 'observaciones', 'offline_flag',
-                  'fecha_creacion', 'evidencias', 'firma']
-        read_only_fields = ['id', 'fecha_creacion']
-
-
-class OrdenServicioListSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.CharField(source='cliente.nombre', read_only=True)
-    tecnico_nombre = serializers.CharField(source='tecnico.nombre', read_only=True)
+class WorkOrderSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    technician_name = serializers.CharField(source='technician.name', read_only=True)
+    evidences = EvidenceSerializer(many=True, read_only=True)
+    signature = SignatureSerializer(read_only=True)
 
     class Meta:
-        model = OrdenServicio
-        fields = ['id', 'cliente', 'cliente_nombre', 'tecnico', 'tecnico_nombre',
-                  'estado', 'prioridad', 'fecha_programada', 'offline_flag']
+        model = WorkOrder
+        fields = ['id', 'customer', 'customer_name', 'technician', 'technician_name',
+                  'service_request', 'status', 'priority', 'scheduled_date',
+                  'started_at', 'completed_at', 'notes', 'offline_flag',
+                  'created_at', 'evidences', 'signature']
+        read_only_fields = ['id', 'created_at']
 
 
-class SimulacionEventoSerializer(serializers.ModelSerializer):
+class WorkOrderListSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    technician_name = serializers.CharField(source='technician.name', read_only=True)
+
     class Meta:
-        model = SimulacionEvento
+        model = WorkOrder
+        fields = ['id', 'customer', 'customer_name', 'technician', 'technician_name',
+                  'status', 'priority', 'scheduled_date', 'offline_flag']
+
+
+class SimulationEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SimulationEvent
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_creacion']
+        read_only_fields = ['id', 'created_at']

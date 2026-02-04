@@ -1,8 +1,8 @@
 from django.contrib import admin
-from .models import UbicacionTecnico
+from .models import TechnicianLocation
 
 
-@admin.register(UbicacionTecnico)
-class UbicacionTecnicoAdmin(admin.ModelAdmin):
-    list_display = ['tecnico', 'latitud', 'longitud', 'timestamp']
-    list_filter = ['tecnico']
+@admin.register(TechnicianLocation)
+class TechnicianLocationAdmin(admin.ModelAdmin):
+    list_display = ['technician', 'latitude', 'longitude', 'timestamp']
+    list_filter = ['technician']

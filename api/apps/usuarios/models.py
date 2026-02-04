@@ -2,10 +2,10 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 
 
-class UsuarioManager(BaseUserManager):
+class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError('El email es obligatorio')
+            raise ValueError('Email is required')
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -15,70 +15,64 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('rol', 'ADMIN')
+        extra_fields.setdefault('role', 'ADMIN')
         return self.create_user(email, password, **extra_fields)
 
 
-class Usuario(AbstractBaseUser, PermissionsMixin):
-    class Rol(models.TextChoices):
-        ADMIN = 'ADMIN', 'Administrador'
-        TECNICO = 'TECNICO', 'Técnico'
+class User(AbstractBaseUser, PermissionsMixin):
+    class Role(models.TextChoices):
+        ADMIN = 'ADMIN', 'Administrator'
+        TECHNICIAN = 'TECHNICIAN', 'Technician'
 
     email = models.EmailField(unique=True)
-    nombre = models.CharField(max_length=150)
-    telefono = models.CharField(max_length=20, blank=True)
-    rol = models.CharField(max_length=10, choices=Rol.choices, default=Rol.TECNICO)
+    name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20, blank=True)
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.TECHNICIAN)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    objects = UsuarioManager()
+    objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['nombre']
+    REQUIRED_FIELDS = ['name']
 
     class Meta:
-        db_table = 'usuarios'
-        verbose_name = 'Usuario'
-        verbose_name_plural = 'Usuarios'
+        db_table = 'users'
 
     def __str__(self):
-        return f"{self.nombre} ({self.rol})"
+        return f"{self.name} ({self.role})"
 
 
-class PlanSuscripcion(models.Model):
-    nombre = models.CharField(max_length=50)
-    precio_mensual = models.DecimalField(max_digits=10, decimal_places=2)
-    max_incidentes = models.IntegerField(default=3)
-    permite_offline = models.BooleanField(default=False)
-    max_fotos = models.IntegerField(default=1)
-    tracking_tiempo_real = models.BooleanField(default=False)
+class SubscriptionPlan(models.Model):
+    name = models.CharField(max_length=50)
+    monthly_price = models.DecimalField(max_digits=10, decimal_places=2)
+    max_incidents = models.IntegerField(default=3)
+    allows_offline = models.BooleanField(default=False)
+    max_photos = models.IntegerField(default=1)
+    realtime_tracking = models.BooleanField(default=False)
 
     class Meta:
-        db_table = 'planes_suscripcion'
-        verbose_name = 'Plan de Suscripción'
-        verbose_name_plural = 'Planes de Suscripción'
+        db_table = 'subscription_plans'
 
     def __str__(self):
-        return self.nombre
+        return self.name
 
 
-class PlanUsuario(models.Model):
-    class EstadoPlan(models.TextChoices):
-        ACTIVO = 'ACTIVO', 'Activo'
-        SUSPENDIDO = 'SUSPENDIDO', 'Suspendido'
-        CANCELADO = 'CANCELADO', 'Cancelado'
+class UserPlan(models.Model):
+    class PlanStatus(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        SUSPENDED = 'SUSPENDED', 'Suspended'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='planes')
-    plan = models.ForeignKey(PlanSuscripcion, on_delete=models.PROTECT, related_name='usuarios')
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField(null=True, blank=True)
-    estado_plan = models.CharField(max_length=15, choices=EstadoPlan.choices, default=EstadoPlan.ACTIVO)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='plans')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT, related_name='users')
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=15, choices=PlanStatus.choices, default=PlanStatus.ACTIVE)
 
     class Meta:
-        db_table = 'planes_usuario'
-        verbose_name = 'Plan de Usuario'
-        verbose_name_plural = 'Planes de Usuario'
+        db_table = 'user_plans'
 
     def __str__(self):
-        return f"{self.usuario.nombre} - {self.plan.nombre}"
+        return f"{self.user.name} - {self.plan.name}"

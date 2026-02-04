@@ -1,21 +1,21 @@
 from django.contrib import admin
-from .models import Cliente, SolicitudServicio, ListaNegra
+from .models import Customer, ServiceRequest, Blacklist
 
 
-@admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'telefono', 'estado_validacion', 'fecha_registro']
-    list_filter = ['estado_validacion']
-    search_fields = ['nombre', 'telefono']
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ['name', 'phone', 'validation_status', 'created_at']
+    list_filter = ['validation_status']
+    search_fields = ['name', 'phone']
 
 
-@admin.register(SolicitudServicio)
-class SolicitudServicioAdmin(admin.ModelAdmin):
-    list_display = ['id', 'nombre_cliente', 'telefono', 'estado', 'otp_validado', 'fecha_solicitud']
-    list_filter = ['estado', 'otp_validado']
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(admin.ModelAdmin):
+    list_display = ['id', 'customer_name', 'phone', 'status', 'otp_validated', 'created_at']
+    list_filter = ['status', 'otp_validated']
 
 
-@admin.register(ListaNegra)
-class ListaNegraAdmin(admin.ModelAdmin):
-    list_display = ['telefono', 'motivo', 'fecha_bloqueo']
-    search_fields = ['telefono']
+@admin.register(Blacklist)
+class BlacklistAdmin(admin.ModelAdmin):
+    list_display = ['phone', 'reason', 'blocked_at']
+    search_fields = ['phone']

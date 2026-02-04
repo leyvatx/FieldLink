@@ -1,64 +1,58 @@
 from django.db import models
 
 
-class Cliente(models.Model):
-    class EstadoValidacion(models.TextChoices):
-        PENDIENTE = 'PENDIENTE', 'Pendiente'
-        VALIDADO = 'VALIDADO', 'Validado'
-        RECHAZADO = 'RECHAZADO', 'Rechazado'
+class Customer(models.Model):
+    class ValidationStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        VALIDATED = 'VALIDATED', 'Validated'
+        REJECTED = 'REJECTED', 'Rejected'
 
-    nombre = models.CharField(max_length=150)
-    telefono = models.CharField(max_length=20)
+    name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20)
     email = models.EmailField(blank=True)
-    direccion = models.TextField()
-    estado_validacion = models.CharField(
+    address = models.TextField()
+    validation_status = models.CharField(
         max_length=15, 
-        choices=EstadoValidacion.choices, 
-        default=EstadoValidacion.PENDIENTE
+        choices=ValidationStatus.choices, 
+        default=ValidationStatus.PENDING
     )
-    fecha_registro = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'clientes'
-        verbose_name = 'Cliente'
-        verbose_name_plural = 'Clientes'
+        db_table = 'customers'
 
     def __str__(self):
-        return self.nombre
+        return self.name
 
 
-class SolicitudServicio(models.Model):
-    class Estado(models.TextChoices):
-        PENDIENTE = 'PENDIENTE', 'Pendiente'
-        VALIDADA = 'VALIDADA', 'Validada'
-        RECHAZADA = 'RECHAZADA', 'Rechazada'
+class ServiceRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        VALIDATED = 'VALIDATED', 'Validated'
+        REJECTED = 'REJECTED', 'Rejected'
 
-    nombre_cliente = models.CharField(max_length=150)
-    telefono = models.CharField(max_length=20)
-    direccion = models.TextField()
-    descripcion = models.TextField(blank=True)
-    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.PENDIENTE)
-    otp_validado = models.BooleanField(default=False)
-    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    customer_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20)
+    address = models.TextField()
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    otp_validated = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'solicitudes_servicio'
-        verbose_name = 'Solicitud de Servicio'
-        verbose_name_plural = 'Solicitudes de Servicio'
+        db_table = 'service_requests'
 
     def __str__(self):
-        return f"Solicitud #{self.pk} - {self.nombre_cliente}"
+        return f"Request #{self.pk} - {self.customer_name}"
 
 
-class ListaNegra(models.Model):
-    telefono = models.CharField(max_length=20, unique=True)
-    motivo = models.TextField()
-    fecha_bloqueo = models.DateTimeField(auto_now_add=True)
+class Blacklist(models.Model):
+    phone = models.CharField(max_length=20, unique=True)
+    reason = models.TextField()
+    blocked_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'lista_negra'
-        verbose_name = 'Número en Lista Negra'
-        verbose_name_plural = 'Lista Negra'
+        db_table = 'blacklist'
 
     def __str__(self):
-        return self.telefono
+        return self.phone

@@ -1,23 +1,23 @@
 from rest_framework import serializers
-from .models import Cliente, SolicitudServicio, ListaNegra
+from .models import Customer, ServiceRequest, Blacklist
 
 
-class ClienteSerializer(serializers.ModelSerializer):
+class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Cliente
+        model = Customer
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_registro']
+        read_only_fields = ['id', 'created_at']
 
 
-class SolicitudServicioSerializer(serializers.ModelSerializer):
+class ServiceRequestSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SolicitudServicio
+        model = ServiceRequest
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_solicitud', 'otp_validado']
+        read_only_fields = ['id', 'created_at', 'otp_validated']
 
 
-class ListaNegraSerializer(serializers.ModelSerializer):
+class BlacklistSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ListaNegra
+        model = Blacklist
         fields = '__all__'
-        read_only_fields = ['id', 'fecha_bloqueo']
+        read_only_fields = ['id', 'blocked_at']

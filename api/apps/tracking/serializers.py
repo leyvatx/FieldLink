@@ -1,11 +1,11 @@
 from rest_framework import serializers
-from .models import UbicacionTecnico
+from .models import TechnicianLocation
 
 
-class UbicacionTecnicoSerializer(serializers.ModelSerializer):
-    tecnico_nombre = serializers.CharField(source='tecnico.nombre', read_only=True)
+class TechnicianLocationSerializer(serializers.ModelSerializer):
+    technician_name = serializers.CharField(source='technician.name', read_only=True)
 
     class Meta:
-        model = UbicacionTecnico
-        fields = ['id', 'tecnico', 'tecnico_nombre', 'latitud', 'longitud', 'timestamp']
+        model = TechnicianLocation
+        fields = ['id', 'technician', 'technician_name', 'latitude', 'longitude', 'timestamp']
         read_only_fields = ['id', 'timestamp']

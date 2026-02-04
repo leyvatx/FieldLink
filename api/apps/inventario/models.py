@@ -1,53 +1,47 @@
 from django.db import models
-from apps.usuarios.models import Usuario
-from apps.ordenes.models import OrdenServicio
+from apps.usuarios.models import User
+from apps.ordenes.models import WorkOrder
 
 
 class Material(models.Model):
-    nombre = models.CharField(max_length=150)
-    descripcion = models.TextField(blank=True)
-    unidad = models.CharField(max_length=20)
-    activo = models.BooleanField(default=True)
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    unit = models.CharField(max_length=20)
+    is_active = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'materiales'
-        verbose_name = 'Material'
-        verbose_name_plural = 'Materiales'
+        db_table = 'materials'
 
     def __str__(self):
-        return self.nombre
+        return self.name
 
 
-class InventarioTecnico(models.Model):
-    tecnico = models.ForeignKey(
-        Usuario, 
+class TechnicianInventory(models.Model):
+    technician = models.ForeignKey(
+        User, 
         on_delete=models.CASCADE, 
-        related_name='inventario',
-        limit_choices_to={'rol': 'TECNICO'}
+        related_name='inventory',
+        limit_choices_to={'role': 'TECHNICIAN'}
     )
-    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='inventarios')
-    cantidad_actual = models.IntegerField(default=0)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='inventories')
+    current_quantity = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'inventario_tecnico'
-        verbose_name = 'Inventario de Técnico'
-        verbose_name_plural = 'Inventarios de Técnicos'
-        unique_together = ['tecnico', 'material']
+        db_table = 'technician_inventory'
+        unique_together = ['technician', 'material']
 
     def __str__(self):
-        return f"{self.tecnico.nombre} - {self.material.nombre}: {self.cantidad_actual}"
+        return f"{self.technician.name} - {self.material.name}: {self.current_quantity}"
 
 
-class MaterialUsado(models.Model):
-    orden = models.ForeignKey(OrdenServicio, on_delete=models.CASCADE, related_name='materiales_usados')
-    material = models.ForeignKey(Material, on_delete=models.PROTECT, related_name='usos')
-    cantidad_usada = models.IntegerField()
+class UsedMaterial(models.Model):
+    work_order = models.ForeignKey(WorkOrder, on_delete=models.CASCADE, related_name='used_materials')
+    material = models.ForeignKey(Material, on_delete=models.PROTECT, related_name='usages')
+    quantity_used = models.IntegerField()
 
     class Meta:
-        db_table = 'materiales_usados'
-        verbose_name = 'Material Usado'
-        verbose_name_plural = 'Materiales Usados'
+        db_table = 'used_materials'
 
     def __str__(self):
-        return f"Orden #{self.orden.pk} - {self.material.nombre}: {self.cantidad_usada}"
+        return f"Order #{self.work_order.pk} - {self.material.name}: {self.quantity_used}"

@@ -1,118 +1,110 @@
 from django.db import models
-from apps.usuarios.models import Usuario
-from apps.clientes.models import Cliente, SolicitudServicio
+from apps.usuarios.models import User
+from apps.clientes.models import Customer, ServiceRequest
 
 
-class OrdenServicio(models.Model):
-    class Estado(models.TextChoices):
-        PENDIENTE = 'PENDIENTE', 'Pendiente'
-        ASIGNADA = 'ASIGNADA', 'Asignada'
-        EN_CURSO = 'EN_CURSO', 'En Curso'
-        FINALIZADA = 'FINALIZADA', 'Finalizada'
-        CANCELADA = 'CANCELADA', 'Cancelada'
+class WorkOrder(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        ASSIGNED = 'ASSIGNED', 'Assigned'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
-    class Prioridad(models.TextChoices):
-        BAJA = 'BAJA', 'Baja'
-        MEDIA = 'MEDIA', 'Media'
-        ALTA = 'ALTA', 'Alta'
-        URGENTE = 'URGENTE', 'Urgente'
+    class Priority(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+        URGENT = 'URGENT', 'Urgent'
 
-    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name='ordenes')
-    tecnico = models.ForeignKey(
-        Usuario, 
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='work_orders')
+    technician = models.ForeignKey(
+        User, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        related_name='ordenes_asignadas',
-        limit_choices_to={'rol': 'TECNICO'}
+        related_name='assigned_orders',
+        limit_choices_to={'role': 'TECHNICIAN'}
     )
-    solicitud = models.OneToOneField(
-        SolicitudServicio, 
+    service_request = models.OneToOneField(
+        ServiceRequest, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        related_name='orden'
+        related_name='work_order'
     )
-    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.PENDIENTE)
-    prioridad = models.CharField(max_length=10, choices=Prioridad.choices, default=Prioridad.MEDIA)
-    fecha_programada = models.DateTimeField(null=True, blank=True)
-    fecha_inicio = models.DateTimeField(null=True, blank=True)
-    fecha_fin = models.DateTimeField(null=True, blank=True)
-    observaciones = models.TextField(blank=True)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
+    scheduled_date = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
     offline_flag = models.BooleanField(default=False)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'ordenes_servicio'
-        verbose_name = 'Orden de Servicio'
-        verbose_name_plural = 'Órdenes de Servicio'
+        db_table = 'work_orders'
 
     def __str__(self):
-        return f"Orden #{self.pk} - {self.cliente.nombre}"
+        return f"Order #{self.pk} - {self.customer.name}"
 
 
-class Evidencia(models.Model):
-    class SyncEstado(models.TextChoices):
-        PENDIENTE = 'PENDIENTE', 'Pendiente'
-        ENVIANDO = 'ENVIANDO', 'Enviando'
-        SINCRONIZADA = 'SINCRONIZADA', 'Sincronizada'
+class Evidence(models.Model):
+    class SyncStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        UPLOADING = 'UPLOADING', 'Uploading'
+        SYNCED = 'SYNCED', 'Synced'
         ERROR = 'ERROR', 'Error'
 
-    orden = models.ForeignKey(OrdenServicio, on_delete=models.CASCADE, related_name='evidencias')
-    archivo = models.ImageField(upload_to='evidencias/')
-    latitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
-    longitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
-    fecha_captura = models.DateTimeField()
-    sync_estado = models.CharField(
+    work_order = models.ForeignKey(WorkOrder, on_delete=models.CASCADE, related_name='evidences')
+    file = models.ImageField(upload_to='evidences/')
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    captured_at = models.DateTimeField()
+    sync_status = models.CharField(
         max_length=15, 
-        choices=SyncEstado.choices, 
-        default=SyncEstado.SINCRONIZADA
+        choices=SyncStatus.choices, 
+        default=SyncStatus.SYNCED
     )
 
     class Meta:
-        db_table = 'evidencias'
-        verbose_name = 'Evidencia'
-        verbose_name_plural = 'Evidencias'
+        db_table = 'evidences'
 
     def __str__(self):
-        return f"Evidencia #{self.pk} - Orden #{self.orden.pk}"
+        return f"Evidence #{self.pk} - Order #{self.work_order.pk}"
 
 
-class Firma(models.Model):
-    orden = models.OneToOneField(OrdenServicio, on_delete=models.CASCADE, related_name='firma')
-    firma_imagen = models.ImageField(upload_to='firmas/')
-    nombre_firmante = models.CharField(max_length=150)
-    fecha_firma = models.DateTimeField(auto_now_add=True)
+class Signature(models.Model):
+    work_order = models.OneToOneField(WorkOrder, on_delete=models.CASCADE, related_name='signature')
+    image = models.ImageField(upload_to='signatures/')
+    signer_name = models.CharField(max_length=150)
+    signed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'firmas'
-        verbose_name = 'Firma'
-        verbose_name_plural = 'Firmas'
+        db_table = 'signatures'
 
     def __str__(self):
-        return f"Firma - Orden #{self.orden.pk}"
+        return f"Signature - Order #{self.work_order.pk}"
 
 
-class SimulacionEvento(models.Model):
-    class TipoEvento(models.TextChoices):
-        INCIDENTE = 'INCIDENTE', 'Incidente'
-        FALLA = 'FALLA', 'Falla'
-        PRUEBA = 'PRUEBA', 'Prueba'
+class SimulationEvent(models.Model):
+    class EventType(models.TextChoices):
+        INCIDENT = 'INCIDENT', 'Incident'
+        FAILURE = 'FAILURE', 'Failure'
+        TEST = 'TEST', 'Test'
 
-    class Estado(models.TextChoices):
-        ACTIVO = 'ACTIVO', 'Activo'
-        PROCESADO = 'PROCESADO', 'Procesado'
-        CANCELADO = 'CANCELADO', 'Cancelado'
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        PROCESSED = 'PROCESSED', 'Processed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
 
-    tipo_evento = models.CharField(max_length=15, choices=TipoEvento.choices)
-    descripcion = models.TextField()
-    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.ACTIVO)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    event_type = models.CharField(max_length=15, choices=EventType.choices)
+    description = models.TextField()
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.ACTIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'simulaciones_evento'
-        verbose_name = 'Simulación de Evento'
-        verbose_name_plural = 'Simulaciones de Evento'
+        db_table = 'simulation_events'
 
     def __str__(self):
-        return f"Simulación #{self.pk} - {self.tipo_evento}"
+        return f"Simulation #{self.pk} - {self.event_type}"

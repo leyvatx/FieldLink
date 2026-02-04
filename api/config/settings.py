@@ -69,9 +69,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('DB_NAME', 'fieldlink'),
         'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 
@@ -82,7 +85,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LANGUAGE_CODE = 'es-mx'
+LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/Mexico_City'
 USE_I18N = True
 USE_TZ = True
@@ -94,7 +97,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
-AUTH_USER_MODEL = 'usuarios.Usuario'
+AUTH_USER_MODEL = 'usuarios.User'
 
 # REST Framework
 REST_FRAMEWORK = {
@@ -106,7 +109,7 @@ REST_FRAMEWORK = {
 # Swagger/OpenAPI
 SPECTACULAR_SETTINGS = {
     'TITLE': 'FieldLink API',
-    'DESCRIPTION': 'API para gestión de servicios de campo (FSM)',
+    'DESCRIPTION': 'Field Service Management (FSM) API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }

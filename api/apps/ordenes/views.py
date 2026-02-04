@@ -1,100 +1,100 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
-from .models import OrdenServicio, Evidencia, Firma, SimulacionEvento
+from .models import WorkOrder, Evidence, Signature, SimulationEvent
 from .serializers import (
-    OrdenServicioSerializer, OrdenServicioListSerializer,
-    EvidenciaSerializer, FirmaSerializer, SimulacionEventoSerializer
+    WorkOrderSerializer, WorkOrderListSerializer,
+    EvidenceSerializer, SignatureSerializer, SimulationEventSerializer
 )
 
 
-class OrdenServicioViewSet(viewsets.ModelViewSet):
-    queryset = OrdenServicio.objects.select_related('cliente', 'tecnico').all()
+class WorkOrderViewSet(viewsets.ModelViewSet):
+    queryset = WorkOrder.objects.select_related('customer', 'technician').all()
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return OrdenServicioListSerializer
-        return OrdenServicioSerializer
+            return WorkOrderListSerializer
+        return WorkOrderSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        estado = self.request.query_params.get('estado')
-        tecnico = self.request.query_params.get('tecnico')
-        prioridad = self.request.query_params.get('prioridad')
+        status = self.request.query_params.get('status')
+        technician = self.request.query_params.get('technician')
+        priority = self.request.query_params.get('priority')
         
-        if estado:
-            queryset = queryset.filter(estado=estado)
-        if tecnico:
-            queryset = queryset.filter(tecnico_id=tecnico)
-        if prioridad:
-            queryset = queryset.filter(prioridad=prioridad)
+        if status:
+            queryset = queryset.filter(status=status)
+        if technician:
+            queryset = queryset.filter(technician_id=technician)
+        if priority:
+            queryset = queryset.filter(priority=priority)
         return queryset
 
     @action(detail=True, methods=['post'])
-    def asignar(self, request, pk=None):
-        """Asigna un técnico a la orden"""
-        orden = self.get_object()
-        tecnico_id = request.data.get('tecnico_id')
-        if not tecnico_id:
-            return Response({'error': 'Falta tecnico_id'}, status=400)
-        orden.tecnico_id = tecnico_id
-        orden.estado = 'ASIGNADA'
-        orden.save()
-        return Response({'mensaje': 'Técnico asignado'})
+    def assign(self, request, pk=None):
+        """Assigns a technician to the order"""
+        order = self.get_object()
+        technician_id = request.data.get('technician_id')
+        if not technician_id:
+            return Response({'error': 'technician_id is required'}, status=400)
+        order.technician_id = technician_id
+        order.status = 'ASSIGNED'
+        order.save()
+        return Response({'message': 'Technician assigned'})
 
     @action(detail=True, methods=['post'])
-    def iniciar(self, request, pk=None):
-        """Inicia la orden"""
-        orden = self.get_object()
-        orden.estado = 'EN_CURSO'
-        orden.fecha_inicio = timezone.now()
-        orden.save()
-        return Response({'mensaje': 'Orden iniciada'})
+    def start(self, request, pk=None):
+        """Starts the order"""
+        order = self.get_object()
+        order.status = 'IN_PROGRESS'
+        order.started_at = timezone.now()
+        order.save()
+        return Response({'message': 'Order started'})
 
     @action(detail=True, methods=['post'])
-    def finalizar(self, request, pk=None):
-        """Finaliza la orden"""
-        orden = self.get_object()
-        orden.estado = 'FINALIZADA'
-        orden.fecha_fin = timezone.now()
-        orden.save()
-        return Response({'mensaje': 'Orden finalizada'})
+    def complete(self, request, pk=None):
+        """Completes the order"""
+        order = self.get_object()
+        order.status = 'COMPLETED'
+        order.completed_at = timezone.now()
+        order.save()
+        return Response({'message': 'Order completed'})
 
     @action(detail=True, methods=['post'])
-    def cancelar(self, request, pk=None):
-        """Cancela la orden"""
-        orden = self.get_object()
-        orden.estado = 'CANCELADA'
-        orden.save()
-        return Response({'mensaje': 'Orden cancelada'})
+    def cancel(self, request, pk=None):
+        """Cancels the order"""
+        order = self.get_object()
+        order.status = 'CANCELLED'
+        order.save()
+        return Response({'message': 'Order cancelled'})
 
 
-class EvidenciaViewSet(viewsets.ModelViewSet):
-    queryset = Evidencia.objects.select_related('orden').all()
-    serializer_class = EvidenciaSerializer
+class EvidenceViewSet(viewsets.ModelViewSet):
+    queryset = Evidence.objects.select_related('work_order').all()
+    serializer_class = EvidenceSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        orden = self.request.query_params.get('orden')
-        if orden:
-            queryset = queryset.filter(orden_id=orden)
+        order = self.request.query_params.get('order')
+        if order:
+            queryset = queryset.filter(work_order_id=order)
         return queryset
 
 
-class FirmaViewSet(viewsets.ModelViewSet):
-    queryset = Firma.objects.select_related('orden').all()
-    serializer_class = FirmaSerializer
+class SignatureViewSet(viewsets.ModelViewSet):
+    queryset = Signature.objects.select_related('work_order').all()
+    serializer_class = SignatureSerializer
 
 
-class SimulacionEventoViewSet(viewsets.ModelViewSet):
-    queryset = SimulacionEvento.objects.all()
-    serializer_class = SimulacionEventoSerializer
+class SimulationEventViewSet(viewsets.ModelViewSet):
+    queryset = SimulationEvent.objects.all()
+    serializer_class = SimulationEventSerializer
 
     @action(detail=True, methods=['post'])
-    def procesar(self, request, pk=None):
-        """Marca el evento como procesado"""
-        evento = self.get_object()
-        evento.estado = 'PROCESADO'
-        evento.save()
-        return Response({'mensaje': 'Evento procesado'})
+    def process(self, request, pk=None):
+        """Marks the event as processed"""
+        event = self.get_object()
+        event.status = 'PROCESSED'
+        event.save()
+        return Response({'message': 'Event processed'})

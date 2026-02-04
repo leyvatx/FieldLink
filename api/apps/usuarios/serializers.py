@@ -1,36 +1,36 @@
 from rest_framework import serializers
-from .models import Usuario, PlanSuscripcion, PlanUsuario
+from .models import User, SubscriptionPlan, UserPlan
 
 
-class UsuarioSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuario
-        fields = ['id', 'email', 'nombre', 'telefono', 'rol', 'is_active', 'fecha_creacion']
-        read_only_fields = ['id', 'fecha_creacion']
+        model = User
+        fields = ['id', 'email', 'name', 'phone', 'role', 'is_active', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
-class UsuarioCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
-        model = Usuario
-        fields = ['id', 'email', 'nombre', 'telefono', 'rol', 'password']
+        model = User
+        fields = ['id', 'email', 'name', 'phone', 'role', 'password']
 
     def create(self, validated_data):
-        return Usuario.objects.create_user(**validated_data)
+        return User.objects.create_user(**validated_data)
 
 
-class PlanSuscripcionSerializer(serializers.ModelSerializer):
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PlanSuscripcion
+        model = SubscriptionPlan
         fields = '__all__'
 
 
-class PlanUsuarioSerializer(serializers.ModelSerializer):
-    usuario_nombre = serializers.CharField(source='usuario.nombre', read_only=True)
-    plan_nombre = serializers.CharField(source='plan.nombre', read_only=True)
+class UserPlanSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    plan_name = serializers.CharField(source='plan.name', read_only=True)
 
     class Meta:
-        model = PlanUsuario
-        fields = ['id', 'usuario', 'usuario_nombre', 'plan', 'plan_nombre', 
-                  'fecha_inicio', 'fecha_fin', 'estado_plan']
+        model = UserPlan
+        fields = ['id', 'user', 'user_name', 'plan', 'plan_name', 
+                  'start_date', 'end_date', 'status']

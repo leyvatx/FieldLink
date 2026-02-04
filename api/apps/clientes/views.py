@@ -1,67 +1,67 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Cliente, SolicitudServicio, ListaNegra
-from .serializers import ClienteSerializer, SolicitudServicioSerializer, ListaNegraSerializer
+from .models import Customer, ServiceRequest, Blacklist
+from .serializers import CustomerSerializer, ServiceRequestSerializer, BlacklistSerializer
 
 
-class ClienteViewSet(viewsets.ModelViewSet):
-    queryset = Cliente.objects.all()
-    serializer_class = ClienteSerializer
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        estado = self.request.query_params.get('estado')
-        if estado:
-            queryset = queryset.filter(estado_validacion=estado)
-        return queryset
-
-
-class SolicitudServicioViewSet(viewsets.ModelViewSet):
-    queryset = SolicitudServicio.objects.all()
-    serializer_class = SolicitudServicioSerializer
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        estado = self.request.query_params.get('estado')
-        if estado:
-            queryset = queryset.filter(estado=estado)
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(validation_status=status)
+        return queryset
+
+
+class ServiceRequestViewSet(viewsets.ModelViewSet):
+    queryset = ServiceRequest.objects.all()
+    serializer_class = ServiceRequestSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
         return queryset
 
     @action(detail=True, methods=['post'])
-    def validar_otp(self, request, pk=None):
-        """Simula validación OTP"""
-        solicitud = self.get_object()
-        solicitud.otp_validado = True
-        solicitud.save()
-        return Response({'mensaje': 'OTP validado correctamente'})
+    def validate_otp(self, request, pk=None):
+        """Simulates OTP validation"""
+        service_request = self.get_object()
+        service_request.otp_validated = True
+        service_request.save()
+        return Response({'message': 'OTP validated successfully'})
 
     @action(detail=True, methods=['post'])
-    def aprobar(self, request, pk=None):
-        """Aprueba la solicitud"""
-        solicitud = self.get_object()
-        solicitud.estado = 'VALIDADA'
-        solicitud.save()
-        return Response({'mensaje': 'Solicitud aprobada'})
+    def approve(self, request, pk=None):
+        """Approves the request"""
+        service_request = self.get_object()
+        service_request.status = 'VALIDATED'
+        service_request.save()
+        return Response({'message': 'Request approved'})
 
     @action(detail=True, methods=['post'])
-    def rechazar(self, request, pk=None):
-        """Rechaza la solicitud"""
-        solicitud = self.get_object()
-        solicitud.estado = 'RECHAZADA'
-        solicitud.save()
-        return Response({'mensaje': 'Solicitud rechazada'})
+    def reject(self, request, pk=None):
+        """Rejects the request"""
+        service_request = self.get_object()
+        service_request.status = 'REJECTED'
+        service_request.save()
+        return Response({'message': 'Request rejected'})
 
 
-class ListaNegraViewSet(viewsets.ModelViewSet):
-    queryset = ListaNegra.objects.all()
-    serializer_class = ListaNegraSerializer
+class BlacklistViewSet(viewsets.ModelViewSet):
+    queryset = Blacklist.objects.all()
+    serializer_class = BlacklistSerializer
 
     @action(detail=False, methods=['get'])
-    def verificar(self, request):
-        """Verifica si un teléfono está en lista negra"""
-        telefono = request.query_params.get('telefono')
-        if not telefono:
-            return Response({'error': 'Falta parámetro telefono'}, status=400)
-        existe = ListaNegra.objects.filter(telefono=telefono).exists()
-        return Response({'bloqueado': existe})
+    def check(self, request):
+        """Checks if a phone is blacklisted"""
+        phone = request.query_params.get('phone')
+        if not phone:
+            return Response({'error': 'Missing phone parameter'}, status=400)
+        is_blocked = Blacklist.objects.filter(phone=phone).exists()
+        return Response({'blocked': is_blocked})

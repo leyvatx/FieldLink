@@ -1,99 +1,99 @@
 # FieldLink API - Backend
 
-API REST para el sistema de gestión de servicios de campo (FSM).
+REST API for Field Service Management (FSM) system.
 
-## Requisitos
+## Requirements
 
 - Python 3.10+
 - PostgreSQL 14+
 
-## Instalación
+## Installation
 
-1. Crear entorno virtual:
+1. Create virtual environment:
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
 ```
 
-2. Instalar dependencias:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Configurar base de datos PostgreSQL:
+3. Create PostgreSQL database:
 ```sql
 CREATE DATABASE fieldlink;
 ```
 
-4. Variables de entorno (opcional):
-```bash
-set DB_NAME=fieldlink
-set DB_USER=postgres
-set DB_PASSWORD=tu_password
-set DB_HOST=localhost
-set DB_PORT=5432
+4. Set environment variables:
+```powershell
+$env:DB_NAME="fieldlink"
+$env:DB_USER="postgres"
+$env:DB_PASSWORD="your_password"
+$env:DB_HOST="localhost"
+$env:DB_PORT="5432"
 ```
 
-5. Ejecutar migraciones:
+5. Run migrations:
 ```bash
-python manage.py makemigrations
+python manage.py makemigrations usuarios clientes ordenes inventario tracking
 python manage.py migrate
 ```
 
-6. Crear superusuario:
+6. Create superuser:
 ```bash
 python manage.py createsuperuser
 ```
 
-7. Ejecutar servidor:
+7. Run server:
 ```bash
 python manage.py runserver
 ```
 
 ## Endpoints
 
-### Documentación API
+### API Documentation
 - Swagger UI: `http://localhost:8000/api/docs/`
-- Schema OpenAPI: `http://localhost:8000/api/schema/`
+- OpenAPI Schema: `http://localhost:8000/api/schema/`
 
-### Usuarios
-- `GET/POST /api/usuarios/` - Listar/Crear usuarios
-- `GET/PUT/DELETE /api/usuarios/{id}/` - Detalle usuario
-- `GET /api/usuarios/tecnicos/` - Solo técnicos
-- `GET /api/usuarios/admins/` - Solo admins
+### Users
+- `GET/POST /api/users/` - List/Create users
+- `GET/PUT/DELETE /api/users/{id}/` - User detail
+- `GET /api/users/technicians/` - Technicians only
+- `GET /api/users/admins/` - Admins only
 
-### Planes
-- `GET/POST /api/planes/` - Planes de suscripción
-- `GET/POST /api/planes-usuario/` - Asignación de planes
+### Plans
+- `GET/POST /api/plans/` - Subscription plans
+- `GET/POST /api/user-plans/` - User plan assignments
 
-### Clientes
-- `GET/POST /api/clientes/` - Listar/Crear clientes
-- `GET/POST /api/solicitudes/` - Solicitudes de servicio
-- `POST /api/solicitudes/{id}/validar_otp/` - Validar OTP
-- `POST /api/solicitudes/{id}/aprobar/` - Aprobar solicitud
-- `GET/POST /api/lista-negra/` - Lista negra
-- `GET /api/lista-negra/verificar/?telefono=xxx` - Verificar teléfono
+### Customers
+- `GET/POST /api/customers/` - List/Create customers
+- `GET/POST /api/service-requests/` - Service requests
+- `POST /api/service-requests/{id}/validate_otp/` - Validate OTP
+- `POST /api/service-requests/{id}/approve/` - Approve request
+- `GET/POST /api/blacklist/` - Blacklist
+- `GET /api/blacklist/check/?phone=xxx` - Check phone
 
-### Órdenes
-- `GET/POST /api/ordenes/` - Listar/Crear órdenes
-- `POST /api/ordenes/{id}/asignar/` - Asignar técnico
-- `POST /api/ordenes/{id}/iniciar/` - Iniciar orden
-- `POST /api/ordenes/{id}/finalizar/` - Finalizar orden
-- `GET/POST /api/evidencias/` - Evidencias multimedia
-- `GET/POST /api/firmas/` - Firmas digitales
-- `GET/POST /api/simulaciones/` - Eventos de prueba
+### Work Orders
+- `GET/POST /api/work-orders/` - List/Create orders
+- `POST /api/work-orders/{id}/assign/` - Assign technician
+- `POST /api/work-orders/{id}/start/` - Start order
+- `POST /api/work-orders/{id}/complete/` - Complete order
+- `GET/POST /api/evidences/` - Multimedia evidences
+- `GET/POST /api/signatures/` - Digital signatures
+- `GET/POST /api/simulations/` - Test events
 
-### Inventario
-- `GET/POST /api/materiales/` - Catálogo de materiales
-- `GET/POST /api/inventario-tecnico/` - Stock por técnico
-- `POST /api/inventario-tecnico/{id}/reabastecer/` - Reabastecer
-- `GET/POST /api/materiales-usados/` - Materiales usados en órdenes
+### Inventory
+- `GET/POST /api/materials/` - Materials catalog
+- `GET/POST /api/technician-inventory/` - Stock per technician
+- `POST /api/technician-inventory/{id}/restock/` - Restock
+- `GET/POST /api/used-materials/` - Materials used in orders
 
 ### Tracking
-- `GET/POST /api/ubicaciones/` - Ubicaciones de técnicos
-- `GET /api/ubicaciones/ultima/?tecnico=id` - Última ubicación
+- `GET/POST /api/locations/` - Technician locations
+- `GET /api/locations/latest/?technician=id` - Latest location
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 api/
@@ -102,11 +102,11 @@ api/
 │   ├── urls.py
 │   └── wsgi.py
 ├── apps/
-│   ├── usuarios/      # Usuarios, Planes
-│   ├── clientes/      # Clientes, Solicitudes, Lista Negra
-│   ├── ordenes/       # Órdenes, Evidencias, Firmas
-│   ├── inventario/    # Materiales, Inventario
-│   └── tracking/      # Ubicaciones GPS
+│   ├── usuarios/      # Users, Plans
+│   ├── clientes/      # Customers, Requests, Blacklist
+│   ├── ordenes/       # Work Orders, Evidences, Signatures
+│   ├── inventario/    # Materials, Inventory
+│   └── tracking/      # GPS Locations
 ├── manage.py
 └── requirements.txt
 ```

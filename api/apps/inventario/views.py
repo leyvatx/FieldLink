@@ -1,8 +1,8 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Material, InventarioTecnico, MaterialUsado
-from .serializers import MaterialSerializer, InventarioTecnicoSerializer, MaterialUsadoSerializer
+from .models import Material, TechnicianInventory, UsedMaterial
+from .serializers import MaterialSerializer, TechnicianInventorySerializer, UsedMaterialSerializer
 
 
 class MaterialViewSet(viewsets.ModelViewSet):
@@ -11,40 +11,40 @@ class MaterialViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        activo = self.request.query_params.get('activo')
-        if activo is not None:
-            queryset = queryset.filter(activo=activo.lower() == 'true')
+        is_active = self.request.query_params.get('active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
         return queryset
 
 
-class InventarioTecnicoViewSet(viewsets.ModelViewSet):
-    queryset = InventarioTecnico.objects.select_related('tecnico', 'material').all()
-    serializer_class = InventarioTecnicoSerializer
+class TechnicianInventoryViewSet(viewsets.ModelViewSet):
+    queryset = TechnicianInventory.objects.select_related('technician', 'material').all()
+    serializer_class = TechnicianInventorySerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        tecnico = self.request.query_params.get('tecnico')
-        if tecnico:
-            queryset = queryset.filter(tecnico_id=tecnico)
+        technician = self.request.query_params.get('technician')
+        if technician:
+            queryset = queryset.filter(technician_id=technician)
         return queryset
 
     @action(detail=True, methods=['post'])
-    def reabastecer(self, request, pk=None):
-        """Reabastece inventario del técnico"""
-        inventario = self.get_object()
-        cantidad = request.data.get('cantidad', 0)
-        inventario.cantidad_actual += int(cantidad)
-        inventario.save()
-        return Response({'cantidad_actual': inventario.cantidad_actual})
+    def restock(self, request, pk=None):
+        """Restocks technician inventory"""
+        inventory = self.get_object()
+        quantity = request.data.get('quantity', 0)
+        inventory.current_quantity += int(quantity)
+        inventory.save()
+        return Response({'current_quantity': inventory.current_quantity})
 
 
-class MaterialUsadoViewSet(viewsets.ModelViewSet):
-    queryset = MaterialUsado.objects.select_related('orden', 'material').all()
-    serializer_class = MaterialUsadoSerializer
+class UsedMaterialViewSet(viewsets.ModelViewSet):
+    queryset = UsedMaterial.objects.select_related('work_order', 'material').all()
+    serializer_class = UsedMaterialSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        orden = self.request.query_params.get('orden')
-        if orden:
-            queryset = queryset.filter(orden_id=orden)
+        order = self.request.query_params.get('order')
+        if order:
+            queryset = queryset.filter(work_order_id=order)
         return queryset

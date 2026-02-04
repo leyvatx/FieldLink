@@ -1,29 +1,29 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import UbicacionTecnico
-from .serializers import UbicacionTecnicoSerializer
+from .models import TechnicianLocation
+from .serializers import TechnicianLocationSerializer
 
 
-class UbicacionTecnicoViewSet(viewsets.ModelViewSet):
-    queryset = UbicacionTecnico.objects.select_related('tecnico').all()
-    serializer_class = UbicacionTecnicoSerializer
+class TechnicianLocationViewSet(viewsets.ModelViewSet):
+    queryset = TechnicianLocation.objects.select_related('technician').all()
+    serializer_class = TechnicianLocationSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        tecnico = self.request.query_params.get('tecnico')
-        if tecnico:
-            queryset = queryset.filter(tecnico_id=tecnico)
+        technician = self.request.query_params.get('technician')
+        if technician:
+            queryset = queryset.filter(technician_id=technician)
         return queryset
 
     @action(detail=False, methods=['get'])
-    def ultima(self, request):
-        """Obtiene la última ubicación de un técnico"""
-        tecnico = request.query_params.get('tecnico')
-        if not tecnico:
-            return Response({'error': 'Falta parámetro tecnico'}, status=400)
-        ubicacion = UbicacionTecnico.objects.filter(tecnico_id=tecnico).first()
-        if ubicacion:
-            serializer = self.get_serializer(ubicacion)
+    def latest(self, request):
+        """Gets the latest location of a technician"""
+        technician = request.query_params.get('technician')
+        if not technician:
+            return Response({'error': 'Missing technician parameter'}, status=400)
+        location = TechnicianLocation.objects.filter(technician_id=technician).first()
+        if location:
+            serializer = self.get_serializer(location)
             return Response(serializer.data)
-        return Response({'mensaje': 'Sin ubicaciones registradas'}, status=404)
+        return Response({'message': 'No locations found'}, status=404)
