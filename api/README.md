@@ -44,7 +44,8 @@ python manage.py runserver
 ## Endpoints
 
 ### API Documentation
-- Swagger UI: `http://localhost:8000/api/docs/`
+- Swagger UI: `http://127.0.0.1:8000/api/docs/`
+- Admin: `http://127.0.0.1:8000/admin`
 - OpenAPI Schema: `http://localhost:8000/api/schema/`
 
 ### Users
