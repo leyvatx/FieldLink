@@ -1,53 +1,260 @@
-from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework import viewsets, status
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from .models import User, SubscriptionPlan, UserPlan
-from .serializers import UserSerializer, UserCreateSerializer, SubscriptionPlanSerializer, UserPlanSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfiguration
+from .serializers import (
+    UserSerializer, UserDetailSerializer, CustomTokenObtainPairSerializer,
+    LoginSerializer, ChangePasswordSerializer, CompanySerializer,
+    CompanyConfigurationSerializer, SubscriptionPlanSerializer, CompanyPlanSerializer
+)
+from .permissions import IsAdmin, IsSameCompany, IsAdminOrSameCompany
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers as drf_serializers
+
+
+# ============================================================================
+# AUTHENTICATION ENDPOINTS
+# ============================================================================
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    JWT Token endpoint.
+    POST /api/auth/token/
+    Body: { "email": "user@example.com", "password": "password123" }
+    Returns: { "access": "jwt_token", "refresh": "refresh_token", "user": {...} }
+    """
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]
+
+
+@extend_schema(request=LoginSerializer, responses={200: inline_serializer('LoginResponse', fields={'access': drf_serializers.CharField(), 'refresh': drf_serializers.CharField(), 'user': drf_serializers.DictField()})})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    """
+    Custom login endpoint (alternative to token/).
+    POST /api/auth/login/
+    Body: { "email": "user@example.com", "password": "password123" }
+    """
+    serializer = LoginSerializer(data=request.data)
+    if serializer.is_valid():
+        tokens = serializer.save()
+        return Response(tokens, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(request=inline_serializer('LogoutRequest', fields={'refresh': drf_serializers.CharField()}), responses={200: inline_serializer('LogoutResponse', fields={'detail': drf_serializers.CharField()})})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """
+    Logout endpoint - blacklist refresh token.
+    POST /api/auth/logout/
+    Header: Authorization: Bearer <access_token>
+    """
+    try:
+        refresh_token = request.data.get('refresh')
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        return Response(
+            {'detail': 'Successfully logged out'},
+            status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@extend_schema(responses={200: UserDetailSerializer})
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def me_view(request):
+    """
+    Get current user profile.
+    GET /api/auth/me/
+    Header: Authorization: Bearer <access_token>
+    """
+    serializer = UserDetailSerializer(request.user)
+    return Response(serializer.data)
+
+
+@extend_schema(request=ChangePasswordSerializer, responses={200: inline_serializer('PasswordChangeResponse', fields={'detail': drf_serializers.CharField()})})
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    """
+    Change user password.
+    POST /api/auth/change-password/
+    Body: { "old_password": "...", "new_password": "...", "new_password_confirm": "..." }
+    """
+    serializer = ChangePasswordSerializer(
+        data=request.data,
+        context={'request': request}
+    )
+    if serializer.is_valid():
+        serializer.save()
+        return Response(
+            {'detail': 'Password changed successfully'},
+            status=status.HTTP_200_OK
+        )
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ============================================================================
+# USER MANAGEMENT (ADMIN ONLY)
+# ============================================================================
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return UserCreateSerializer
-        return UserSerializer
-
+    """
+    User management - ADMIN ONLY.
+    Lists users in same company (for admins).
+    """
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
     def get_queryset(self):
-        queryset = super().get_queryset()
+        """Filter users by company"""
+        user = self.request.user
+        queryset = User.objects.filter(company=user.company)
+        
+        # Optional filters
         role = self.request.query_params.get('role')
         if role:
             queryset = queryset.filter(role=role)
-        return queryset
-
+        
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        
+        return queryset.order_by('-created_at')
+    
     @action(detail=False, methods=['get'])
     def technicians(self, request):
-        technicians = User.objects.filter(role='TECHNICIAN')
+        """Get all technicians in company"""
+        technicians = self.get_queryset().filter(role='TECHNICIAN')
         serializer = self.get_serializer(technicians, many=True)
         return Response(serializer.data)
-
+    
+    @action(detail=False, methods=['get'])
+    def managers(self, request):
+        """Get all managers in company"""
+        managers = self.get_queryset().filter(role='MANAGER')
+        serializer = self.get_serializer(managers, many=True)
+        return Response(serializer.data)
+    
     @action(detail=False, methods=['get'])
     def admins(self, request):
-        admins = User.objects.filter(role='ADMIN')
+        """Get all admins in company"""
+        admins = self.get_queryset().filter(role='ADMIN')
         serializer = self.get_serializer(admins, many=True)
         return Response(serializer.data)
 
 
-class SubscriptionPlanViewSet(viewsets.ModelViewSet):
-    queryset = SubscriptionPlan.objects.all()
-    serializer_class = SubscriptionPlanSerializer
+# ============================================================================
+# COMPANY MANAGEMENT
+# ============================================================================
 
-
-class UserPlanViewSet(viewsets.ModelViewSet):
-    queryset = UserPlan.objects.select_related('user', 'plan').all()
-    serializer_class = UserPlanSerializer
-
+class CompanyViewSet(viewsets.ModelViewSet):
+    """
+    Company management - ADMIN ONLY.
+    """
+    queryset = Company.objects.all()
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    lookup_field = 'slug'
+    
     def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.query_params.get('user')
-        status = self.request.query_params.get('status')
-        if user:
-            queryset = queryset.filter(user_id=user)
+        """Admin can see all companies, regular users see only their own"""
+        if self.request.user.role == 'ADMIN':
+            return Company.objects.all()
+        return Company.objects.filter(id=self.request.user.company_id)
+    
+    @action(detail=False, methods=['get'])
+    def my_company(self, request):
+        """Get current user's company"""
+        serializer = self.get_serializer(request.user.company)
+        return Response(serializer.data)
+
+
+class CompanyConfigurationViewSet(viewsets.ModelViewSet):
+    """
+    Company configuration for white-label setup - ADMIN ONLY.
+    """
+    serializer_class = CompanyConfigurationSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        """Get configuration for user's company"""
+        return CompanyConfiguration.objects.filter(company=self.request.user.company)
+    
+    @action(detail=False, methods=['get', 'put', 'patch'])
+    def my_config(self, request):
+        """Get or update current company config"""
+        try:
+            config = CompanyConfiguration.objects.get(company=request.user.company)
+        except CompanyConfiguration.DoesNotExist:
+            return Response(
+                {'error': 'Configuration not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if request.method == 'GET':
+            serializer = self.get_serializer(config)
+            return Response(serializer.data)
+        
+        serializer = self.get_serializer(config, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ============================================================================
+# SUBSCRIPTION PLAN MANAGEMENT
+# ============================================================================
+
+class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    View available subscription plans.
+    Anyone can read, only admins can modify.
+    """
+    queryset = SubscriptionPlan.objects.filter(is_active=True)
+    serializer_class = SubscriptionPlanSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CompanyPlanViewSet(viewsets.ModelViewSet):
+    """
+    Company subscription management - ADMIN ONLY.
+    """
+    serializer_class = CompanyPlanSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get_queryset(self):
+        """Get subscription for user's company"""
+        return CompanyPlan.objects.filter(company=self.request.user.company)
+    
+    @action(detail=False, methods=['get'])
+    def current_plan(self, request):
+        """Get current active subscription"""
+        try:
+            plan = CompanyPlan.objects.get(
+                company=request.user.company,
+                status='ACTIVE'
+            )
+            serializer = self.get_serializer(plan)
+            return Response(serializer.data)
+        except CompanyPlan.DoesNotExist:
+            return Response(
+                {'error': 'No active subscription'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         if status:
             queryset = queryset.filter(status=status)
         return queryset
