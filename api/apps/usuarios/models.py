@@ -112,11 +112,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # CRITICAL: Company relationship - every user belongs to ONE company (tenant)
+    # Company relationship - every user belongs to ONE company (tenant)
+    # null=True allows superusers (developers) to exist without a company
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
-        related_name='users'
+        related_name='users',
+        null=True,
+        blank=True
     )
     
     email = models.EmailField(unique=True)
