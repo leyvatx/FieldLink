@@ -8,14 +8,14 @@ from .serializers import (
     WorkOrderSerializer, WorkOrderListSerializer,
     EvidenceSerializer, SignatureSerializer, SimulationEventSerializer
 )
-from apps.usuarios.permissions import IsSameCompany, IsAdmin, IsTechnician
+from apps.usuarios.permissions import IsSameCompany, IsOwner, IsDispatcherOrOwner, IsTechnician
 
 
 class WorkOrderViewSet(viewsets.ModelViewSet):
     """
     Work orders - with tenant isolation.
-    Admin: full access
-    Technician: can only access their own orders
+    OWNER/DISPATCHER: full access to all company orders
+    TECHNICIAN: can only access their own assigned orders
     """
     permission_classes = [IsAuthenticated, IsSameCompany]
 
@@ -35,7 +35,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         if status_param:
             queryset = queryset.filter(status=status_param)
         
-        # Filter by technician (only admins can filter others)
+        # Filter by technician (only owners/dispatchers can filter others)
         technician = self.request.query_params.get('technician')
         if technician:
             if self.request.user.role == 'TECHNICIAN' and technician != str(self.request.user.id):
@@ -56,9 +56,9 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         """Add company to new order"""
         serializer.save(company=self.request.user.company)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDispatcherOrOwner])
     def assign(self, request, pk=None):
-        """Assign technician to order (ADMIN ONLY)"""
+        """Assign technician to order (OWNER or DISPATCHER)"""
         order = self.get_object()
         technician_id = request.data.get('technician_id')
         
@@ -156,9 +156,9 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsAdmin])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDispatcherOrOwner])
     def cancel(self, request, pk=None):
-        """Cancel order (ADMIN ONLY)"""
+        """Cancel order (OWNER or DISPATCHER)"""
         order = self.get_object()
         order.status = WorkOrder.Status.CANCELLED
         order.save()
@@ -222,10 +222,10 @@ class SignatureViewSet(viewsets.ModelViewSet):
 
 class SimulationEventViewSet(viewsets.ModelViewSet):
     """
-    Simulation events - ADMIN ONLY.
+    Simulation events - OWNER ONLY.
     For testing/development.
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOwner]
     queryset = SimulationEvent.objects.all()
     serializer_class = SimulationEventSerializer
 
