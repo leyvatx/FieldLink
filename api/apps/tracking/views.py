@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import TechnicianLocation, LocationGeoFence
 from .serializers import TechnicianLocationSerializer, LocationGeoFenceSerializer
-from apps.usuarios.permissions import IsSameCompany, IsAdmin
+from apps.usuarios.permissions import IsSameCompany, IsDispatcherOrOwner
 
 
 class TechnicianLocationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -82,9 +82,9 @@ class TechnicianLocationViewSet(viewsets.ReadOnlyModelViewSet):
 
 class LocationGeoFenceViewSet(viewsets.ModelViewSet):
     """
-    Geofence validation - admin only.
+    Geofence validation - OWNER and DISPATCHER.
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
     serializer_class = LocationGeoFenceSerializer
 
     def get_queryset(self):
