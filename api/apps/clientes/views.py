@@ -4,15 +4,15 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Customer, ServiceRequest, Blacklist
 from .serializers import CustomerSerializer, ServiceRequestSerializer, BlacklistSerializer
-from apps.usuarios.permissions import IsSameCompany
+from apps.usuarios.permissions import IsSameCompany, IsDispatcherOrOwner
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
     """
-    Customers - protected.
-    Only allow company members to access their own company's customers.
+    Customers - OWNER and DISPATCHER can manage.
+    Tenant isolation enforced.
     """
-    permission_classes = [IsAuthenticated, IsSameCompany]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner, IsSameCompany]
     serializer_class = CustomerSerializer
 
     def get_queryset(self):
@@ -30,10 +30,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
 class ServiceRequestViewSet(viewsets.ModelViewSet):
     """
-    Service Requests - protected.
-    Only allow company members to access their own company's requests.
+    Service Requests - OWNER and DISPATCHER can manage.
+    Tenant isolation enforced.
     """
-    permission_classes = [IsAuthenticated, IsSameCompany]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner, IsSameCompany]
     serializer_class = ServiceRequestSerializer
 
     def get_queryset(self):
@@ -75,10 +75,9 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
 
 class BlacklistViewSet(viewsets.ModelViewSet):
     """
-    Blacklist - ADMIN ONLY for management.
-    Check endpoint is ADMIN ONLY.
+    Blacklist - OWNER ONLY for management.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
     serializer_class = BlacklistSerializer
     
     def get_queryset(self):
