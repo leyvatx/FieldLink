@@ -6,22 +6,24 @@ from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfigu
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Basic user info (for profile display)"""
+    """Basic user info (for lists and profile display)"""
     company_name = serializers.CharField(source='company.name', read_only=True)
+    company_slug = serializers.CharField(source='company.slug', read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'created_at']
+        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'company_slug', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    """Detailed user info (self only)"""
+    """Detailed user info (self only via /auth/me/)"""
     company_name = serializers.CharField(source='company.name', read_only=True)
+    company_slug = serializers.CharField(source='company.slug', read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'is_active', 'mobile_id', 'created_at', 'updated_at']
+        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'company_slug', 'is_active', 'mobile_id', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -35,29 +37,35 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Add user information to response
         user = self.user
-        data.update({
-            'user': {
-                'id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'role': user.role,
+        user_data = {
+            'id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'role': user.role,
+        }
+        # Add company info (superusers may not have company)
+        if user.company:
+            user_data.update({
                 'company_id': str(user.company.id),
                 'company_name': user.company.name,
-            }
-        })
+                'company_slug': user.company.slug,
+            })
+        data['user'] = user_data
         
         return data
     
     @classmethod
     def get_token(cls, user):
-        """Add custom claims to token"""
+        """Add custom claims to JWT token"""
         token = super().get_token(user)
         
-        # Add custom claims
+        # Custom claims for frontend routing
         token['user_id'] = str(user.id)
         token['email'] = user.email
         token['role'] = user.role
-        token['company_id'] = str(user.company.id)
+        if user.company:
+            token['company_id'] = str(user.company.id)
+            token['company_slug'] = user.company.slug
         
         return token
 
@@ -91,11 +99,11 @@ class LoginSerializer(serializers.Serializer):
         return attrs
     
     def create(self, validated_data):
-        """Generate tokens"""
+        """Generate tokens with user + company data for frontend routing"""
         user = validated_data['user']
         tokens = RefreshToken.for_user(user)
         
-        return {
+        response = {
             'access': str(tokens.access_token),
             'refresh': str(tokens),
             'user': {
@@ -103,10 +111,16 @@ class LoginSerializer(serializers.Serializer):
                 'email': user.email,
                 'name': user.name,
                 'role': user.role,
-                'company_id': str(user.company.id),
-                'company_name': user.company.name,
             }
         }
+        # Add company info (superusers may not have company)
+        if user.company:
+            response['user'].update({
+                'company_id': str(user.company.id),
+                'company_name': user.company.name,
+                'company_slug': user.company.slug,
+            })
+        return response
 
 
 class ChangePasswordSerializer(serializers.Serializer):
