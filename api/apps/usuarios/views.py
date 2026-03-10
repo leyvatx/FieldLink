@@ -11,7 +11,7 @@ from .serializers import (
     LoginSerializer, ChangePasswordSerializer, CompanySerializer,
     CompanyConfigurationSerializer, SubscriptionPlanSerializer, CompanyPlanSerializer
 )
-from .permissions import IsAdmin, IsSameCompany, IsAdminOrSameCompany
+from .permissions import IsOwner, IsDispatcherOrOwner, IsSameCompany, IsTechnician
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 
@@ -112,11 +112,11 @@ def change_password_view(request):
 
 class UserViewSet(viewsets.ModelViewSet):
     """
-    User management - ADMIN ONLY.
-    Lists users in same company (for admins).
+    User management - OWNER ONLY.
+    Lists users in same company.
     """
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOwner]
     
     def get_queryset(self):
         """Filter users by company"""
@@ -142,17 +142,17 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
-    def managers(self, request):
-        """Get all managers in company"""
-        managers = self.get_queryset().filter(role='MANAGER')
-        serializer = self.get_serializer(managers, many=True)
+    def dispatchers(self, request):
+        """Get all dispatchers in company"""
+        dispatchers = self.get_queryset().filter(role='DISPATCHER')
+        serializer = self.get_serializer(dispatchers, many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
-    def admins(self, request):
-        """Get all admins in company"""
-        admins = self.get_queryset().filter(role='ADMIN')
-        serializer = self.get_serializer(admins, many=True)
+    def owners(self, request):
+        """Get all owners in company"""
+        owners = self.get_queryset().filter(role='OWNER')
+        serializer = self.get_serializer(owners, many=True)
         return Response(serializer.data)
 
 
@@ -162,16 +162,16 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class CompanyViewSet(viewsets.ModelViewSet):
     """
-    Company management - ADMIN ONLY.
+    Company management - OWNER ONLY.
     """
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOwner]
     lookup_field = 'slug'
     
     def get_queryset(self):
-        """Admin can see all companies, regular users see only their own"""
-        if self.request.user.role == 'ADMIN':
+        """Owner can only see their own company"""
+        if self.request.user.is_superuser:
             return Company.objects.all()
         return Company.objects.filter(id=self.request.user.company_id)
     
@@ -184,10 +184,10 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
 class CompanyConfigurationViewSet(viewsets.ModelViewSet):
     """
-    Company configuration for white-label setup - ADMIN ONLY.
+    Company configuration for white-label setup - OWNER ONLY.
     """
     serializer_class = CompanyConfigurationSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOwner]
     
     def get_queryset(self):
         """Get configuration for user's company"""
@@ -231,10 +231,11 @@ class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
 
 class CompanyPlanViewSet(viewsets.ModelViewSet):
     """
-    Company subscription management - ADMIN ONLY.
+    Company subscription management - OWNER ONLY.
+    Only the business owner can manage billing and subscription.
     """
     serializer_class = CompanyPlanSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsOwner]
     
     def get_queryset(self):
         """Get subscription for user's company"""
