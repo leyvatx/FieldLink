@@ -11,7 +11,7 @@ from .serializers import (
     MaterialSerializer, TechnicianInventorySerializer, UsedMaterialSerializer,
     CentralWarehouseSerializer, MaterialApprovalSerializer, RestockHistorySerializer
 )
-from apps.usuarios.permissions import IsAdmin, IsTechnician, IsSameCompany
+from apps.usuarios.permissions import IsOwner, IsDispatcherOrOwner, IsTechnician, IsSameCompany
 
 
 class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
@@ -35,9 +35,9 @@ class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
 
 class CentralWarehouseViewSet(viewsets.ModelViewSet):
     """
-    Central warehouse inventory - ADMIN ONLY.
+    Central warehouse inventory - OWNER and DISPATCHER.
     """
-    permission_classes = [IsAuthenticated, IsAdmin, IsSameCompany]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner, IsSameCompany]
     serializer_class = CentralWarehouseSerializer
     
     def get_queryset(self):
@@ -156,9 +156,9 @@ class UsedMaterialViewSet(viewsets.ModelViewSet):
 
 class MaterialApprovalViewSet(viewsets.ModelViewSet):
     """
-    Material usage approval workflow - ADMIN ONLY.
+    Material usage approval workflow - OWNER and DISPATCHER.
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
     serializer_class = MaterialApprovalSerializer
     
     def get_queryset(self):
@@ -217,9 +217,9 @@ class MaterialApprovalViewSet(viewsets.ModelViewSet):
 
 class RestockHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Inventory restock audit trail - ADMIN ONLY.
+    Inventory restock audit trail - OWNER and DISPATCHER.
     """
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
     serializer_class = RestockHistorySerializer
     
     def get_queryset(self):
