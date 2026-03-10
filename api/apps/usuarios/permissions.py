@@ -1,64 +1,112 @@
 """
-Custom permission classes for role-based access control (RBAC).
+Custom permission classes for Role-Based Access Control (RBAC).
+
+Roles hierarchy:
+    OWNER      → Full access: web dashboard + finances + subscription + operations
+    DISPATCHER → Operations access: dashboard, map, inventory, assign orders. NO finances.
+    TECHNICIAN → Mobile app only: agenda, photos, evidence, signatures.
+
+Screen mapping:
+    Web Public:  Landing (/), Company landing (/<slug>/), Tracking (/tracking/<id>/) → AllowAny
+    Web Private: Dashboard, Inventory, Subscription → IsOwner / IsDispatcherOrOwner
+    Mobile App:  Technician views → IsTechnician / IsFieldStaff
 """
 from rest_framework import permissions
 
 
-class IsAdmin(permissions.BasePermission):
-    """Only allow admins"""
+# ============================================================================
+# ROLE-BASED PERMISSIONS
+# ============================================================================
+
+class IsOwner(permissions.BasePermission):
+    """
+    Only OWNER can access.
+    Protects: Subscription/billing, finances, company settings, user management.
+    """
+    message = 'Only business owners can access this resource.'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role == 'ADMIN')
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == 'OWNER'
+        )
+
+
+class IsDispatcher(permissions.BasePermission):
+    """
+    Only DISPATCHER can access.
+    """
+    message = 'Only dispatchers can access this resource.'
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == 'DISPATCHER'
+        )
 
 
 class IsTechnician(permissions.BasePermission):
-    """Only allow technicians"""
+    """
+    Only TECHNICIAN can access.
+    Protects: Mobile-exclusive endpoints (start_transit, arrive, complete, log_usage).
+    """
+    message = 'Only field technicians can access this resource.'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role == 'TECHNICIAN')
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == 'TECHNICIAN'
+        )
 
 
-class IsManager(permissions.BasePermission):
-    """Only allow managers"""
+class IsDispatcherOrOwner(permissions.BasePermission):
+    """
+    DISPATCHER or OWNER can access.
+    Protects: Dashboard, map view, inventory management, order assignment,
+    customer management — all operational web screens.
+    """
+    message = 'Only owners or dispatchers can access this resource.'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role == 'MANAGER')
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in ('OWNER', 'DISPATCHER')
+        )
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
+class IsFieldStaff(permissions.BasePermission):
     """
-    Admin can do everything.
-    Others can only read.
+    Any authenticated company member can access (OWNER, DISPATCHER, or TECHNICIAN).
+    Protects: Shared endpoints like viewing materials, own profile, etc.
     """
+    message = 'Only company staff can access this resource.'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
-    
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.role == 'ADMIN'
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in ('OWNER', 'DISPATCHER', 'TECHNICIAN')
+        )
 
 
-class IsOwnerOrAdmin(permissions.BasePermission):
-    """
-    Admin or the object owner can access.
-    """
-    def has_object_permission(self, request, view, obj):
-        # Admin can access anything
-        if request.user.role == 'ADMIN':
-            return True
-        # User can access their own profile
-        if hasattr(obj, 'user'):
-            return obj.user == request.user
-        if hasattr(obj, 'id'):
-            return obj.id == request.user.id
-        return False
-
+# ============================================================================
+# TENANT ISOLATION PERMISSIONS
+# ============================================================================
 
 class IsSameCompany(permissions.BasePermission):
     """
-    CRITICAL: Tenant isolation.
-    Users can only access data from their own company.
+    CRITICAL: Multi-tenant data isolation.
+    Users can only access objects belonging to their own company.
     """
+    message = 'You can only access data from your own company.'
+
     def has_object_permission(self, request, view, obj):
-        # Check if object has company field
+        if not request.user.company:
+            return request.user.is_superuser
         if hasattr(obj, 'company'):
             return obj.company == request.user.company
         if hasattr(obj, 'company_id'):
@@ -66,31 +114,35 @@ class IsSameCompany(permissions.BasePermission):
         return False
 
 
-class IsSameCompanyQueryset(permissions.BasePermission):
+class IsOwnerOrReadOnly(permissions.BasePermission):
     """
-    Filter QuerySet by company.
-    Used at view level to filter all queries.
+    OWNER can do everything.
+    Others (DISPATCHER, TECHNICIAN) can only read.
+    Protects: Resources that anyone can view but only owners can modify.
     """
+    message = 'Only owners can modify this resource.'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
-    
-    def has_object_permission(self, request, view, obj):
-        if hasattr(obj, 'company'):
-            return obj.company == request.user.company
-        return True
+        if request.method in permissions.SAFE_METHODS:
+            return bool(request.user and request.user.is_authenticated)
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == 'OWNER'
+        )
 
 
-class IsAdminOrSameCompany(permissions.BasePermission):
+class IsOwnProfileOrOwner(permissions.BasePermission):
     """
-    Admin can access everything.
-    Others can only access their own company data.
+    Users can access their own profile.
+    OWNER can access any user in their company.
+    Protects: User detail/update endpoints.
     """
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
-    
+    message = 'You can only access your own profile or be an owner.'
+
     def has_object_permission(self, request, view, obj):
-        if request.user.role == 'ADMIN':
+        if request.user.role == 'OWNER':
             return True
-        if hasattr(obj, 'company'):
-            return obj.company == request.user.company
+        if hasattr(obj, 'id'):
+            return obj.id == request.user.id
         return False

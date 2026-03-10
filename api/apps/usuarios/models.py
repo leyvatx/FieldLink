@@ -100,15 +100,15 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'ADMIN')
+        extra_fields.setdefault('role', 'OWNER')
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        ADMIN = 'ADMIN', 'Administrator'
-        TECHNICIAN = 'TECHNICIAN', 'Technician'
-        MANAGER = 'MANAGER', 'Manager'
+        OWNER = 'OWNER', 'Owner (Business Owner)'
+        DISPATCHER = 'DISPATCHER', 'Dispatcher (Operations Manager)'
+        TECHNICIAN = 'TECHNICIAN', 'Technician (Field Worker)'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
@@ -125,7 +125,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20, blank=True)
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.TECHNICIAN)
+    role = models.CharField(max_length=15, choices=Role.choices, default=Role.TECHNICIAN)
     
     # Offline sync
     mobile_id = models.CharField(
