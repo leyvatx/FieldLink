@@ -1,0 +1,26 @@
+[data-theme="dark"] {
+  .elevation-1 {
+    background-color: var(--elevation-1-bg-color);
+    border: 0.0625rem solid var(--elevation-1-border-color);
+  }
+
+  .elevation-2 {
+    background-color: var(--elevation-2-bg-color);
+    border: 0.0625rem solid var(--elevation-2-border-color);
+  }
+
+  .elevation-3 {
+    background-color: var(--elevation-3-bg-color);
+    border: 0.0625rem solid var(--elevation-3-border-color);
+  }
+
+  .elevation-4 {
+    background-color: var(--elevation-4-bg-color);
+    border: 0.0625rem solid var(--elevation-4-border-color);
+  }
+
+  .elevation-5 {
+    background-color: var(--elevation-5-bg-color);
+    border: 0.0625rem solid var(--elevation-5-border-color);
+  }
+}

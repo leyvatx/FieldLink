@@ -1,0 +1,67 @@
+[data-theme="dark"] {
+  --color: #fff;
+  --bg-color: hsl(249, 14%, 12%);
+
+  --scrollbar-track-bg-color: hsla(0, 0%, 27%, 0.25);
+  --scrollbar-thumb-bg-color: #444;
+  --scrollbar-thumb-hover-bg-color: #666;
+
+  --card-box-shadow: 0 2px 13px -3px hsla(0, 0%, 0%, 0.15);
+
+  --sidebar-bg-color: #242334;
+  --sidebar-border-color: #303030;
+
+  --sidebar-toggle-btn-bg-color: #242334;
+  --sidebar-toggle-btn-border-color: #41404d;
+  --sidebar-toggle-btn-box-shadow: 0 2px 13px -3px hsla(0, 0%, 0%, 0.15);
+
+  --sidebar-item-link-color: #9292a9;
+  --sidebar-item-link-active-color: #ffffff;
+  --sidebar-item-link-hover-bg-color: rgb(51, 48, 82);
+  --row-hover-bg-color: #1f1c28;
+  --table-module-hover: #262535;
+  --sidebar-item-link-active-bg-color: var(--primary-color);
+
+  --sidebar-item-group-btn-color: #fff;
+  /* --sidebar-item-group-btn-bg-color: rgb(51, 48, 82); */
+
+  --sidebar-item-group-children-border-color: #3a3a46;
+
+  --login-bg: radial-gradient(
+      circle farthest-corner at 50% 100%,
+      #130d3fff 0%,
+      #000000ff 100%
+    ),
+    0% 0% / 15px 15px repeat
+      radial-gradient(
+        circle farthest-corner at 50% 50%,
+        #1f1c30ff 0%,
+        #0a0aff00 15%
+      );
+
+  --login-card-bg: radial-gradient(
+    circle farthest-corner at 50% 100%,
+    #171237 50%,
+    #120f27 100%
+  );
+  --login-card-border-color: #292543;
+  --login-card-box-shadow: 0px 5px 5px 0px rgba(0, 0, 0, 0.25);
+
+  --login-card-input-bg: #110e27;
+  --login-card-input-border-color: #292543;
+
+  --bg-base: #201f2e;
+  --border: #5a587980;
+
+  --elevation-1-bg-color: #201F2E;
+  --elevation-2-bg-color: #242334;
+  --elevation-3-bg-color: #28273A;
+  --elevation-4-bg-color: #2D2B40;
+  --elevation-5-bg-color: #313046;
+
+  --elevation-1-border-color: #41404D;
+  --elevation-2-border-color: #41404D;
+  --elevation-3-border-color: #42414E;
+  --elevation-4-border-color: #42414E;
+  --elevation-5-border-color: #42414E;
+}

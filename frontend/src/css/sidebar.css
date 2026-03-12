@@ -1,0 +1,81 @@
+/* Sidebar */
+.sidebar {
+  @apply fixed top-2 left-2 bottom-2 transition-all z-10 flex flex-col shadow-lg rounded-xl bg-(--sidebar-bg-color) border-1 border-(--sidebar-border-color);
+}
+.sidebar-expanded .sidebar,
+.sidebar-collapsed:has(.sidebar-body:hover) .sidebar {
+  @apply w-[280px];
+}
+.sidebar-collapsed .sidebar {
+  @apply w-[70px];
+}
+
+/* Sidebar header */
+.sidebar-header {
+  @apply w-auto h-auto items-center p-4 overflow-hidden;
+}
+
+/* Sidebar body*/
+.sidebar-body {
+  @apply flex flex-col gap-4 flex-grow-1 px-4 pb-4 h-full overflow-hidden;
+}
+
+/* Sidebar items */
+.sidebar-items {
+  @apply flex flex-col gap-1 h-full overflow-y-auto overflow-x-hidden;
+}
+
+.sidebar-item-link {
+  @apply rounded-xl transition-colors flex items-center !text-(--sidebar-item-link-color);
+}
+.sidebar-item-link:hover {
+  @apply bg-(--sidebar-item-link-hover-bg-color) !text-(--sidebar-item-link-active-color);
+}
+.sidebar-item-link.active {
+  @apply bg-(--sidebar-item-link-active-bg-color) !text-(--sidebar-item-link-active-color);
+}
+
+.sidebar-item-link-icon-content {
+  @apply min-w-[36px] min-h-[36px] grid place-items-center;
+}
+.sidebar-item-link-label {
+  @apply text-nowrap;
+}
+
+.sidebar-item-group {
+  @apply h-[36px] flex flex-col gap-1 overflow-hidden transition-[height];
+  interpolate-size: allow-keywords;
+
+  &.open {
+    @apply h-auto;
+
+    & .sidebar-item-group-btn-arrow {
+      @apply rotate-90;
+    }
+  }
+
+  & .sidebar-item-group-btn {
+    @apply text-start flex items-center justify-between rounded-xl text-(--sidebar-item-group-btn-color) bg-(--sidebar-item-group-btn-bg-color);
+  }
+
+  & .sidebar-item-group-btn-icon,
+  .sidebar-item-group-btn-arrow {
+    @apply min-w-[36px] min-h-[36px] grid place-items-center transition-transform;
+  }
+
+  & .sidebar-item-group-children {
+    @apply h-auto w-full flex flex-col gap-1;
+  }
+}
+
+/* Sidebar toggle button */
+.sidebar-toggle-btn {
+  @apply !absolute rounded-full w-[16px] h-[96px] m-auto top-1/2 -right-[8px] -translate-y-1/2 grid place-items-center cursor-pointer border-1 bg-(--sidebar-toggle-btn-bg-color) border-(--sidebar-toggle-btn-border-color) shadow-(--sidebar-toggle-btn-box-shadow);
+}
+.sidebar-collapsed .sidebar-toggle-btn {
+  @apply scale-x-[1];
+}
+
+.sidebar-expanded .sidebar-toggle-btn svg {
+  @apply scale-x-[-1];
+}

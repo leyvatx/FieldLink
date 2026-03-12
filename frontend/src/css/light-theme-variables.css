@@ -1,0 +1,70 @@
+[data-theme="light"] {
+  --color: #000;
+  --bg-color: #f4f3fb;
+
+  --scrollbar-track-bg-color: hsla(0, 0%, 53%, 0.25);
+  --scrollbar-thumb-bg-color: #999;
+  --scrollbar-thumb-hover-bg-color: #777;
+
+  --card-box-shadow: 0 2px 13px -3px hsla(0, 0%, 0%, 0.15);
+
+  --sidebar-bg-color: #fff;
+  --sidebar-border-color: #f0f0f0;
+
+  --sidebar-toggle-btn-bg-color: white;
+  --sidebar-toggle-btn-border-color: white;
+  --sidebar-toggle-btn-box-shadow: 0 5px 10px -6px hsla(0, 0%, 0%, 2);
+
+  --sidebar-item-link-color: #9292a9;
+  --sidebar-item-link-active-color: #fff;
+  --sidebar-item-link-hover-bg-color: rgb(157, 153, 194);
+  --row-hover-bg-color: #f0eff5;
+  --table-module-hover: #fcfcfc;
+  --sidebar-item-link-active-bg-color: var(--primary-color);
+
+  --sidebar-item-group-btn-color: #51515f;
+  /* --sidebar-item-group-btn-bg-color: rgb(147, 142, 194); */
+
+  --sidebar-item-group-children-border-color: #f0f0f0;
+
+  --login-bg: radial-gradient(
+      circle farthest-corner at 0% 50%,
+      #cac2f4ff 0%,
+      #ffffffbf 100%
+    ),
+    radial-gradient(
+      circle farthest-corner at 75% 19%,
+      #ff4733ff 0%,
+      #ffffff00 100%
+    ),
+    radial-gradient(
+      circle farthest-corner at 89% 100%,
+      #33ffa7ff 0%,
+      #ffffff00 100%
+    ),
+    0% 0% / 15px 15px repeat
+      radial-gradient(
+        circle farthest-corner at 50% 50%,
+        #000000ff 0% 15%,
+        #00000000 15% 0%
+      );
+
+  --login-card-bg: white;
+  --login-card-border-color: hsl(0, 0%, 86%);
+  --login-card-box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+
+  --login-card-input-bg: white;
+  --login-card-input-border-color: hsl(0, 0%, 88%);
+
+  --bg-base: #fff;
+  --border: #e9ecef;
+
+  --elevation-1-box-shadow: rgb(0 0 0 / 12%) 0px 2px 10px -3px;
+  --elevation-2-box-shadow: rgb(0 0 0 / 15%) 0px 2px 13px -3px;
+  --elevation-3-box-shadow: rgb(0 0 0 / 5%) 0px 2px 13px -3px,
+    rgb(0 0 0 / 10%) 0px 2px 20px 0px;
+  --elevation-4-box-shadow: rgb(0 0 0 / 4%) 0px 2px 13px -3px,
+    rgb(0 0 0 / 11%) 0px 2px 22px 2px;
+  --elevation-5-box-shadow: rgb(0 0 0 / 3%) 0px 2px 13px -3px,
+    rgb(0 0 0 / 5%) 0px 4px 10px 3px, rgb(0 0 0 / 7%) 0px 4px 33px 10px;
+}

@@ -1,0 +1,8 @@
+/* @import url('./variables.css'); */
+
+.main {
+  @apply fixed top-2 right-2 bottom-2 left-[96px] transition-all box-border;
+}
+.sidebar-expanded .main {
+  @apply fixed top-2 right-2 bottom-2 left-[310px];
+}

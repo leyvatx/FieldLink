@@ -58,6 +58,11 @@ def logout_view(request):
     """
     try:
         refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response(
+                {'refresh': ['Refresh token is required.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         token = RefreshToken(refresh_token)
         token.blacklist()
         return Response(
@@ -71,8 +76,8 @@ def logout_view(request):
         )
 
 
-@extend_schema(responses={200: UserDetailSerializer})
-@api_view(['GET'])
+@extend_schema(request=UserSerializer, responses={200: UserDetailSerializer})
+@api_view(['GET', 'PATCH', 'PUT'])
 @permission_classes([IsAuthenticated])
 def me_view(request):
     """
@@ -80,6 +85,23 @@ def me_view(request):
     GET /api/auth/me/
     Header: Authorization: Bearer <access_token>
     """
+    if request.method in ['PATCH', 'PUT']:
+        allowed_fields = {'name', 'phone', 'email'}
+        if request.user.is_superuser:
+            allowed_fields.update({'role', 'is_active', 'company'})
+
+        payload = {k: v for k, v in request.data.items() if k in allowed_fields}
+        serializer = UserSerializer(
+            request.user,
+            data=payload,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     serializer = UserDetailSerializer(request.user)
     return Response(serializer.data)
 
@@ -104,6 +126,34 @@ def change_password_view(request):
             status=status.HTTP_200_OK
         )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    request=inline_serializer('ValidatePasswordRequest', fields={'password': drf_serializers.CharField()}),
+    responses={200: inline_serializer('ValidatePasswordResponse', fields={'detail': drf_serializers.CharField()})}
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def validate_password_view(request):
+    """
+    Validate current user password.
+    POST /api/auth/validate-password/
+    Body: { "password": "current_password" }
+    """
+    password = request.data.get('password')
+    if not password:
+        return Response(
+            {'password': ['Password is required.']},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not request.user.check_password(password):
+        return Response(
+            {'detail': 'Current password is incorrect'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    return Response({'detail': 'Password is valid'}, status=status.HTTP_200_OK)
 
 
 # ============================================================================
@@ -256,6 +306,3 @@ class CompanyPlanViewSet(viewsets.ModelViewSet):
                 {'error': 'No active subscription'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        if status:
-            queryset = queryset.filter(status=status)
-        return queryset

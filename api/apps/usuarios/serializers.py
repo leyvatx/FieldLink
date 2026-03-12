@@ -1,30 +1,109 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
 from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfiguration
+
+
+ROLE_PERMISSIONS = {
+    User.Role.OWNER: [
+        'view.admin.menu',
+        'view.users.option',
+        'view.log.option',
+        'view.roles.option',
+        'release_notes.general.manage_release_notes',
+        'view.permissions.both',
+        'permissions.view_both',
+        'permissions.view_name',
+    ],
+    User.Role.DISPATCHER: [
+        'view.users.option',
+    ],
+    User.Role.TECHNICIAN: [],
+}
 
 
 class UserSerializer(serializers.ModelSerializer):
     """Basic user info (for lists and profile display)"""
     company_name = serializers.CharField(source='company.name', read_only=True)
     company_slug = serializers.CharField(source='company.slug', read_only=True)
+    permissions = serializers.SerializerMethodField(read_only=True)
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'company_slug', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = [
+            'id', 'email', 'name', 'phone', 'role', 'company',
+            'company_name', 'company_slug', 'is_active', 'permissions',
+            'password', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'company_name', 'company_slug', 'permissions', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'company': {'required': False, 'allow_null': True},
+        }
+
+    def get_permissions(self, obj):
+        return ROLE_PERMISSIONS.get(obj.role, [])
+
+    def validate_company(self, value):
+        request = self.context.get('request')
+        request_user = getattr(request, 'user', None)
+
+        # Non-superusers cannot assign users to another company.
+        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+            if value and request_user.company_id and value.id != request_user.company_id:
+                raise serializers.ValidationError('Cannot assign user to a different company.')
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        if not password:
+            raise serializers.ValidationError({'password': 'Password is required.'})
+
+        request = self.context.get('request')
+        request_user = getattr(request, 'user', None)
+
+        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+            validated_data['company'] = request_user.company
+
+        email = validated_data.pop('email')
+        user = User.objects.create_user(email=email, password=password, **validated_data)
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+
+        request = self.context.get('request')
+        request_user = getattr(request, 'user', None)
+        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+            validated_data.pop('company', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """Detailed user info (self only via /auth/me/)"""
     company_name = serializers.CharField(source='company.name', read_only=True)
     company_slug = serializers.CharField(source='company.slug', read_only=True)
+    permissions = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone', 'role', 'company', 'company_name', 'company_slug', 'is_active', 'mobile_id', 'created_at', 'updated_at']
+        fields = [
+            'id', 'email', 'name', 'phone', 'role', 'company',
+            'company_name', 'company_slug', 'is_active', 'mobile_id',
+            'permissions', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_permissions(self, obj):
+        return ROLE_PERMISSIONS.get(obj.role, [])
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -42,6 +121,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'email': user.email,
             'name': user.name,
             'role': user.role,
+            'permissions': ROLE_PERMISSIONS.get(user.role, []),
         }
         # Add company info (superusers may not have company)
         if user.company:
@@ -111,6 +191,7 @@ class LoginSerializer(serializers.Serializer):
                 'email': user.email,
                 'name': user.name,
                 'role': user.role,
+                'permissions': ROLE_PERMISSIONS.get(user.role, []),
             }
         }
         # Add company info (superusers may not have company)

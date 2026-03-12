@@ -1,0 +1,90 @@
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--scrollbar-track-bg-color);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-bg-color);
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover-bg-color);
+}
+
+/* Card */
+.ant-card {
+  box-shadow: var(--card-box-shadow);
+}
+
+/* Button */
+.ant-btn-icon {
+  display: grid;
+  place-items: center;
+}
+
+/* Drawer */
+.ant-drawer {
+  & .ant-drawer-content {
+    border-radius: 16px;
+  }
+
+  &.ant-drawer-right {
+    & > .ant-drawer-content-wrapper {
+      top: 8px;
+      right: 8px;
+      bottom: 8px;
+    }
+  }
+}
+
+.login-content {
+  background: var(--login-bg);
+  background-blend-mode: screen;
+
+  & .ant-card {
+    background: var(--login-card-bg);
+    border-color: var(--login-card-border-color);
+    box-shadow: var(--login-card-box-shadow);
+
+    & .ant-input,
+    .ant-input-password {
+      background-color: var(--login-card-input-bg);
+      border-color: var(--login-card-input-border-color);
+    }
+  }
+}
+
+.layout {
+  @apply h-screen text-(--color) bg-(--bg-color);
+}
+
+.color-green {
+  color: var(--sk-color-green);
+}
+
+.color-yellow {
+  color: var(--sk-color-yellow);
+}
+
+.color-red {
+  color: var(--sk-color-red);
+}
+
+.color-blue {
+  color: var(--sk-color-blue);
+}
+
+.color-purple {
+  color: var(--sk-color-purple);
+}
+
+.color-gray {
+  color: var(--sk-color-gray);
+}
