@@ -26,7 +26,9 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         model = WorkOrder
         fields = ['id', 'customer', 'customer_name', 'technician', 'technician_name',
                   'service_request', 'status', 'priority', 'scheduled_date',
-                  'started_at', 'completed_at', 'notes', 'offline_flag',
+                  'started_at', 'arrived_at', 'completed_at', 'notes', 'offline_flag',
+                  'service_location_address', 'customer_latitude', 'customer_longitude',
+                  'customer_phone', 'customer_email', 'tracking_token',
                   'created_at', 'evidences', 'signature']
         read_only_fields = ['id', 'created_at']
 
@@ -38,7 +40,9 @@ class WorkOrderListSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkOrder
         fields = ['id', 'customer', 'customer_name', 'technician', 'technician_name',
-                  'status', 'priority', 'scheduled_date', 'offline_flag']
+                  'status', 'priority', 'scheduled_date', 'offline_flag',
+                  'service_location_address', 'customer_latitude', 'customer_longitude',
+                  'customer_phone', 'tracking_token', 'arrived_at']
 
 
 class SimulationEventSerializer(serializers.ModelSerializer):

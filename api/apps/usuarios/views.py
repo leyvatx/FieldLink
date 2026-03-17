@@ -17,6 +17,7 @@ from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 import threading
 from datetime import datetime
+from django.utils import timezone
 
 
 # ============================================================================
@@ -309,6 +310,46 @@ class CompanyPlanViewSet(viewsets.ModelViewSet):
                 {'error': 'No active subscription'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=False, methods=['post'])
+    def upgrade(self, request):
+        """Upgrade current company plan (simulated payment)."""
+        plan_id = request.data.get('plan_id')
+        if not plan_id:
+            return Response(
+                {'error': 'plan_id is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            plan = SubscriptionPlan.objects.get(id=plan_id, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response(
+                {'error': 'Plan not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        company = request.user.company
+        start_date = timezone.now().date()
+
+        company_plan, _ = CompanyPlan.objects.update_or_create(
+            company=company,
+            defaults={
+                'plan': plan,
+                'start_date': start_date,
+                'status': CompanyPlan.PlanStatus.ACTIVE,
+                'auto_renew': True,
+                'next_billing_date': None,
+            }
+        )
+
+        company.subscription_plan = plan
+        company.plan_start_date = start_date
+        company.is_trial = False
+        company.save(update_fields=['subscription_plan', 'plan_start_date', 'is_trial'])
+
+        serializer = self.get_serializer(company_plan)
+        return Response(serializer.data)
 
 
 # ============================================================================

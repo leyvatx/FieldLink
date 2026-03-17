@@ -121,6 +121,8 @@ def public_tracking_view(request, tracking_token):
         )
     
     # Return public information only
+    tracking_active = work_order.status == WorkOrder.Status.IN_TRANSIT and not work_order.arrived_at
+
     data = {
         'id': str(work_order.id),
         'status': work_order.status,
@@ -130,10 +132,16 @@ def public_tracking_view(request, tracking_token):
         'assigned_at': work_order.scheduled_date,
         'arrived_at': work_order.arrived_at,
         'completed_at': work_order.completed_at,
+        'tracking_active': tracking_active,
+        'service_location': {
+            'address': work_order.service_location_address,
+            'latitude': work_order.customer_latitude,
+            'longitude': work_order.customer_longitude,
+        }
     }
     
-    # If in transit or in service, show current location
-    if work_order.status in ['IN_TRANSIT', 'IN_SERVICE']:
+    # Only show location while tracking is active (before arrival)
+    if tracking_active:
         latest_location = work_order.technician_locations.order_by('-timestamp').first()
         if latest_location:
             data['technician_location'] = {

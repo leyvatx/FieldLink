@@ -30,6 +30,11 @@ export const getUsers = async ({ trashed = false } = {}) => {
   return data;
 };
 
+export const getTechnicians = async () => {
+  const { data } = await apiClient.get("/users/technicians/");
+  return data;
+};
+
 export const createUser = async (payload) => {
   const { data } = await apiClient.post("/users/", normalizeUserPayload(payload));
   return data;

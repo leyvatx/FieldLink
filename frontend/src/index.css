@@ -10,6 +10,7 @@
 @import "./css/theme.css";
 @import "./css/sidebar.css";
 @import "./css/main.css";
+@import "./css/public-portal.css";
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 

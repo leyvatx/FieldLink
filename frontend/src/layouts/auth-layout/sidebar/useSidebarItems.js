@@ -7,23 +7,36 @@ const useSidebarItems = () => {
   const [items, setItems] = useState([]);
 
   const filterItemsByPermissions = (items) => {
-    return items
-      .filter((item) => {
-        if (!item.permission) {
-          return true;
-        }
+    return items.reduce((acc, item) => {
+      const hasRoleAccess =
+        !item.roles || item.roles.includes(user?.role);
+      const hasPermissionAccess =
+        !item.permission || user?.permissions?.includes(item.permission);
 
-        return user?.permissions?.includes(item.permission);
-      })
-      .map((item) => ({
+      const filteredChildren = item.children
+        ? filterItemsByPermissions(item.children)
+        : [];
+
+      const hasVisibleChildren = filteredChildren.length > 0;
+      const isVisible =
+        hasRoleAccess &&
+        hasPermissionAccess &&
+        (item.path || hasVisibleChildren);
+
+      if (!isVisible) {
+        return acc;
+      }
+
+      acc.push({
         ...item,
-        children: item.children
-          ? filterItemsByPermissions(item.children)
-          : undefined,
-      }));
+        children: hasVisibleChildren ? filteredChildren : undefined,
+      });
+
+      return acc;
+    }, []);
   };
 
-  // ✅ Generar los ítems iniciales en base a permisos
+  // Generar los ítems iniciales según permisos
   const initialItems = useMemo(() => {
     if (!user) {
       return [];
@@ -32,7 +45,7 @@ const useSidebarItems = () => {
     return filterItemsByPermissions(sidebarItems);
   }, [user]);
 
-  // Seteamos los ítems visibles
+  // Establecer los ítems visibles
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);

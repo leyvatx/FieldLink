@@ -10,10 +10,33 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
 class ServiceRequestSerializer(serializers.ModelSerializer):
+    is_suspicious = serializers.SerializerMethodField(read_only=True)
+    suspicious_reasons = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ServiceRequest
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'otp_validated']
+
+    def _get_suspicious_reasons(self, obj):
+        if obj.status == ServiceRequest.Status.VALIDATED:
+            return []
+
+        reasons = []
+        if not obj.otp_validated:
+            reasons.append('otp_unvalidated')
+        if obj.company_id and Blacklist.objects.filter(
+            company_id=obj.company_id,
+            phone=obj.phone
+        ).exists():
+            reasons.append('blacklisted_phone')
+        return reasons
+
+    def get_is_suspicious(self, obj):
+        return len(self._get_suspicious_reasons(obj)) > 0
+
+    def get_suspicious_reasons(self, obj):
+        return self._get_suspicious_reasons(obj)
 
 
 class BlacklistSerializer(serializers.ModelSerializer):

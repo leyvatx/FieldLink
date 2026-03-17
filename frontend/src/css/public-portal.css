@@ -1,0 +1,202 @@
+.public-portal {
+  --portal-ink: var(--sk-color-text);
+  --portal-muted: var(--sk-color-text-secondary);
+  --portal-accent: var(--sk-color-warning);
+  --portal-accent-2: var(--sk-color-info);
+  --portal-accent-soft: rgba(216, 107, 75, 0.18);
+  --portal-accent-2-soft: rgba(46, 139, 164, 0.18);
+  --portal-bg: var(--sk-color-bg-layout);
+  --portal-card: var(--sk-color-bg-container);
+  --portal-shadow: var(--sk-box-shadow-card);
+  font-family: "Heebo", sans-serif;
+  color: var(--portal-ink);
+  background: var(--portal-bg);
+  min-height: 100vh;
+}
+
+[data-theme="light"] .public-portal {
+  background: radial-gradient(
+        circle at 10% 10%,
+        rgba(216, 107, 75, 0.12),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(46, 139, 164, 0.14),
+        transparent 40%
+      ),
+      linear-gradient(135deg, #f9f6f1 0%, #efe8df 100%);
+}
+
+[data-theme="dark"] .public-portal {
+  --portal-accent-soft: rgba(120, 112, 200, 0.2);
+  --portal-accent-2-soft: rgba(22, 104, 220, 0.18);
+  background: radial-gradient(
+        circle at 10% 10%,
+        rgba(90, 80, 150, 0.25),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 90% 20%,
+        rgba(22, 104, 220, 0.18),
+        transparent 40%
+      ),
+      linear-gradient(
+        135deg,
+        var(--sk-color-bg-layout) 0%,
+        var(--sk-color-bg-container) 100%
+      );
+}
+
+.public-portal .portal-shell {
+  position: relative;
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 48px 20px 64px;
+  display: grid;
+  gap: 32px;
+}
+
+.public-portal .portal-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.public-portal .portal-kicker {
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--portal-accent-2);
+}
+
+.public-portal .portal-title {
+  font-size: clamp(30px, 4vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.public-portal .portal-subtitle {
+  font-size: 16px;
+  color: var(--portal-muted);
+  max-width: 560px;
+}
+
+.public-portal .portal-card {
+  background: var(--portal-card);
+  border: 1px solid var(--sk-color-border-secondary);
+  border-radius: 24px;
+  box-shadow: var(--portal-shadow);
+  padding: 28px;
+}
+
+.public-portal .portal-map {
+  position: relative;
+  border-radius: 24px;
+  background: linear-gradient(
+    140deg,
+    var(--sk-color-bg-container) 0%,
+    var(--sk-color-bg-layout) 100%
+  );
+  overflow: hidden;
+  min-height: 320px;
+  border: 1px solid var(--sk-color-border-secondary);
+}
+
+.public-portal .portal-map::before,
+.public-portal .portal-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      to right,
+      var(--sk-color-text-quaternary) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      var(--sk-color-text-quaternary) 1px,
+      transparent 1px
+    );
+  background-size: 48px 48px;
+  opacity: 0.2;
+}
+
+.public-portal .portal-map::after {
+  background: radial-gradient(
+    circle at 30% 40%,
+    var(--portal-accent-soft),
+    transparent 55%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.35;
+}
+
+.public-portal .map-marker {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  box-shadow: 0 0 0 8px var(--portal-accent-soft);
+  transform: translate(-50%, -50%);
+}
+
+.public-portal .map-marker.tech {
+  background: var(--portal-accent-2);
+  box-shadow: 0 0 0 8px var(--portal-accent-2-soft);
+}
+
+.public-portal .portal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--portal-accent-2-soft);
+  color: var(--portal-accent-2);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.public-portal .portal-divider {
+  height: 1px;
+  background: var(--sk-color-border-secondary);
+  margin: 18px 0;
+}
+
+.public-portal .portal-stat {
+  display: grid;
+  gap: 4px;
+}
+
+.public-portal .portal-stat span {
+  font-size: 12px;
+  color: var(--portal-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.public-portal .portal-stat strong {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.public-portal .portal-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.public-portal .portal-muted {
+  color: var(--portal-muted);
+}
+
+.public-portal .portal-error {
+  color: var(--sk-color-error);
+}
+
+@media (min-width: 900px) {
+  .public-portal .portal-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+    align-items: start;
+  }
+}

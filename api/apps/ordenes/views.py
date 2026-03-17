@@ -49,6 +49,11 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         priority = self.request.query_params.get('priority')
         if priority:
             queryset = queryset.filter(priority=priority)
+
+        # Filter by customer
+        customer = self.request.query_params.get('customer')
+        if customer:
+            queryset = queryset.filter(customer_id=customer)
         
         return queryset.order_by('-created_at')
 

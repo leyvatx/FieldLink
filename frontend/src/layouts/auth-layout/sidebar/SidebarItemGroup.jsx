@@ -1,11 +1,26 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import classnames from "classnames";
 import SidebarItem from "@layouts/auth-layout/sidebar/SidebarItem";
 import { PiCaretRight } from "react-icons/pi";
 import sidebarIcons from "@layouts/auth-layout/sidebar/sidebarIcons";
 
 const SidebarItemGroup = ({ item }) => {
-  const [open, setOpen] = useState(false);
+  const location = useLocation();
+  const hasActiveChild = useMemo(
+    () =>
+      item.children?.some(
+        (child) => child.path && location.pathname.startsWith(child.path)
+      ),
+    [item.children, location.pathname]
+  );
+  const [open, setOpen] = useState(hasActiveChild || item.defaultOpen);
+
+  useEffect(() => {
+    if (hasActiveChild) {
+      setOpen(true);
+    }
+  }, [hasActiveChild]);
 
   const toggleOpen = () => {
     setOpen((prevValue) => !prevValue);

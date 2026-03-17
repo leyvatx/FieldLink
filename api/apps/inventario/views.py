@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from django.db import transaction
 from .models import (
     Material, TechnicianInventory, UsedMaterial,
     CentralWarehouse, MaterialApproval, RestockHistory
@@ -117,6 +118,54 @@ class TechnicianInventoryViewSet(viewsets.ModelViewSet):
         inventory.current_quantity -= quantity
         inventory.save()
         
+        serializer = self.get_serializer(inventory)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDispatcherOrOwner])
+    def restock(self, request, pk=None):
+        """
+        Admin restock technician inventory and log warehouse movement.
+        """
+        inventory = self.get_object()
+        quantity = int(request.data.get('quantity', 0))
+        notes = request.data.get('notes', '')
+
+        if quantity <= 0:
+            return Response(
+                {'error': 'quantity must be greater than zero'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            inventory.current_quantity += quantity
+            inventory.save()
+
+            warehouse, _ = CentralWarehouse.objects.get_or_create(
+                company=request.user.company,
+                material=inventory.material,
+                defaults={
+                    'quantity_available': 0,
+                    'quantity_reserved': 0,
+                    'quantity_damaged': 0,
+                    'minimum_threshold': 10,
+                    'reorder_quantity': 50,
+                }
+            )
+            warehouse.quantity_available = max(
+                0,
+                warehouse.quantity_available - quantity
+            )
+            warehouse.last_restocked_at = timezone.now()
+            warehouse.save()
+
+            RestockHistory.objects.create(
+                warehouse=warehouse,
+                restock_type=RestockHistory.RestockType.ADJUSTMENT,
+                quantity_change=-quantity,
+                performed_by=request.user,
+                notes=notes or f"Entrega a tecnico {inventory.technician.name}",
+            )
+
         serializer = self.get_serializer(inventory)
         return Response(serializer.data)
 

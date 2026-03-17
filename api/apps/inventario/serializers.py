@@ -54,25 +54,39 @@ class UsedMaterialSerializer(serializers.ModelSerializer):
     material_unit = serializers.CharField(source='material.unit', read_only=True)
     work_order_id = serializers.CharField(source='work_order.id', read_only=True)
     approval_status = serializers.CharField(source='approval.status', read_only=True, allow_null=True)
+    approval_id = serializers.CharField(source='approval.id', read_only=True, allow_null=True)
+    photos = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = UsedMaterial
         fields = [
             'id', 'work_order', 'work_order_id', 'material', 'material_name',
-            'material_unit', 'quantity_used', 'approval_status', 'mobile_id',
+            'material_unit', 'quantity_used', 'approval_status', 'approval_id',
+            'mobile_id', 'photos',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def get_photos(self, obj):
+        photos = []
+        for photo in obj.photos.all():
+            photos.append({
+                'id': str(photo.id),
+                'file': photo.file.url if photo.file else None,
+                'captured_at': photo.captured_at,
+            })
+        return photos
+
 
 class MaterialApprovalSerializer(serializers.ModelSerializer):
     used_material_detail = serializers.SerializerMethodField(read_only=True)
+    used_material_photos = serializers.SerializerMethodField(read_only=True)
     reviewed_by_name = serializers.CharField(source='reviewed_by.name', read_only=True, allow_null=True)
 
     class Meta:
         model = MaterialApproval
         fields = [
-            'id', 'used_material', 'used_material_detail', 'work_order',
+            'id', 'used_material', 'used_material_detail', 'used_material_photos', 'work_order',
             'status', 'reviewed_by', 'reviewed_by_name', 'reviewed_at',
             'approved_quantity', 'rejection_reason', 'created_at', 'updated_at'
         ]
@@ -84,6 +98,16 @@ class MaterialApprovalSerializer(serializers.ModelSerializer):
             'material': obj.used_material.material.name,
             'quantity_used': obj.used_material.quantity_used
         }
+
+    def get_used_material_photos(self, obj):
+        photos = []
+        for photo in obj.used_material.photos.all():
+            photos.append({
+                'id': str(photo.id),
+                'file': photo.file.url if photo.file else None,
+                'captured_at': photo.captured_at,
+            })
+        return photos
 
 
 class RestockHistorySerializer(serializers.ModelSerializer):
