@@ -11,9 +11,12 @@ from .serializers import (
     LoginSerializer, ChangePasswordSerializer, CompanySerializer,
     CompanyConfigurationSerializer, SubscriptionPlanSerializer, CompanyPlanSerializer
 )
+from .serializers import ROLE_PERMISSIONS
 from .permissions import IsOwner, IsDispatcherOrOwner, IsSameCompany, IsTechnician
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
+import threading
+from datetime import datetime
 
 
 # ============================================================================
@@ -306,3 +309,561 @@ class CompanyPlanViewSet(viewsets.ModelViewSet):
                 {'error': 'No active subscription'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+# ============================================================================
+# LOCAL-ONLY MOCK ENDPOINTS FOR ROLES/PERMISSIONS/LOG/RELEASE NOTES
+# ============================================================================
+
+_DATA_LOCK = threading.Lock()
+_IN_MEMORY_DATA = None
+
+
+def _split_permission_code(code):
+    parts = (code or "").split(".")
+    if len(parts) >= 3:
+        return parts[0], parts[1], ".".join(parts[2:])
+    if len(parts) == 2:
+        return parts[0], None, parts[1]
+    return None, None, code
+
+
+def _build_initial_data():
+    # Roles used across the UI
+    roles = [
+        {"id": 1, "name": "owner"},
+        {"id": 2, "name": "dispatcher"},
+        {"id": 3, "name": "technician"},
+    ]
+
+    base_permissions = set()
+    for perms in ROLE_PERMISSIONS.values():
+        base_permissions.update(perms)
+
+    # Extra permissions used by the roles/permissions UI
+    base_permissions.update(
+        {
+            "roles.create",
+            "roles.edit",
+            "roles.delete",
+            "permissions.create",
+            "permissions.edit",
+            "permissions.delete",
+        }
+    )
+
+    # Build modules and submodules
+    module_names = {}
+    submodule_names = {}
+    for code in base_permissions:
+        module, submodule, _ = _split_permission_code(code)
+        if module:
+            module_names[module] = True
+            if submodule:
+                submodule_names.setdefault(module, set()).add(submodule)
+
+    modules = []
+    submodules = []
+    module_id_map = {}
+    submodule_id_map = {}
+    next_module_id = 1
+    next_submodule_id = 1
+    for module in sorted(module_names.keys()):
+        module_id_map[module] = next_module_id
+        modules.append({"id": next_module_id, "name": module})
+        next_module_id += 1
+        for submodule in sorted(submodule_names.get(module, [])):
+            submodule_id_map[(module, submodule)] = next_submodule_id
+            submodules.append(
+                {
+                    "id": next_submodule_id,
+                    "name": submodule,
+                    "module_id": module_id_map[module],
+                }
+            )
+            next_submodule_id += 1
+
+    permissions = []
+    permission_id_map = {}
+    next_permission_id = 1
+    for code in sorted(base_permissions):
+        module, submodule, name = _split_permission_code(code)
+        module_id = module_id_map.get(module) if module else None
+        submodule_id = submodule_id_map.get((module, submodule)) if module and submodule else None
+        permission = {
+            "id": next_permission_id,
+            "name": code,
+            "description": code,
+            "module_id": module_id,
+            "submodule_id": submodule_id,
+        }
+        permission_id_map[code] = next_permission_id
+        permissions.append(permission)
+        next_permission_id += 1
+
+    # Matrix: role_id -> permission_ids
+    matrix = {1: [], 2: [], 3: []}
+    role_map = {
+        User.Role.OWNER: 1,
+        User.Role.DISPATCHER: 2,
+        User.Role.TECHNICIAN: 3,
+    }
+    for role, perms in ROLE_PERMISSIONS.items():
+        role_id = role_map.get(role)
+        if not role_id:
+            continue
+        matrix[role_id] = [permission_id_map[p] for p in perms if p in permission_id_map]
+    # Give owner the extra permissions by default
+    matrix[1] = sorted(set(matrix[1] + [permission_id_map[p] for p in base_permissions]))
+
+    return {
+        "roles": roles,
+        "modules": modules,
+        "submodules": submodules,
+        "permissions": permissions,
+        "matrix": matrix,
+        "next_ids": {
+            "roles": 4,
+            "modules": next_module_id,
+            "submodules": next_submodule_id,
+            "permissions": next_permission_id,
+            "projects": 2,
+            "release_notes": 1,
+            "release_modules": 2,
+            "release_submodules": 2,
+        },
+        "projects": [
+            {"id": 1, "name": "Default Project", "code": "DEFAULT", "description": ""}
+        ],
+        "release_modules": [{"id": 1, "name": "General"}],
+        "release_submodules": [
+            {"id": 1, "name": "General", "release_module_id": 1, "module_name": "General"}
+        ],
+        "release_notes": [],
+    }
+
+
+def _get_data():
+    global _IN_MEMORY_DATA
+    with _DATA_LOCK:
+        if _IN_MEMORY_DATA is None:
+            _IN_MEMORY_DATA = _build_initial_data()
+        return _IN_MEMORY_DATA
+
+
+def _serialize_permission(perm, data):
+    module = None
+    submodule = None
+    if perm.get("module_id"):
+        module = next((m for m in data["modules"] if m["id"] == perm["module_id"]), None)
+    if perm.get("submodule_id"):
+        submodule = next((s for s in data["submodules"] if s["id"] == perm["submodule_id"]), None)
+    return {
+        "id": perm["id"],
+        "name": perm["name"],
+        "description": perm.get("description") or "",
+        "module_id": perm.get("module_id"),
+        "submodule_id": perm.get("submodule_id"),
+        "module": module,
+        "submodule": submodule,
+    }
+
+
+def _next_id(data, key):
+    next_id = data["next_ids"][key]
+    data["next_ids"][key] += 1
+    return next_id
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def roles_permissions_matrix_view(request):
+    data = _get_data()
+    permissions = [_serialize_permission(p, data) for p in data["permissions"]]
+    matrix = {str(k): v for k, v in data["matrix"].items()}
+    return Response({"roles": data["roles"], "permissions": permissions, "matrix": matrix})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def roles_permissions_batch_view(request):
+    data = _get_data()
+    payload = request.data or {}
+    attach = payload.get("attach") or []
+    detach = payload.get("detach") or []
+
+    for item in attach:
+        role_id = int(item.get("roleId"))
+        perm_ids = item.get("permissionIds") or []
+        data["matrix"].setdefault(role_id, [])
+        for pid in perm_ids:
+            if pid not in data["matrix"][role_id]:
+                data["matrix"][role_id].append(pid)
+
+    for item in detach:
+        role_id = int(item.get("roleId"))
+        perm_ids = set(item.get("permissionIds") or [])
+        if role_id in data["matrix"]:
+            data["matrix"][role_id] = [pid for pid in data["matrix"][role_id] if pid not in perm_ids]
+
+    return Response({"detail": "ok"})
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+def role_permission_toggle_view(request, role_id, permission_id):
+    data = _get_data()
+    role_id = int(role_id)
+    permission_id = int(permission_id)
+    data["matrix"].setdefault(role_id, [])
+
+    if request.method == "POST":
+        if permission_id not in data["matrix"][role_id]:
+            data["matrix"][role_id].append(permission_id)
+        return Response({"detail": "attached"})
+
+    data["matrix"][role_id] = [pid for pid in data["matrix"][role_id] if pid != permission_id]
+    return Response({"detail": "detached"})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def roles_collection_view(request):
+    data = _get_data()
+    if request.method == "GET":
+        return Response(data["roles"])
+
+    name = (request.data or {}).get("name") or "role"
+    role = {"id": _next_id(data, "roles"), "name": name}
+    data["roles"].append(role)
+    data["matrix"][role["id"]] = []
+    return Response(role, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def roles_detail_view(request, role_id):
+    data = _get_data()
+    role_id = int(role_id)
+    role = next((r for r in data["roles"] if r["id"] == role_id), None)
+    if not role:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        return Response(role)
+
+    if request.method == "PUT":
+        role["name"] = (request.data or {}).get("name") or role["name"]
+        return Response(role)
+
+    data["roles"] = [r for r in data["roles"] if r["id"] != role_id]
+    data["matrix"].pop(role_id, None)
+    return Response({"detail": "deleted"})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def permissions_collection_view(request):
+    data = _get_data()
+    if request.method == "GET":
+        return Response([_serialize_permission(p, data) for p in data["permissions"]])
+
+    payload = request.data or {}
+    name = payload.get("name") or payload.get("code") or "permission"
+    description = payload.get("description") or name
+    module_id = payload.get("module_id") or payload.get("module")
+    submodule_id = payload.get("submodule_id") or payload.get("submodule")
+    perm = {
+        "id": _next_id(data, "permissions"),
+        "name": name,
+        "description": description,
+        "module_id": module_id,
+        "submodule_id": submodule_id,
+    }
+    data["permissions"].append(perm)
+    return Response(_serialize_permission(perm, data), status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def permissions_detail_view(request, permission_id):
+    data = _get_data()
+    permission_id = int(permission_id)
+    perm = next((p for p in data["permissions"] if p["id"] == permission_id), None)
+    if not perm:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        return Response(_serialize_permission(perm, data))
+
+    if request.method == "PUT":
+        payload = request.data or {}
+        perm["name"] = payload.get("name") or perm["name"]
+        perm["description"] = payload.get("description") or perm.get("description") or perm["name"]
+        perm["module_id"] = payload.get("module_id") or payload.get("module") or perm.get("module_id")
+        perm["submodule_id"] = payload.get("submodule_id") or payload.get("submodule") or perm.get("submodule_id")
+        return Response(_serialize_permission(perm, data))
+
+    data["permissions"] = [p for p in data["permissions"] if p["id"] != permission_id]
+    for role_id in list(data["matrix"].keys()):
+        data["matrix"][role_id] = [pid for pid in data["matrix"][role_id] if pid != permission_id]
+    return Response({"detail": "deleted"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def permissions_import_text_view(request):
+    data = _get_data()
+    text = "\n".join(sorted([p["name"] for p in data["permissions"]]))
+    return Response(text)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def permissions_import_view(request):
+    data = _get_data()
+    text = (request.data or {}).get("text") or ""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    created = 0
+    for code in lines:
+        if any(p["name"] == code for p in data["permissions"]):
+            continue
+        perm = {
+            "id": _next_id(data, "permissions"),
+            "name": code,
+            "description": code,
+            "module_id": None,
+            "submodule_id": None,
+        }
+        data["permissions"].append(perm)
+        created += 1
+    return Response({"results": {"created": created, "skipped": len(lines) - created}})
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def modules_collection_view(request):
+    data = _get_data()
+    if request.method == "GET":
+        return Response(data["modules"])
+    name = (request.data or {}).get("name") or "module"
+    module = {"id": _next_id(data, "modules"), "name": name}
+    data["modules"].append(module)
+    return Response(module, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def submodules_collection_view(request):
+    data = _get_data()
+    if request.method == "GET":
+        return Response(data["submodules"])
+    payload = request.data or {}
+    name = payload.get("name") or "submodule"
+    module_id = payload.get("module_id") or payload.get("module") or None
+    submodule = {
+        "id": _next_id(data, "submodules"),
+        "name": name,
+        "module_id": module_id,
+    }
+    data["submodules"].append(submodule)
+    return Response(submodule, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def log_data_view(request):
+    return Response({"data": {"data": [], "last_page": 1}})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def projects_options_view(request):
+    data = _get_data()
+    return Response(data["projects"])
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def projects_collection_view(request):
+    data = _get_data()
+    payload = request.data or {}
+    project = {
+        "id": _next_id(data, "projects"),
+        "name": payload.get("name") or "Project",
+        "code": payload.get("code") or "CODE",
+        "description": payload.get("description") or "",
+    }
+    data["projects"].append(project)
+    return Response(project, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_modules_options_view(request):
+    data = _get_data()
+    return Response(data["release_modules"])
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_modules_collection_view(request):
+    data = _get_data()
+    name = (request.data or {}).get("name") or "Module"
+    module = {"id": _next_id(data, "release_modules"), "name": name}
+    data["release_modules"].append(module)
+    return Response(module, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_submodules_options_view(request):
+    data = _get_data()
+    return Response(data["release_submodules"])
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_submodules_collection_view(request):
+    data = _get_data()
+    payload = request.data or {}
+    name = payload.get("name") or "Submodule"
+    module_id = payload.get("release_module_id")
+    module = next((m for m in data["release_modules"] if m["id"] == module_id), None)
+    submodule = {
+        "id": _next_id(data, "release_submodules"),
+        "name": name,
+        "release_module_id": module_id,
+        "module_name": module["name"] if module else "",
+    }
+    data["release_submodules"].append(submodule)
+    return Response(submodule, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_change_types_options_view(request):
+    return Response(
+        [
+            {"value": "feature", "label": "Feature"},
+            {"value": "fix", "label": "Fix"},
+            {"value": "improvement", "label": "Improvement"},
+        ]
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_notes_pagination_view(request):
+    data = _get_data()
+    return Response({"data": data["release_notes"], "total": len(data["release_notes"])})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_notes_collection_view(request):
+    data = _get_data()
+    payload = request.data or {}
+    project_id = payload.get("project_id")
+    project = next((p for p in data["projects"] if p["id"] == project_id), None)
+    release_note = {
+        "id": _next_id(data, "release_notes"),
+        "project_id": project_id,
+        "project": project,
+        "project_name": project["name"] if project else "",
+        "version_number": payload.get("version_number") or "0.0.1",
+        "release_date": payload.get("release_date") or datetime.utcnow().strftime("%Y-%m-%d"),
+        "title": payload.get("title") or "",
+        "summary": payload.get("summary") or "",
+        "status": payload.get("status") or "draft",
+        "created_by": request.user.email,
+        "sections": [],
+    }
+    data["release_notes"].append(release_note)
+    return Response(release_note, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+def release_notes_detail_view(request, note_id):
+    data = _get_data()
+    note_id = int(note_id)
+    note = next((n for n in data["release_notes"] if n["id"] == note_id), None)
+    if not note:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        return Response(note)
+
+    if request.method == "POST":
+        payload = request.data or {}
+        if payload.get("_method") == "PUT":
+            note["version_number"] = payload.get("version_number") or note["version_number"]
+            note["release_date"] = payload.get("release_date") or note["release_date"]
+            note["title"] = payload.get("title") or note["title"]
+            note["summary"] = payload.get("summary") or note["summary"]
+            note["status"] = payload.get("status") or note["status"]
+            return Response(note)
+        return Response({"detail": "Unsupported"}, status=status.HTTP_400_BAD_REQUEST)
+
+    data["release_notes"] = [n for n in data["release_notes"] if n["id"] != note_id]
+    return Response({"detail": "deleted"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_notes_current_view(request):
+    data = _get_data()
+    if not data["release_notes"]:
+        return Response(None)
+    return Response(data["release_notes"][-1])
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_notes_current_version_view(request):
+    data = _get_data()
+    if not data["release_notes"]:
+        return Response({"version_number": "0.0.0"})
+    return Response({"version_number": data["release_notes"][-1]["version_number"]})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def release_notes_status_options_view(request):
+    return Response(
+        [
+            {"value": "draft", "label": "Draft"},
+            {"value": "published", "label": "Published"},
+            {"value": "archived", "label": "Archived"},
+        ]
+    )
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def release_notes_update_status_view(request, note_id):
+    data = _get_data()
+    note_id = int(note_id)
+    note = next((n for n in data["release_notes"] if n["id"] == note_id), None)
+    if not note:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+    note["status"] = (request.data or {}).get("status") or note["status"]
+    return Response(note)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def release_sections_create_view(request, note_id):
+    data = _get_data()
+    note_id = int(note_id)
+    note = next((n for n in data["release_notes"] if n["id"] == note_id), None)
+    if not note:
+        return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+    section = {
+        "id": len(note["sections"]) + 1,
+        "title": (request.data or {}).get("title") or "Section",
+        "changes": [],
+    }
+    note["sections"].append(section)
+    return Response(section, status=status.HTTP_201_CREATED)

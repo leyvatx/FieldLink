@@ -1,0 +1,24 @@
+{
+  "MOVEMENTS": [
+    { "id": 1, "name": "create", "label": "Creacion", "action": "agregado", "color": "green" },
+    { "id": 2, "name": "edit", "label": "Edicion", "action": "editado", "color": "yellow" },
+    { "id": 3, "name": "delete", "label": "Eliminacion", "action": "eliminado", "color": "red" },
+    { "id": 4, "name": "confirm", "label": "Confirmacion", "action": "confirmado", "color": "green" },
+    { "id": 5, "name": "enable_material", "label": "Habilitar material", "action": "habilitado", "color": "blue" },
+    { "id": 6, "name": "approve", "label": "Aprobacion", "action": "aprobado", "color": "green" },
+    { "id": 7, "name": "reject", "label": "Rechazo", "action": "rechazado", "color": "red" },
+    { "id": 8, "name": "archive", "label": "Archivado", "action": "archivado", "color": "gray" },
+    { "id": 9, "name": "restore", "label": "Restaurado", "action": "restaurado", "color": "gray" },
+    { "id": 10, "name": "add_image", "label": "Agregar imagen", "action": "agregado", "color": "blue" },
+    { "id": 11, "name": "update_container", "label": "Actualizar contenedor", "action": "actualizado", "color": "blue" },
+    { "id": 12, "name": "change_qty", "label": "Cambio de cantidad", "action": "cambiado", "color": "blue" },
+    { "id": 13, "name": "cancel", "label": "Cancelado", "action": "cancelado", "color": "red" }
+  ],
+  "MODULES": [
+    { "id": 1, "name": "user", "label": "Usuario", "prefix": "el usuario", "url": null },
+    { "id": 2, "name": "role", "label": "Rol", "prefix": "el rol", "url": null },
+    { "id": 3, "name": "permission", "label": "Permiso", "prefix": "el permiso", "url": null },
+    { "id": 4, "name": "picklist", "label": "Picklist", "prefix": "la picklist", "url": null }
+  ],
+  "COLUMNS": {}
+}
