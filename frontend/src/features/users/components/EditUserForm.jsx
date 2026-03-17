@@ -51,7 +51,7 @@ const EditUserForm = ({ id, onClose }) => {
     return (
       <Alert
         message="Error"
-        description="No se pudo cargar la informacion del usuario. Intentelo de nuevo."
+        description="No se pudo cargar la información del usuario. Inténtelo de nuevo."
         type="error"
         showIcon
       />

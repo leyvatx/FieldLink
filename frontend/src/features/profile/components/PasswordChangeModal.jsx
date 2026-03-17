@@ -22,7 +22,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
       );
 
       if (result.success) {
-        success("Contrasena actualizada exitosamente");
+        success("Contraseña actualizada exitosamente");
         form.resetFields();
         onClose();
         return;
@@ -72,7 +72,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
           },
           {
             name: "confirmPassword",
-            errors: ["Las contrasenas no coinciden"],
+            errors: ["Las contraseñas no coinciden"],
           },
         ]);
       }
@@ -88,7 +88,7 @@ const PasswordChangeModal = ({ isOpen, onClose }) => {
 
   return (
     <Modal
-      title="Cambiar Contrasena"
+      title="Cambiar contraseña"
       open={isOpen}
       onCancel={handleCancel}
       footer={null}
@@ -123,42 +123,42 @@ const PasswordChangeForm = ({
       onFinishFailed={onFinishFailed}
     >
       <Form.Item
-        label="Contrasena actual"
+        label="Contraseña actual"
         name="currentPassword"
         rules={[
-          { required: true, message: "Por favor ingrese su contrasena actual" },
+          { required: true, message: "Por favor ingrese su contraseña actual" },
         ]}
       >
         <Input.Password />
       </Form.Item>
 
       <Form.Item
-        label="Nueva contrasena"
+        label="Nueva contraseña"
         name="newPassword"
         rules={[
-          { required: true, message: "Por favor ingrese la nueva contrasena" },
-          { min: 8, message: "La contrasena debe tener al menos 8 caracteres" },
+          { required: true, message: "Por favor ingrese la nueva contraseña" },
+          { min: 8, message: "La contraseña debe tener al menos 8 caracteres" },
         ]}
       >
         <Input.Password />
       </Form.Item>
 
       <Form.Item
-        label="Confirmar contrasena"
+        label="Confirmar contraseña"
         name="confirmPassword"
         dependencies={["newPassword"]}
         rules={[
           {
             required: true,
-            message: "Por favor confirme la nueva contrasena",
+            message: "Por favor confirme la nueva contraseña",
           },
-          { min: 8, message: "La contrasena debe tener al menos 8 caracteres" },
+          { min: 8, message: "La contraseña debe tener al menos 8 caracteres" },
           ({ getFieldValue }) => ({
             validator(_, value) {
               if (!value || getFieldValue("newPassword") === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error("Las contrasenas no coinciden"));
+              return Promise.reject(new Error("Las contraseñas no coinciden"));
             },
           }),
         ]}
@@ -173,7 +173,7 @@ const PasswordChangeForm = ({
           htmlType="submit"
           loading={changing}
         >
-          Guardar contrasena
+          Guardar contraseña
         </Button>
       </div>
     </Form>

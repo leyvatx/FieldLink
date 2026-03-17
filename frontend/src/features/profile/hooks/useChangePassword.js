@@ -18,33 +18,33 @@ const useChangePassword = () => {
     onSuccess: (result) => {
       setChanging(false);
       if (!result.success) {
-        handleError(result.error || "Error al cambiar la contrasena");
+        handleError(result.error || "Error al cambiar la contraseña");
       }
     },
     onError: (error) => {
       setChanging(false);
-      handleError(error, "Error al cambiar la contrasena");
+      handleError(error, "Error al cambiar la contraseña");
     },
   });
 
   const validatePasswords = (currentPassword, newPassword, confirmPassword) => {
     if (!currentPassword?.trim()) {
-      return "La contrasena actual es requerida";
+      return "La contraseña actual es requerida";
     }
     if (!newPassword?.trim()) {
-      return "La nueva contrasena es requerida";
+      return "La nueva contraseña es requerida";
     }
     if (!confirmPassword?.trim()) {
-      return "La confirmacion de contrasena es requerida";
+      return "La confirmación de contraseña es requerida";
     }
     if (newPassword !== confirmPassword) {
-      return "Las contrasenas no coinciden";
+      return "Las contraseñas no coinciden";
     }
     if (currentPassword === newPassword) {
-      return "La nueva contrasena no puede ser igual a la actual";
+      return "La nueva contraseña no puede ser igual a la actual";
     }
     if (newPassword.length < 8) {
-      return "La contrasena debe tener al menos 8 caracteres";
+      return "La contraseña debe tener al menos 8 caracteres";
     }
     return null;
   };
@@ -68,12 +68,12 @@ const useChangePassword = () => {
       const validationResult = await validateProfilePassword(currentPassword);
       if (!validationResult?.success) {
         handleError(
-          validationResult.message || validationResult.error || "Contrasena incorrecta"
+          validationResult.message || validationResult.error || "Contraseña incorrecta"
         );
         return validationResult;
       }
     } catch (err) {
-      handleError(err?.message || "Error validando la contrasena actual");
+      handleError(err?.message || "Error validando la contraseña actual");
       return { success: false, error: err?.message || "validation_error" };
     }
 

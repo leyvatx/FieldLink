@@ -24,7 +24,7 @@ const UsersTable = () => {
       key: "email",
     },
     {
-      title: "Telefono",
+      title: "Teléfono",
       dataIndex: "phone",
       key: "phone",
       render: (phone) => phone || "-",

@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
 
     if (window.location.pathname !== "/login") {
       if (status === 401) {
-        showGlobalError("Sesion expirada. Inicia sesion nuevamente.");
+        showGlobalError("Sesión expirada. Inicia sesión nuevamente.");
         sessionStorage.setItem("previousUrl", window.location.pathname);
         localStorage.removeItem("token");
         localStorage.removeItem("refresh_token");

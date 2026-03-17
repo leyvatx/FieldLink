@@ -27,7 +27,7 @@ export const validateProfilePassword = async (password) => {
       return {
         success: false,
         error: "validation",
-        message: error.response?.data?.detail || "Contrasena incorrecta",
+        message: error.response?.data?.detail || "Contraseña incorrecta",
         errors: error.response?.data || {},
       };
     }
@@ -69,7 +69,7 @@ export const changePassword = async (
     return {
       success: false,
       error: "server",
-      message: "Error al cambiar la contrasena",
+      message: "Error al cambiar la contraseña",
     };
   }
 };

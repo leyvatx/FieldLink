@@ -14,7 +14,7 @@ const BasicInfoSection = ({ formData, fieldErrors, handleChange, isEditing }) =>
         level={3}
         style={{ marginBottom: 24, fontWeight: 600 }}
       >
-        Informacion basica
+        Información básica
       </Title>
       <Form layout="vertical">
         <Form.Item
@@ -32,7 +32,7 @@ const BasicInfoSection = ({ formData, fieldErrors, handleChange, isEditing }) =>
         </Form.Item>
 
         <Form.Item
-          label="Telefono"
+          label="Teléfono"
           help={fieldErrors.phone}
           validateStatus={fieldErrors.phone ? "error" : ""}
         >
@@ -66,7 +66,7 @@ const BasicInfoSection = ({ formData, fieldErrors, handleChange, isEditing }) =>
             icon={<PiKey className="mr-1" size={18} />}
             onClick={() => setPasswordModalVisible(true)}
           >
-            Cambiar contrasena
+            Cambiar contraseña
           </Button>
         </Form.Item>
       </Form>

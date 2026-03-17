@@ -20,11 +20,11 @@ const UserDetailsForm = ({ id }) => {
       children: user?.name,
     },
     {
-      label: "Correo electronico",
+      label: "Correo electrónico",
       children: user?.email,
     },
     {
-      label: "Telefono",
+      label: "Teléfono",
       children: user?.phone || "-",
     },
     {
@@ -32,19 +32,19 @@ const UserDetailsForm = ({ id }) => {
       children: <Tag>{user?.role || "N/A"}</Tag>,
     },
     {
-      label: "Fecha de creacion",
+      label: "Fecha de creación",
       children: user?.created_at
         ? dayjs(user.created_at).isValid()
           ? dayjs(user.created_at).format("DD/MM/YYYY")
-          : "Fecha invalida"
+          : "Fecha inválida"
         : "Sin fecha",
     },
     {
-      label: "Fecha de actualizacion",
+      label: "Fecha de actualización",
       children: user?.updated_at
         ? dayjs(user.updated_at).isValid()
           ? dayjs(user.updated_at).format("DD/MM/YYYY")
-          : "Fecha invalida"
+          : "Fecha inválida"
         : "Sin fecha",
     },
   ];

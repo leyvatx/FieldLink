@@ -64,7 +64,7 @@ const CreateUserForm = ({ onClose }) => {
       </Form.Item>
 
       <Form.Item
-        label="Telefono"
+        label="Teléfono"
         name="phone"
         tooltip={FIELD_TOOLTIPS.phone}
         rules={USER_VALIDATION_RULES.phone}
@@ -102,7 +102,7 @@ const CreateUserForm = ({ onClose }) => {
       </Form.Item>
 
       <Form.Item
-        label="Contrasena"
+        label="Contraseña"
         name="password"
         rules={USER_VALIDATION_RULES.password}
       >
@@ -110,7 +110,7 @@ const CreateUserForm = ({ onClose }) => {
       </Form.Item>
 
       <Form.Item
-        label="Confirmar contrasena"
+        label="Confirmar contraseña"
         name="password_confirmation"
         dependencies={["password"]}
         rules={[
@@ -120,7 +120,7 @@ const CreateUserForm = ({ onClose }) => {
               if (!value || getFieldValue("password") === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error("Las contrasenas no coinciden"));
+              return Promise.reject(new Error("Las contraseñas no coinciden"));
             },
           }),
         ]}

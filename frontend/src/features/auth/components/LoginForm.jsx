@@ -28,16 +28,16 @@ const LoginForm = () => {
       onFinish={onFinish}
     >
       <Form.Item
-        label="Correo electronico"
+        label="Correo electrónico"
         name="email"
         rules={[
           {
             required: true,
-            message: "Por favor ingrese su correo electronico.",
+            message: "Por favor ingrese su correo electrónico.",
           },
           {
             type: "email",
-            message: "Ingrese un correo valido.",
+            message: "Ingrese un correo válido.",
           },
         ]}
       >
@@ -45,12 +45,12 @@ const LoginForm = () => {
       </Form.Item>
 
       <Form.Item
-        label="Contrasena"
+        label="Contraseña"
         name="password"
         rules={[
           {
             required: true,
-            message: "Por favor ingrese su contrasena.",
+            message: "Por favor ingrese su contraseña.",
           },
         ]}
       >
@@ -64,7 +64,7 @@ const LoginForm = () => {
         loading={loginMutation.isPending}
         block
       >
-        Iniciar sesion
+        Iniciar sesión
       </Button>
     </Form>
   );

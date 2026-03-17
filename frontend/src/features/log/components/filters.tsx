@@ -34,7 +34,7 @@ const Filters = () => {
               label: (
                 <span className="flex flex-col items-center gap-1">
                   <PiRows className="text-lg mt-2" />
-                  <span>Linea de tiempo</span>
+                  <span>Línea de tiempo</span>
                 </span>
               ),
               value: "block",
@@ -129,7 +129,7 @@ const Filters = () => {
           </div>
         </div>
         <div>
-          <span className="text-sm mb-2 block">Modulo</span>
+          <span className="text-sm mb-2 block">Módulo</span>
           <Select
             mode="multiple"
             tagRender={() => <></>}

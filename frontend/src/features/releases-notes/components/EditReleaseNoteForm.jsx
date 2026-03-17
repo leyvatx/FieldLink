@@ -272,7 +272,7 @@ const EditReleaseNoteForm = ({ id }) => {
 
                               <Col span={18}>
                                 <Form.Item
-                                  label="Submodulos"
+                                  label="Submódulos"
                                   name={[subfield.name, "submodules_ids"]}>
                                   <ReleaseSubmoduleSelect
                                     query={submodulesQuery}

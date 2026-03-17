@@ -108,7 +108,7 @@ const CreateReleaseSectionForm = ({ id }) => {
 
                     <Col span={18}>
                       <Form.Item
-                        label="Submodulos"
+                        label="Submódulos"
                         name={[field.name, "submodules_ids"]}>
                         <ReleaseSubmoduleSelect
                           query={querySubmodules}

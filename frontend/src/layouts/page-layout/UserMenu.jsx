@@ -55,7 +55,7 @@ const UserMenu = () => {
     },
     {
       key: "config",
-      label: "Configuracion",
+      label: "Configuración",
       icon: <PiGearFill size={16} />,
     },
     {
@@ -63,7 +63,7 @@ const UserMenu = () => {
     },
     {
       key: "logout",
-      label: "Cerrar sesion",
+      label: "Cerrar sesión",
       icon: <PiSignOutBold size={16} />,
       danger: true,
       onClick: () => logout.mutate(),

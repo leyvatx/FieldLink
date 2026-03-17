@@ -51,7 +51,7 @@ const useEditUserForm = (id, onClose) => {
         }
       );
     } catch (error) {
-      console.error("Error en la validacion del formulario:", error);
+      console.error("Error en la validación del formulario:", error);
     }
   };
 
@@ -72,7 +72,7 @@ const useEditUserForm = (id, onClose) => {
         form.setFields([
           {
             name: "confirmPassword",
-            errors: ["Las contrasenas no coinciden"],
+            errors: ["Las contraseñas no coinciden"],
           },
         ]);
         return;
@@ -81,7 +81,7 @@ const useEditUserForm = (id, onClose) => {
       const result = await changeUserPassword(id, values.newPassword);
 
       if (result.success) {
-        success("Contrasena actualizada exitosamente");
+        success("Contraseña actualizada exitosamente");
         setPasswordSection(false);
         form.resetFields(["newPassword", "confirmPassword"]);
       } else {
@@ -93,11 +93,11 @@ const useEditUserForm = (id, onClose) => {
           ]);
           setPasswordError("");
         } else {
-          setPasswordError(result.message || "Error al cambiar la contrasena");
+          setPasswordError(result.message || "Error al cambiar la contraseña");
         }
       }
     } catch (formErr) {
-      console.error("Error de validacion del formulario:", formErr);
+      console.error("Error de validación del formulario:", formErr);
     } finally {
       setChanging(false);
     }

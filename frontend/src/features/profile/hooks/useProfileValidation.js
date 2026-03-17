@@ -11,9 +11,9 @@ const useProfileValidation = () => {
     }
 
     if (!formData.email?.trim()) {
-      errors.email = "El correo electronico es requerido";
+      errors.email = "El correo electrónico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "El correo electronico no es valido";
+      errors.email = "El correo electrónico no es válido";
     }
 
     setFieldErrors(errors);
