@@ -21,4 +21,28 @@ export const sidebarItems = [
     wordkeys: ["usuarios", "users", "staff"],
     path: "/users",
   },
+  {
+    key: "roles-permissions",
+    label: "Roles y permisos",
+    icon: "PiUserGearFill",
+    permission: "view.roles.option",
+    wordkeys: ["roles", "permisos", "roles y permisos"],
+    path: "/roles-permissions",
+  },
+  {
+    key: "log",
+    label: "Log",
+    icon: "PiClockCounterClockwiseFill",
+    permission: "view.log.option",
+    wordkeys: ["log", "bitacora", "movimientos"],
+    path: "/log",
+  },
+  {
+    key: "release-notes",
+    label: "Notas de version",
+    icon: "PiKeyFill",
+    permission: "release_notes.general.manage_release_notes",
+    wordkeys: ["notas", "version", "release"],
+    path: "/release-notes",
+  },
 ];
