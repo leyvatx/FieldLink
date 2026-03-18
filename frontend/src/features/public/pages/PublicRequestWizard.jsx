@@ -6,10 +6,10 @@ import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
 
 const SERVICE_TYPES = [
-  { value: "instalacion", label: "Instalacion" },
+  { value: "instalacion", label: "Instalación" },
   { value: "mantenimiento", label: "Mantenimiento" },
-  { value: "reparacion", label: "Reparacion" },
-  { value: "diagnostico", label: "Diagnostico" },
+  { value: "reparacion", label: "Reparación" },
+  { value: "diagnostico", label: "Diagnóstico" },
 ];
 
 const PublicRequestWizard = () => {
@@ -75,7 +75,7 @@ const PublicRequestWizard = () => {
 
   const header = (
     <div className="portal-hero">
-      <span className="portal-kicker">Solicitud Express</span>
+      <span className="portal-kicker">Solicitud exprés</span>
       <h1 className="portal-title">Agenda tu visita técnica en minutos</h1>
       <p className="portal-subtitle">
         Completa este formulario rápido. No necesitas registrarte y recibirás
@@ -121,16 +121,18 @@ const PublicRequestWizard = () => {
                     <Form.Item
                       label="Nombre completo"
                       name="customer_name"
-                      rules={[{ required: true, message: "Ingresa tu nombre" }]}>
+                      rules={[{ required: true, message: "Ingresa tu nombre." }]}
+                    >
                       <Input placeholder="Nombre y apellido" />
                     </Form.Item>
                     <Form.Item
                       label="Teléfono"
                       name="phone"
-                      rules={[{ required: true, message: "Ingresa tu teléfono" }]}>
+                      rules={[{ required: true, message: "Ingresa tu teléfono." }]}
+                    >
                       <Input placeholder="Ej: +52 55 1234 5678" />
                     </Form.Item>
-                    <Form.Item label="Email" name="email">
+                    <Form.Item label="Correo" name="email">
                       <Input placeholder="correo@ejemplo.com" />
                     </Form.Item>
                   </>
@@ -140,13 +142,15 @@ const PublicRequestWizard = () => {
                     <Form.Item
                       label="Dirección de servicio"
                       name="address"
-                      rules={[{ required: true, message: "Ingresa la dirección" }]}>
+                      rules={[{ required: true, message: "Ingresa la dirección." }]}
+                    >
                       <Input placeholder="Calle, número, colonia, ciudad" />
                     </Form.Item>
                     <Form.Item
                       label="Tipo de servicio"
                       name="service_type"
-                      rules={[{ required: true, message: "Selecciona un tipo" }]}>
+                      rules={[{ required: true, message: "Selecciona un tipo." }]}
+                    >
                       <Select options={SERVICE_TYPES} placeholder="Selecciona" />
                     </Form.Item>
                     <Form.Item label="Descripción" name="description">
@@ -167,7 +171,8 @@ const PublicRequestWizard = () => {
                 <Button
                   disabled={current === 0}
                   onClick={handleBack}
-                  type="text">
+                  type="text"
+                >
                   Atrás
                 </Button>
                 {current < steps.length - 1 ? (
@@ -178,7 +183,8 @@ const PublicRequestWizard = () => {
                   <Button
                     type="primary"
                     loading={submitting}
-                    onClick={handleSubmit}>
+                    onClick={handleSubmit}
+                  >
                     Enviar solicitud
                   </Button>
                 )}
@@ -188,7 +194,7 @@ const PublicRequestWizard = () => {
         </Card>
         <Card className="portal-card" bordered={false}>
           <div className="portal-pill">Seguro y sin registro</div>
-          <h2 className="text-xl font-semibold mt-4">
+          <h2 className="mt-4 text-xl font-semibold">
             Qué ocurre después de enviar
           </h2>
           <div className="portal-divider" />

@@ -3,6 +3,8 @@ import { useAuth } from "@context/AuthProvider";
 import { useDialog } from "@context/DialogProvider";
 import PageLoader from "@components/PageLoader";
 
+const PUBLIC_AUTH_PATHS = new Set(["/login", "/register"]);
+
 const AuthGuard = () => {
   const { user, loadingUser } = useAuth();
   const { closeDialogs } = useDialog();
@@ -12,7 +14,7 @@ const AuthGuard = () => {
     return <PageLoader />;
   }
 
-  if (user && location.pathname === "/login") {
+  if (user && PUBLIC_AUTH_PATHS.has(location.pathname)) {
     const previousUrl = sessionStorage.getItem("previousUrl");
     sessionStorage.removeItem("previousUrl");
 
@@ -24,7 +26,7 @@ const AuthGuard = () => {
     );
   }
 
-  if (!user && location.pathname !== "/login") {
+  if (!user && !PUBLIC_AUTH_PATHS.has(location.pathname)) {
     closeDialogs();
 
     return (

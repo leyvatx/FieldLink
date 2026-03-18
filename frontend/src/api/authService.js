@@ -5,6 +5,11 @@ export const login = async (credentials) => {
   return data;
 };
 
+export const register = async (payload) => {
+  const { data } = await apiClient.post("/auth/register/", payload);
+  return data;
+};
+
 export const logout = async () => {
   const refresh = localStorage.getItem("refresh_token");
   if (!refresh) {

@@ -1,9 +1,13 @@
-import { useState } from "react";
-import { Card, Table, Tag } from "antd";
+import { useMemo, useState } from "react";
+import { Button, Card, Table, Tag } from "antd";
 import { useQuery } from "@tanstack/react-query";
+import { PiPlusBold } from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
+import { useDialog } from "@context/DialogProvider";
 import { getCustomers } from "@api/customerService";
 import { getWorkOrders } from "@api/workOrderService";
+import CreateCustomerForm from "@features/customers/components/CreateCustomerForm";
+import queryClient from "@lib/queryClient";
 
 const STATUS_COLORS = {
   PENDING: "default",
@@ -14,8 +18,19 @@ const STATUS_COLORS = {
   CANCELLED: "red",
 };
 
+const CUSTOMER_STATUS_LABELS = {
+  PENDING: "Pendiente",
+  VALIDATED: "Validado",
+  REJECTED: "Rechazado",
+};
+
 const Customers = () => {
+  const { openDrawer } = useDialog();
   const [selected, setSelected] = useState(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: null,
+  });
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ["customers"],
@@ -29,6 +44,23 @@ const Customers = () => {
     enabled: !!selected?.id,
   });
 
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((record) => {
+      if (filters.status && record.validation_status !== filters.status) {
+        return false;
+      }
+
+      const search = filters.search.trim().toLowerCase();
+      if (!search) {
+        return true;
+      }
+
+      return [record.name, record.phone, record.email, record.address]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(search));
+    });
+  }, [customers, filters]);
+
   const customerColumns = [
     {
       title: "Cliente",
@@ -39,13 +71,22 @@ const Customers = () => {
       title: "Teléfono",
       dataIndex: "phone",
       key: "phone",
+      render: (value) => value || "-",
+    },
+    {
+      title: "Correo",
+      dataIndex: "email",
+      key: "email",
+      render: (value) => value || "-",
     },
     {
       title: "Estado",
       dataIndex: "validation_status",
       key: "validation_status",
       render: (value) => (
-        <Tag color={value === "VALIDATED" ? "green" : "orange"}>{value}</Tag>
+        <Tag color={value === "VALIDATED" ? "green" : value === "REJECTED" ? "red" : "orange"}>
+          {CUSTOMER_STATUS_LABELS[value] || value}
+        </Tag>
       ),
     },
   ];
@@ -70,13 +111,62 @@ const Customers = () => {
     },
   ];
 
+  const searchConfig = useMemo(
+    () => ({
+      title: "Buscar y filtrar clientes",
+      values: filters,
+      fields: [
+        {
+          key: "search",
+          label: "Buscar",
+          placeholder: "Cliente, teléfono, correo o dirección",
+        },
+        {
+          key: "status",
+          label: "Estado",
+          type: "select",
+          options: [
+            { value: "PENDING", label: "Pendiente" },
+            { value: "VALIDATED", label: "Validado" },
+            { value: "REJECTED", label: "Rechazado" },
+          ],
+        },
+      ],
+      onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
+      onReset: () =>
+        setFilters({
+          search: "",
+          status: null,
+        }),
+      onRefresh: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),
+    }),
+    [filters]
+  );
+
   return (
-    <PageLayout title="Clientes e historial">
-      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6">
+    <PageLayout
+      title="Clientes e historial"
+      searchConfig={searchConfig}
+      topbarOptions={
+        <Button
+          type="primary"
+          icon={<PiPlusBold size={16} />}
+          onClick={() =>
+            openDrawer({
+              title: "Crear cliente",
+              content: <CreateCustomerForm onCreated={(customer) => setSelected(customer)} />,
+            })
+          }
+        >
+          Nuevo cliente
+        </Button>
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="rounded-2xl">
           <Table
             rowKey="id"
-            dataSource={customers}
+            dataSource={filteredCustomers}
             columns={customerColumns}
             loading={isLoading}
             pagination={{ pageSize: 8 }}
@@ -85,10 +175,9 @@ const Customers = () => {
             })}
           />
         </Card>
+
         <Card className="rounded-2xl">
-          <div className="text-sm font-semibold mb-4">
-            Historial de servicio
-          </div>
+          <div className="mb-4 text-sm font-semibold">Historial de servicio</div>
           {selected ? (
             <Table
               rowKey="id"

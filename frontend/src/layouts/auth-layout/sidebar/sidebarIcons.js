@@ -1,5 +1,6 @@
 import {
   PiHouseFill,
+  PiCalendarCheckFill,
   PiUserFill,
   PiUsersThreeFill,
   PiUserGearFill,
@@ -17,6 +18,7 @@ import {
 
 const sidebarIcons = {
   PiHouseFill,
+  PiCalendarCheckFill,
   PiUserFill,
   PiUsersThreeFill,
   PiUserGearFill,

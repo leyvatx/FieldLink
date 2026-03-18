@@ -73,7 +73,7 @@ const UserMenu = () => {
     },
     {
       key: "brand",
-      label: <AppLogo style={{ height: "20px" }} />,
+      label: <AppLogo compact style={{ width: 108 }} />,
     },
   ];
 

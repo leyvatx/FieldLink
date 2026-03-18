@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone
 from .models import WorkOrder, Evidence, Signature, SimulationEvent
 from .serializers import (
@@ -18,6 +19,15 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
     TECHNICIAN: can only access their own assigned orders
     """
     permission_classes = [IsAuthenticated, IsSameCompany]
+
+    def get_permissions(self):
+        if self.action in ['start_transit', 'arrive', 'complete']:
+            return [IsAuthenticated(), IsTechnician()]
+
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'assign', 'cancel']:
+            return [IsAuthenticated(), IsDispatcherOrOwner()]
+
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -197,7 +207,15 @@ class EvidenceViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-captured_at')
     
     def perform_create(self, serializer):
-        """Set mobile_id"""
+        """Technicians can only upload evidence for their own orders."""
+        work_order = serializer.validated_data['work_order']
+        if work_order.company_id != self.request.user.company_id:
+            raise PermissionDenied('You can only upload evidence for orders in your company')
+        if (
+            self.request.user.role == 'TECHNICIAN'
+            and work_order.technician_id != self.request.user.id
+        ):
+            raise PermissionDenied('You can only upload evidence for your own orders')
         serializer.save(mobile_id=self.request.user.mobile_id)
 
 
@@ -221,7 +239,15 @@ class SignatureViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-signed_at')
     
     def perform_create(self, serializer):
-        """Set mobile_id"""
+        """Technicians can only create signatures for their own orders."""
+        work_order = serializer.validated_data['work_order']
+        if work_order.company_id != self.request.user.company_id:
+            raise PermissionDenied('You can only upload signatures for orders in your company')
+        if (
+            self.request.user.role == 'TECHNICIAN'
+            and work_order.technician_id != self.request.user.id
+        ):
+            raise PermissionDenied('You can only upload signatures for your own orders')
         serializer.save(mobile_id=self.request.user.mobile_id)
 
 

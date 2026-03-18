@@ -5,14 +5,20 @@ import RoleGuard from "@guards/RoleGuard";
 import PermissionGuard from "@guards/PermissionGuard";
 import AuthLayout from "@layouts/auth-layout/AuthLayout";
 import PageLoader from "@components/PageLoader";
+import { useAuth } from "@context/AuthProvider";
 
 const Login = lazy(() => import("@features/auth/pages/Login"));
+const Register = lazy(() => import("@features/auth/pages/Register"));
 const NotAuthorized = lazy(() => import("@features/auth/pages/NotAuthorized"));
 const PublicRequestWizard = lazy(() =>
   import("@features/public/pages/PublicRequestWizard")
 );
 const PublicTracking = lazy(() => import("@features/public/pages/PublicTracking"));
 const Dashboard = lazy(() => import("@features/dashboard/pages/Dashboard"));
+const WorkOrders = lazy(() => import("@features/work-orders/pages/WorkOrders"));
+const Assignments = lazy(() =>
+  import("@features/assignments/pages/Assignments")
+);
 const ServiceRequests = lazy(() =>
   import("@features/service-requests/pages/ServiceRequests")
 );
@@ -21,29 +27,32 @@ const MaterialApprovals = lazy(() =>
   import("@features/material-approvals/pages/MaterialApprovals")
 );
 const Customers = lazy(() => import("@features/customers/pages/Customers"));
-const Subscription = lazy(() =>
-  import("@features/subscription/pages/Subscription")
-);
-const Simulator = lazy(() => import("@features/simulator/pages/Simulator"));
 const Users = lazy(() => import("@features/users/pages/Users"));
+const Companies = lazy(() => import("@features/companies/pages/Companies"));
 const Profile = lazy(() => import("@features/profile/pages/Profile"));
-const Log = lazy(() => import("@features/log/pages/Log"));
-const RolesAndPermissions = lazy(() =>
-  import("@features/roles-permissions/pages/RolesAndPermissions")
-);
-const ReleaseNotes = lazy(() =>
-  import("@features/releases-notes/pages/ReleaseNotes")
-);
-const EditReleaseNote = lazy(() =>
-  import("@features/releases-notes/pages/EditReleaseNote")
-);
-const ViewReleaseNote = lazy(() =>
-  import("@features/releases-notes/pages/ViewReleaseNote")
-);
+const Agenda = lazy(() => import("@features/technician/pages/Agenda"));
 
 const suspense = (element) => (
   <Suspense fallback={<PageLoader />}>{element}</Suspense>
 );
+
+const HomeRedirect = () => {
+  const { user, loadingUser } = useAuth();
+
+  if (loadingUser) {
+    return <PageLoader />;
+  }
+
+  if (user?.is_superuser) {
+    return <Navigate to="/companies" replace />;
+  }
+
+  if (user?.role === "TECHNICIAN") {
+    return <Navigate to="/agenda" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
+};
 
 const routes = [
   {
@@ -63,57 +72,55 @@ const routes = [
         element: suspense(<Login />),
       },
       {
+        path: "/register",
+        element: suspense(<Register />),
+      },
+      {
         path: "/not-authorized",
         element: suspense(<NotAuthorized />),
       },
       {
         path: "/",
-        element: <RoleGuard allowedRoles={["OWNER", "DISPATCHER"]} />,
+        element: <AuthLayout />,
         children: [
           {
+            index: true,
+            element: <HomeRedirect />,
+          },
+          {
+            path: "profile",
+            element: suspense(<Profile />),
+          },
+          {
             path: "/",
-            element: <AuthLayout />,
+            element: <RoleGuard superuserOnly />,
             children: [
               {
-                index: true,
-                element: (
-                  <Navigate
-                    to="dashboard"
-                    replace
-                  />
-                ),
+                path: "companies",
+                element: suspense(<Companies />),
               },
+            ],
+          },
+          {
+            path: "/",
+            element: (
+              <RoleGuard
+                allowedRoles={["OWNER", "DISPATCHER"]}
+                allowSuperuser={false}
+              />
+            ),
+            children: [
               {
                 path: "dashboard",
                 element: suspense(<Dashboard />),
-              },
-              {
-                path: "service-requests",
-                element: suspense(<ServiceRequests />),
               },
               {
                 path: "inventory",
                 element: suspense(<Inventory />),
               },
               {
-                path: "materials-approval",
-                element: suspense(<MaterialApprovals />),
-              },
-              {
                 path: "customers",
                 element: suspense(<Customers />),
-              },
-              {
-                path: "subscription",
-                element: suspense(<Subscription />),
-              },
-              {
-                path: "simulator",
-                element: suspense(<Simulator />),
-              },
-              {
-                path: "profile",
-                element: suspense(<Profile />),
               },
               {
                 path: "users",
@@ -123,45 +130,47 @@ const routes = [
                   </PermissionGuard>
                 ),
               },
+            ],
+          },
+          {
+            path: "/",
+            element: (
+              <RoleGuard
+                allowedRoles={["DISPATCHER"]}
+                allowSuperuser={false}
+              />
+            ),
+            children: [
               {
-                path: "roles-permissions",
-                element: (
-                  <PermissionGuard permission="view.roles.option">
-                    {suspense(<RolesAndPermissions />)}
-                  </PermissionGuard>
-                ),
+                path: "work-orders",
+                element: suspense(<WorkOrders />),
               },
               {
-                path: "log",
-                element: (
-                  <PermissionGuard permission="view.log.option">
-                    {suspense(<Log />)}
-                  </PermissionGuard>
-                ),
+                path: "assignments",
+                element: suspense(<Assignments />),
               },
               {
-                path: "release-notes",
-                element: (
-                  <PermissionGuard permission="release_notes.general.manage_release_notes">
-                    {suspense(<ReleaseNotes />)}
-                  </PermissionGuard>
-                ),
+                path: "service-requests",
+                element: suspense(<ServiceRequests />),
               },
               {
-                path: "release-notes/:id/edit",
-                element: (
-                  <PermissionGuard permission="release_notes.general.manage_release_notes">
-                    {suspense(<EditReleaseNote />)}
-                  </PermissionGuard>
-                ),
+                path: "materials-approval",
+                element: suspense(<MaterialApprovals />),
               },
+            ],
+          },
+          {
+            path: "/",
+            element: (
+              <RoleGuard
+                allowedRoles={["TECHNICIAN"]}
+                allowSuperuser={false}
+              />
+            ),
+            children: [
               {
-                path: "release-notes/:id/view",
-                element: (
-                  <PermissionGuard permission="release_notes.general.manage_release_notes">
-                    {suspense(<ViewReleaseNote />)}
-                  </PermissionGuard>
-                ),
+                path: "agenda",
+                element: suspense(<Agenda />),
               },
             ],
           },

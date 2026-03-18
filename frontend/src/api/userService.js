@@ -21,12 +21,16 @@ export const updateSettings = async (settings) => {
   return data;
 };
 
-export const getUsers = async ({ trashed = false } = {}) => {
+export const getUsers = async ({ trashed = false, role, is_active } = {}) => {
   if (trashed) {
     return [];
   }
 
-  const { data } = await apiClient.get("/users/");
+  const params = Object.fromEntries(
+    Object.entries({ role, is_active }).filter(([, value]) => value !== undefined && value !== null && value !== "")
+  );
+
+  const { data } = await apiClient.get("/users/", { params });
   return data;
 };
 

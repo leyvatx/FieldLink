@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button, Card, Select, Table, Tag } from "antd";
+import { useCallback, useMemo, useState } from "react";
+import { Table, Tag } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -7,13 +7,39 @@ import {
   approveServiceRequest,
   rejectServiceRequest,
 } from "@api/serviceRequestService";
+import { getTechnicians } from "@api/userService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
+import { useDialog } from "@context/DialogProvider";
 
 const STATUS_COLORS = {
   PENDING: "default",
   VALIDATED: "green",
   REJECTED: "red",
+};
+
+const STATUS_LABELS = {
+  PENDING: "Pendiente",
+  VALIDATED: "Validada",
+  REJECTED: "Rechazada",
+};
+
+const ORDER_STATUS_COLORS = {
+  PENDING: "default",
+  ASSIGNED: "blue",
+  IN_TRANSIT: "cyan",
+  IN_SERVICE: "gold",
+  COMPLETED: "green",
+  CANCELLED: "red",
+};
+
+const ORDER_STATUS_LABELS = {
+  PENDING: "Pendiente",
+  ASSIGNED: "Asignada",
+  IN_TRANSIT: "En ruta",
+  IN_SERVICE: "En servicio",
+  COMPLETED: "Completada",
+  CANCELLED: "Cancelada",
 };
 
 const SUSPICIOUS_LABELS = {
@@ -23,20 +49,40 @@ const SUSPICIOUS_LABELS = {
 
 const ServiceRequests = () => {
   const { success, error } = useMessage();
-  const [status, setStatus] = useState(null);
+  const { openContextMenu } = useDialog();
+  const [filters, setFilters] = useState({
+    search: "",
+    status: null,
+  });
 
   const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["service-requests", status],
-    queryFn: () => getServiceRequests(status ? { status } : {}),
+    queryKey: ["service-requests", filters.status],
+    queryFn: () =>
+      getServiceRequests(filters.status ? { status: filters.status } : {}),
+  });
+
+  const { data: technicians = [] } = useQuery({
+    queryKey: ["technicians"],
+    queryFn: getTechnicians,
   });
 
   const approveMutation = useMutation({
-    mutationFn: approveServiceRequest,
-    onSuccess: () => {
-      success("Solicitud aprobada");
+    mutationFn: ({ id, payload }) => approveServiceRequest(id, payload),
+    onSuccess: (response) => {
+      success(
+        response?.technician_name
+          ? `Orden creada y asignada a ${response.technician_name}`
+          : "Solicitud aprobada y orden creada"
+      );
       queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["work-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
-    onError: () => error("No se pudo aprobar la solicitud"),
+    onError: (mutationError) =>
+      error(
+        mutationError.response?.data?.error ||
+          "No se pudo aprobar la solicitud"
+      ),
   });
 
   const rejectMutation = useMutation({
@@ -47,6 +93,81 @@ const ServiceRequests = () => {
     },
     onError: () => error("No se pudo rechazar la solicitud"),
   });
+
+  const openRequestContextMenu = useCallback(
+    (event, record) => {
+      const technicianItems = technicians.length
+        ? technicians.map((technician) => ({
+            key: `assign-${technician.id}`,
+            label: technician.name,
+            onClick: () =>
+              approveMutation.mutate({
+                id: record.id,
+                payload: { technician_id: technician.id },
+              }),
+          }))
+        : [
+            {
+              key: "no-technicians",
+              label: "Sin técnicos disponibles",
+              disabled: true,
+            },
+          ];
+
+      openContextMenu({
+        event,
+        items: [
+          {
+            key: "approve",
+            label: record.work_order_id
+              ? "Actualizar orden"
+              : "Aprobar y crear orden",
+            disabled: record.status === "REJECTED",
+            onClick: () =>
+              approveMutation.mutate({
+                id: record.id,
+                payload: {},
+              }),
+          },
+          {
+            key: "assign",
+            label: record.technician_name
+              ? `Reasignar de ${record.technician_name}`
+              : "Aprobar y asignar",
+            disabled: record.status === "REJECTED" || technicians.length === 0,
+            children: technicianItems,
+          },
+          {
+            key: "reject",
+            label: "Rechazar solicitud",
+            danger: true,
+            disabled: record.status !== "PENDING",
+            onClick: () => rejectMutation.mutate(record.id),
+          },
+        ],
+      });
+    },
+    [approveMutation, openContextMenu, rejectMutation, technicians]
+  );
+
+  const filteredRequests = useMemo(() => {
+    const searchTerm = filters.search.trim().toLowerCase();
+    if (!searchTerm) {
+      return requests;
+    }
+
+    return requests.filter((record) =>
+      [
+        record.customer_name,
+        record.phone,
+        record.address,
+        record.service_type,
+        record.technician_name,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(searchTerm))
+    );
+  }, [filters.search, requests]);
 
   const columns = [
     {
@@ -75,7 +196,27 @@ const ServiceRequests = () => {
       title: "Estado",
       dataIndex: "status",
       key: "status",
-      render: (value) => <Tag color={STATUS_COLORS[value]}>{value}</Tag>,
+      render: (value) => (
+        <Tag color={STATUS_COLORS[value]}>{STATUS_LABELS[value] || value}</Tag>
+      ),
+    },
+    {
+      title: "Orden",
+      key: "work_order_status",
+      render: (_, record) =>
+        record.work_order_status ? (
+          <Tag color={ORDER_STATUS_COLORS[record.work_order_status] || "default"}>
+            {ORDER_STATUS_LABELS[record.work_order_status] || record.work_order_status}
+          </Tag>
+        ) : (
+          <Tag>Sin crear</Tag>
+        ),
+    },
+    {
+      title: "Técnico",
+      dataIndex: "technician_name",
+      key: "technician_name",
+      render: (value) => value || "Sin asignar",
     },
     {
       title: "Anti-spam",
@@ -92,57 +233,55 @@ const ServiceRequests = () => {
           <Tag color="green">OK</Tag>
         ),
     },
-    {
-      title: "Acciones",
-      key: "actions",
-      render: (_, record) => (
-        <div className="flex gap-2">
-          <Button
-            size="small"
-            type="primary"
-            disabled={record.status !== "PENDING"}
-            onClick={() => approveMutation.mutate(record.id)}>
-            Aprobar
-          </Button>
-          <Button
-            size="small"
-            danger
-            disabled={record.status !== "PENDING"}
-            onClick={() => rejectMutation.mutate(record.id)}>
-            Rechazar
-          </Button>
-        </div>
-      ),
-    },
   ];
 
+  const searchConfig = useMemo(
+    () => ({
+      title: "Buscar y filtrar solicitudes",
+      values: filters,
+      fields: [
+        {
+          key: "search",
+          label: "Buscar",
+          placeholder: "Cliente, teléfono, dirección o técnico",
+        },
+        {
+          key: "status",
+          label: "Estado",
+          type: "select",
+          options: [
+            { value: "PENDING", label: "Pendiente" },
+            { value: "VALIDATED", label: "Validada" },
+            { value: "REJECTED", label: "Rechazada" },
+          ],
+        },
+      ],
+      onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
+      onReset: () =>
+        setFilters({
+          search: "",
+          status: null,
+        }),
+      onRefresh: () => queryClient.invalidateQueries({ queryKey: ["service-requests"] }),
+    }),
+    [filters]
+  );
+
   return (
-    <PageLayout title="Validación de solicitudes">
-      <div className="grid gap-4">
-        <Card className="rounded-2xl">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-semibold">Filtrar por estado</span>
-            <Select
-              allowClear
-              className="min-w-[200px]"
-              placeholder="Estado"
-              onChange={(value) => setStatus(value)}
-              options={[
-                { value: "PENDING", label: "Pendiente" },
-                { value: "VALIDATED", label: "Validada" },
-                { value: "REJECTED", label: "Rechazada" },
-              ]}
-            />
-          </div>
-        </Card>
-        <Table
-          rowKey="id"
-          dataSource={requests}
-          columns={columns}
-          loading={isLoading}
-          pagination={{ pageSize: 8 }}
-        />
-      </div>
+    <PageLayout
+      title="Validación de solicitudes"
+      searchConfig={searchConfig}
+    >
+      <Table
+        rowKey="id"
+        dataSource={filteredRequests}
+        columns={columns}
+        loading={isLoading}
+        onRow={(record) => ({
+          onContextMenu: (event) => openRequestContextMenu(event, record),
+        })}
+        pagination={{ pageSize: 8 }}
+      />
     </PageLayout>
   );
 };

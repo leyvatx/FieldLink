@@ -1,25 +1,56 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import transaction
+from django.utils.text import slugify
 from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfiguration
 
 
 ROLE_PERMISSIONS = {
     User.Role.OWNER: [
-        'view.admin.menu',
         'view.users.option',
-        'view.log.option',
-        'view.roles.option',
-        'release_notes.general.manage_release_notes',
-        'view.permissions.both',
-        'permissions.view_both',
-        'permissions.view_name',
     ],
     User.Role.DISPATCHER: [
         'view.users.option',
     ],
     User.Role.TECHNICIAN: [],
 }
+
+PLATFORM_ADMIN_PERMISSIONS = [
+    'view.companies.option',
+]
+
+
+def _get_permissions_for_user(user):
+    if getattr(user, 'is_superuser', False):
+        return PLATFORM_ADMIN_PERMISSIONS
+    return ROLE_PERMISSIONS.get(user.role, [])
+
+
+def _build_auth_payload(user):
+    tokens = RefreshToken.for_user(user)
+
+    response = {
+        'access': str(tokens.access_token),
+        'refresh': str(tokens),
+        'user': {
+            'id': str(user.id),
+            'email': user.email,
+            'name': user.name,
+            'role': user.role,
+            'permissions': _get_permissions_for_user(user),
+            'is_superuser': user.is_superuser,
+        }
+    }
+
+    if user.company:
+        response['user'].update({
+            'company_id': str(user.company.id),
+            'company_name': user.company.name,
+            'company_slug': user.company.slug,
+        })
+
+    return response
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -42,7 +73,23 @@ class UserSerializer(serializers.ModelSerializer):
         }
 
     def get_permissions(self, obj):
-        return ROLE_PERMISSIONS.get(obj.role, [])
+        return _get_permissions_for_user(obj)
+
+    def validate_role(self, value):
+        request = self.context.get('request')
+        request_user = getattr(request, 'user', None)
+
+        if (
+            request_user
+            and request_user.is_authenticated
+            and not request_user.is_superuser
+            and request_user.role == User.Role.DISPATCHER
+            and value != User.Role.TECHNICIAN
+        ):
+            raise serializers.ValidationError(
+                'Dispatchers can only create or manage technicians.'
+            )
+        return value
 
     def validate_company(self, value):
         request = self.context.get('request')
@@ -98,12 +145,12 @@ class UserDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'name', 'phone', 'role', 'company',
             'company_name', 'company_slug', 'is_active', 'mobile_id',
-            'permissions', 'created_at', 'updated_at'
+            'permissions', 'is_superuser', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
     def get_permissions(self, obj):
-        return ROLE_PERMISSIONS.get(obj.role, [])
+        return _get_permissions_for_user(obj)
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -121,7 +168,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'email': user.email,
             'name': user.name,
             'role': user.role,
-            'permissions': ROLE_PERMISSIONS.get(user.role, []),
+            'permissions': _get_permissions_for_user(user),
+            'is_superuser': user.is_superuser,
         }
         # Add company info (superusers may not have company)
         if user.company:
@@ -181,27 +229,97 @@ class LoginSerializer(serializers.Serializer):
     def create(self, validated_data):
         """Generate tokens with user + company data for frontend routing"""
         user = validated_data['user']
-        tokens = RefreshToken.for_user(user)
-        
-        response = {
-            'access': str(tokens.access_token),
-            'refresh': str(tokens),
-            'user': {
-                'id': str(user.id),
-                'email': user.email,
-                'name': user.name,
-                'role': user.role,
-                'permissions': ROLE_PERMISSIONS.get(user.role, []),
-            }
-        }
-        # Add company info (superusers may not have company)
-        if user.company:
-            response['user'].update({
-                'company_id': str(user.company.id),
-                'company_name': user.company.name,
-                'company_slug': user.company.slug,
+        return _build_auth_payload(user)
+
+
+class RegisterSerializer(serializers.Serializer):
+    company_name = serializers.CharField(max_length=150)
+    company_slug = serializers.CharField(max_length=150, required=False, allow_blank=True)
+    name = serializers.CharField(max_length=150)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, min_length=8)
+
+    def validate_company_name(self, value):
+        normalized_value = value.strip()
+        if not normalized_value:
+            raise serializers.ValidationError('Company name is required.')
+        if Company.objects.filter(name__iexact=normalized_value).exists():
+            raise serializers.ValidationError('A company with this name already exists.')
+        return normalized_value
+
+    def validate_company_slug(self, value):
+        if not value:
+            return ''
+
+        normalized_value = slugify(value)
+        if not normalized_value:
+            raise serializers.ValidationError('Enter a valid company slug.')
+        if Company.objects.filter(slug=normalized_value).exists():
+            raise serializers.ValidationError('This company slug is already in use.')
+        return normalized_value
+
+    def validate_email(self, value):
+        normalized_value = value.strip().lower()
+        if User.objects.filter(email__iexact=normalized_value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        if Company.objects.filter(email__iexact=normalized_value).exists():
+            raise serializers.ValidationError('A company with this contact email already exists.')
+        return normalized_value
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError({
+                'password_confirm': 'Passwords do not match'
             })
-        return response
+        return attrs
+
+    def _generate_company_slug(self, company_name):
+        base_slug = slugify(company_name) or 'fieldlink-company'
+        candidate = base_slug
+        suffix = 2
+
+        while Company.objects.filter(slug=candidate).exists():
+            candidate = f'{base_slug}-{suffix}'
+            suffix += 1
+
+        return candidate
+
+    @transaction.atomic
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        validated_data.pop('password_confirm')
+
+        company_name = validated_data.pop('company_name')
+        company_slug = validated_data.pop('company_slug', '')
+        owner_name = validated_data.pop('name')
+        phone = validated_data.pop('phone', '')
+        email = validated_data.pop('email')
+
+        company = Company.objects.create(
+            name=company_name,
+            slug=company_slug or self._generate_company_slug(company_name),
+            email=email,
+            phone=phone,
+        )
+
+        CompanyConfiguration.objects.create(
+            company=company,
+            support_email=email,
+            support_phone=phone,
+        )
+
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            name=owner_name,
+            phone=phone,
+            role=User.Role.OWNER,
+            company=company,
+        )
+
+        return _build_auth_payload(user)
 
 
 class ChangePasswordSerializer(serializers.Serializer):
@@ -229,9 +347,18 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 class CompanySerializer(serializers.ModelSerializer):
     """Company/Tenant information"""
+    plan_name = serializers.CharField(source='subscription_plan.name', read_only=True)
+    user_count = serializers.IntegerField(read_only=True)
+    technician_count = serializers.IntegerField(read_only=True)
+    active_orders = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Company
-        fields = ['id', 'name', 'slug', 'email', 'phone', 'address', 'city', 'country', 'is_active', 'is_trial', 'created_at']
+        fields = [
+            'id', 'name', 'slug', 'email', 'phone', 'address', 'city', 'country',
+            'is_active', 'is_trial', 'plan_name', 'user_count', 'technician_count',
+            'active_orders', 'created_at'
+        ]
         read_only_fields = ['id', 'created_at']
 
 

@@ -5,6 +5,11 @@ export const getUsedMaterials = async (params = {}) => {
   return data;
 };
 
+export const createUsedMaterial = async (payload) => {
+  const { data } = await apiClient.post("/used-materials/", payload);
+  return data;
+};
+
 export const getMaterialApprovals = async (params = {}) => {
   const { data } = await apiClient.get("/material-approvals/", { params });
   return data;

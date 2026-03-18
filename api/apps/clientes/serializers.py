@@ -12,6 +12,9 @@ class CustomerSerializer(serializers.ModelSerializer):
 class ServiceRequestSerializer(serializers.ModelSerializer):
     is_suspicious = serializers.SerializerMethodField(read_only=True)
     suspicious_reasons = serializers.SerializerMethodField(read_only=True)
+    work_order_id = serializers.UUIDField(source='work_order.id', read_only=True)
+    work_order_status = serializers.CharField(source='work_order.status', read_only=True)
+    technician_name = serializers.CharField(source='work_order.technician.name', read_only=True)
 
     class Meta:
         model = ServiceRequest

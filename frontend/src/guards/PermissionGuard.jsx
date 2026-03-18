@@ -42,8 +42,8 @@ const PermissionGuard = ({
   }
 
   if (permission || permissions.length > 0) {
-    error("No tienes permisos para acceder a esta página");
-    return <Navigate to="/dashboard" />;
+    error("No tienes permisos para acceder a esta pagina");
+    return <Navigate to="/" />;
   }
 
   return children;

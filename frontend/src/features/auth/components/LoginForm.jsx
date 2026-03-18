@@ -1,4 +1,4 @@
-import { Button, Form, Input } from "antd";
+import { Alert, Button, Form, Input } from "antd";
 import useLogin from "@features/auth/hooks/useLogin";
 import formatErrors from "@lib/formatErrors";
 
@@ -6,15 +6,23 @@ const LoginForm = () => {
   const [form] = Form.useForm();
   const loginMutation = useLogin();
 
-  const onFinish = async (values) => {
+  const onFinish = (values) => {
     const { email, password } = values;
+    form.setFields([{ name: "non_field_errors", errors: [] }]);
+
     loginMutation.mutate(
       { email, password },
       {
-        onError: (error) => {
-          if (error?.response?.data) {
-            form.setFields(formatErrors(error.response.data));
-          }
+        onError: (requestError) => {
+          const formErrors = requestError?.response?.data
+            ? formatErrors(requestError.response.data)
+            : [
+                {
+                  name: "non_field_errors",
+                  errors: ["No se pudo iniciar sesión. Verifica tus datos."],
+                },
+              ];
+          form.setFields(formErrors);
         },
       }
     );
@@ -27,21 +35,39 @@ const LoginForm = () => {
       requiredMark={false}
       onFinish={onFinish}
     >
+      <Form.Item noStyle shouldUpdate>
+        {() => {
+          const errors = form.getFieldError("non_field_errors");
+          if (!errors.length) {
+            return null;
+          }
+
+          return (
+            <Alert
+              className="mb-4"
+              message={errors[0]}
+              type="error"
+              showIcon
+            />
+          );
+        }}
+      </Form.Item>
+
       <Form.Item
         label="Correo electrónico"
         name="email"
         rules={[
           {
             required: true,
-            message: "Por favor ingrese su correo electrónico.",
+            message: "Por favor, ingresa tu correo electrónico.",
           },
           {
             type: "email",
-            message: "Ingrese un correo válido.",
+            message: "Ingresa un correo válido.",
           },
         ]}
       >
-        <Input />
+        <Input autoComplete="email" />
       </Form.Item>
 
       <Form.Item
@@ -50,11 +76,11 @@ const LoginForm = () => {
         rules={[
           {
             required: true,
-            message: "Por favor ingrese su contraseña.",
+            message: "Por favor, ingresa tu contraseña.",
           },
         ]}
       >
-        <Input.Password />
+        <Input.Password autoComplete="current-password" />
       </Form.Item>
 
       <Button

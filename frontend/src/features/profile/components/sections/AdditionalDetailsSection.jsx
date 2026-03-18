@@ -5,9 +5,9 @@ import dayjs from "dayjs";
 const { Title } = Typography;
 
 const ROLE_LABELS = {
-  OWNER: "Owner",
-  DISPATCHER: "Dispatcher",
-  TECHNICIAN: "Technician",
+  OWNER: "Empresa",
+  DISPATCHER: "Coordinador",
+  TECHNICIAN: "Técnico",
 };
 
 const AdditionalDetailsSection = ({ profile }) => {
@@ -39,7 +39,7 @@ const AdditionalDetailsSection = ({ profile }) => {
           />
         </Form.Item>
 
-        <Form.Item label="Ultima modificacion">
+        <Form.Item label="Última modificación">
           <Input
             prefix={<PiClock className="text-gray-400" size={18} />}
             value={

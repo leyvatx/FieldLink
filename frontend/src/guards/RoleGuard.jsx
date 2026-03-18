@@ -2,7 +2,11 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@context/AuthProvider";
 import PageLoader from "@components/PageLoader";
 
-const RoleGuard = ({ allowedRoles = [] }) => {
+const RoleGuard = ({
+  allowedRoles = [],
+  allowSuperuser = true,
+  superuserOnly = false,
+}) => {
   const { user, loadingUser } = useAuth();
 
   if (loadingUser) {
@@ -13,6 +17,24 @@ const RoleGuard = ({ allowedRoles = [] }) => {
     return (
       <Navigate
         to="/login"
+        replace
+      />
+    );
+  }
+
+  if (superuserOnly && !user.is_superuser) {
+    return (
+      <Navigate
+        to="/not-authorized"
+        replace
+      />
+    );
+  }
+
+  if (!superuserOnly && user.is_superuser && !allowSuperuser) {
+    return (
+      <Navigate
+        to="/not-authorized"
         replace
       />
     );

@@ -1,22 +1,31 @@
-import { Card } from "antd";
+import { Link } from "react-router-dom";
 import useDocumentTitle from "@hooks/useDocumentTitle";
 import LoginForm from "@features/auth/components/LoginForm";
-import AppLogo from "@components/AppLogo";
+import AuthShell from "@features/auth/components/AuthShell";
 
 const Login = () => {
   useDocumentTitle("Iniciar sesión");
 
   return (
-    <div className="login-content h-screen grid place-content-center justify-items-center gap-5">
-      <AppLogo style={{ width: 200 }} />
-      <Card className="w-[330px] !rounded-2xl">
-        <h1 className="text-2xl font-bold">Iniciar sesión</h1>
-        <p className="text-[#777787] mb-8">
-          Ingresa tus credenciales para continuar
-        </p>
-        <LoginForm />
-      </Card>
-    </div>
+    <AuthShell
+      eyebrow="Operación en campo"
+      title="Coordina solicitudes, inventario y cuadrillas desde un solo lugar."
+      description="Entra al centro de mando para asignar trabajo, seguir técnicos y mantener la operación bajo control."
+      highlights={[
+        "Despacho centralizado",
+        "Rastreo en tiempo real",
+        "Control de inventario",
+      ]}
+      cardTitle="Iniciar sesión"
+      cardDescription="Ingresa tus credenciales para continuar."
+      footer={
+        <>
+          ¿Aún no tienes cuenta? <Link to="/register">Crea tu registro</Link>
+        </>
+      }
+    >
+      <LoginForm />
+    </AuthShell>
   );
 };
 

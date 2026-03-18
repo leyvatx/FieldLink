@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Button, Image, Modal, Table, Tag } from "antd";
+import { useCallback, useMemo, useState } from "react";
+import { Image, Modal, Table, Tag } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@api/materialApprovalService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
+import { useDialog } from "@context/DialogProvider";
 
 const STATUS_COLORS = {
   PENDING: "default",
@@ -21,10 +22,15 @@ const STATUS_COLORS = {
 
 const MaterialApprovals = () => {
   const { success, error } = useMessage();
+  const { openContextMenu } = useDialog();
   const [rejecting, setRejecting] = useState(null);
   const [adjusting, setAdjusting] = useState(null);
   const [reason, setReason] = useState("");
   const [adjustQty, setAdjustQty] = useState(0);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: null,
+  });
 
   const { data: usedMaterials = [], isLoading } = useQuery({
     queryKey: ["used-materials"],
@@ -56,6 +62,52 @@ const MaterialApprovals = () => {
     onError: () => error("No se pudo actualizar la evidencia"),
   });
 
+  const openApprovalContextMenu = useCallback(
+    (event, record) => {
+      openContextMenu({
+        event,
+        items: [
+          {
+            key: "approve",
+            label: "Aprobar evidencia",
+            disabled: record.approval_status === "APPROVED",
+            onClick: () => approvalMutation.mutate({ action: "approve", record }),
+          },
+          {
+            key: "reject",
+            label: "Rechazar evidencia",
+            danger: true,
+            disabled: record.approval_status === "REJECTED",
+            onClick: () => setRejecting(record),
+          },
+          {
+            key: "adjust",
+            label: "Ajustar cantidad",
+            onClick: () => setAdjusting(record),
+          },
+        ],
+      });
+    },
+    [approvalMutation, openContextMenu]
+  );
+
+  const filteredUsedMaterials = useMemo(() => {
+    return usedMaterials.filter((record) => {
+      if (filters.status && record.approval_status !== filters.status) {
+        return false;
+      }
+
+      const search = filters.search.trim().toLowerCase();
+      if (!search) {
+        return true;
+      }
+
+      return [record.work_order_id, record.material_name, record.approval_status]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(search));
+    });
+  }, [filters, usedMaterials]);
+
   const columns = [
     {
       title: "Orden",
@@ -79,66 +131,85 @@ const MaterialApprovals = () => {
       render: (value) =>
         value ? <Tag color={STATUS_COLORS[value]}>{value}</Tag> : <Tag>Sin revisión</Tag>,
     },
-    {
-      title: "Acciones",
-      key: "actions",
-          render: (_, record) => (
-        <div className="flex gap-2">
-          <Button
-            size="small"
-            type="primary"
-            disabled={record.approval_status === "APPROVED"}
-            onClick={() => approvalMutation.mutate({ action: "approve", record })}>
-            Aprobar
-          </Button>
-          <Button
-            size="small"
-            danger
-            disabled={record.approval_status === "REJECTED"}
-            onClick={() => setRejecting(record)}>
-            Rechazar
-          </Button>
-          <Button size="small" onClick={() => setAdjusting(record)}>
-            Ajustar
-          </Button>
-        </div>
-      ),
-    },
   ];
 
+  const searchConfig = useMemo(
+    () => ({
+      title: "Buscar y filtrar evidencias",
+      values: filters,
+      fields: [
+        {
+          key: "search",
+          label: "Buscar",
+          placeholder: "Orden, material o estado",
+        },
+        {
+          key: "status",
+          label: "Estado",
+          type: "select",
+          options: [
+            { value: "PENDING", label: "Pendiente" },
+            { value: "APPROVED", label: "Aprobada" },
+            { value: "REJECTED", label: "Rechazada" },
+            { value: "ADJUSTED", label: "Ajustada" },
+          ],
+        },
+      ],
+      onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
+      onReset: () =>
+        setFilters({
+          search: "",
+          status: null,
+        }),
+      onRefresh: () => queryClient.invalidateQueries({ queryKey: ["used-materials"] }),
+    }),
+    [filters]
+  );
+
   return (
-    <PageLayout title="Validación de evidencias">
-      <Table
-        rowKey="id"
-        dataSource={usedMaterials}
-        columns={columns}
-        loading={isLoading}
-        expandable={{
-          expandedRowRender: (record) => (
-            <div className="flex flex-wrap gap-3">
-              {record.photos?.filter((photo) => photo.file).length ? (
-                <Image.PreviewGroup>
-                  {record.photos
-                    .filter((photo) => photo.file)
-                    .map((photo) => (
-                    <Image
-                      key={photo.id}
-                      width={120}
-                      src={photo.file}
-                      alt="evidencia"
-                    />
-                  ))}
-                </Image.PreviewGroup>
-              ) : (
-                <span className="text-sm ui-text-muted">
-                  Sin fotos adjuntas
-                </span>
-              )}
-            </div>
-          ),
-        }}
-        pagination={{ pageSize: 8 }}
-      />
+    <PageLayout
+      title="Validación de evidencias"
+      searchConfig={searchConfig}
+    >
+      <div className="grid gap-3">
+        <span className="text-xs ui-text-muted">
+          Clic derecho en una fila para aprobar, rechazar o ajustar el material usado.
+        </span>
+        <Table
+          rowKey="id"
+          dataSource={filteredUsedMaterials}
+          columns={columns}
+          loading={isLoading}
+          onRow={(record) => ({
+            onContextMenu: (event) => openApprovalContextMenu(event, record),
+          })}
+          expandable={{
+            expandedRowRender: (record) => (
+              <div className="flex flex-wrap gap-3">
+                {record.photos?.filter((photo) => photo.file).length ? (
+                  <Image.PreviewGroup>
+                    {record.photos
+                      .filter((photo) => photo.file)
+                      .map((photo) => (
+                        <Image
+                          key={photo.id}
+                          width={120}
+                          src={photo.file}
+                          alt="evidencia"
+                        />
+                      ))}
+                  </Image.PreviewGroup>
+                ) : (
+                  <span className="text-sm ui-text-muted">
+                    Sin fotos adjuntas
+                  </span>
+                )}
+              </div>
+            ),
+          }}
+          pagination={{ pageSize: 8 }}
+        />
+      </div>
 
       <Modal
         open={!!rejecting}

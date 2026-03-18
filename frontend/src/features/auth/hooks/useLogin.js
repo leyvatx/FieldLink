@@ -9,6 +9,7 @@ const useLogin = () => {
     onSuccess: (data) => {
       localStorage.setItem("token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
+      queryClient.setQueryData(["auth", "user"], data.user);
       queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
     },
   });

@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
-    CustomTokenObtainPairView, login_view, logout_view, me_view,
+    CustomTokenObtainPairView, login_view, register_view, logout_view, me_view,
     validate_password_view,
     change_password_view, UserViewSet, CompanyViewSet, CompanyConfigurationViewSet,
     SubscriptionPlanViewSet, CompanyPlanViewSet,
@@ -33,6 +33,7 @@ urlpatterns = [
     path('auth/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/login/', login_view, name='login'),
+    path('auth/register/', register_view, name='register'),
     path('auth/logout/', logout_view, name='logout'),
     path('auth/me/', me_view, name='me'),
     path('auth/validate-password/', validate_password_view, name='validate_password'),

@@ -13,8 +13,8 @@ export const getServiceRequests = async (params = {}) => {
   return data;
 };
 
-export const approveServiceRequest = async (id) => {
-  const { data } = await apiClient.post(`/service-requests/${id}/approve/`);
+export const approveServiceRequest = async (id, payload = {}) => {
+  const { data } = await apiClient.post(`/service-requests/${id}/approve/`, payload);
   return data;
 };
 

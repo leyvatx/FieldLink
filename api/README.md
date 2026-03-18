@@ -20,7 +20,7 @@ CREATE DATABASE fieldlink;
 ```powershell
 $env:DB_NAME="fieldlink"
 $env:DB_USER="postgres"
-$env:DB_PASSWORD=""
+$env:DB_PASSWORD="123456"
 $env:DB_HOST="localhost"
 $env:DB_PORT="5432"
 ```
@@ -44,9 +44,9 @@ python manage.py runserver
 ## Endpoints
 
 ### API Documentation
-- Swagger UI: `http://127.0.0.1:8000/api/docs/`
-- Admin: `http://127.0.0.1:8000/admin`
-- OpenAPI Schema: `http://localhost:8000/api/schema/`
+- Swagger UI: `http://127.0.0.1:8001/api/docs/`
+- Admin: `http://127.0.0.1:8001/admin`
+- OpenAPI Schema: `http://localhost:8001/api/schema/`
 
 ### Users
 - `GET/POST /api/users/` - List/Create users

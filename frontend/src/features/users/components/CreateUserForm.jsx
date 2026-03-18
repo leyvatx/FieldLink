@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Button, Form, Input, Select, Space } from "antd";
 import { useMessage } from "@context/MessageProvider";
+import { useAuth } from "@context/AuthProvider";
 import useCreateUser from "@features/users/hooks/useCreateUser";
 import { useDialog } from "@context/DialogProvider";
 import formatErrors from "@lib/formatErrors";
@@ -8,11 +10,13 @@ import {
   CHARACTER_LIMITS,
   FIELD_TOOLTIPS,
   FIELD_PLACEHOLDERS,
-  USER_ROLE_OPTIONS,
+  getAllowedUserRoleOptions,
 } from "@features/users/constants/userValidations";
 
 const CreateUserForm = ({ onClose }) => {
   const { closeModal, closeDrawer } = useDialog();
+  const { user } = useAuth();
+  const isDispatcher = user?.role === "DISPATCHER";
 
   const handleClose = () => {
     if (onClose) {
@@ -26,13 +30,26 @@ const CreateUserForm = ({ onClose }) => {
   const createUserMutation = useCreateUser();
   const { success } = useMessage();
   const [form] = Form.useForm();
+  const roleOptions = getAllowedUserRoleOptions(user?.role);
+
+  useEffect(() => {
+    if (isDispatcher) {
+      form.setFieldValue("role", "TECHNICIAN");
+    }
+  }, [form, isDispatcher]);
 
   const onFinish = (values) => {
+    const payload = isDispatcher ? { ...values, role: "TECHNICIAN" } : values;
+
     createUserMutation.mutate(
-      { payload: values },
+      { payload },
       {
         onSuccess: () => {
-          success("Usuario creado exitosamente");
+          success(
+            isDispatcher
+              ? "Técnico creado exitosamente."
+              : "Usuario creado exitosamente."
+          );
           handleClose();
         },
         onError: (err) => {
@@ -77,7 +94,7 @@ const CreateUserForm = ({ onClose }) => {
       </Form.Item>
 
       <Form.Item
-        label="Email"
+        label="Correo"
         name="email"
         tooltip={FIELD_TOOLTIPS.email}
         rules={USER_VALIDATION_RULES.email}
@@ -89,17 +106,27 @@ const CreateUserForm = ({ onClose }) => {
         />
       </Form.Item>
 
-      <Form.Item
-        label="Rol"
-        name="role"
-        rules={USER_VALIDATION_RULES.role}
-      >
-        <Select
-          allowClear
-          placeholder={FIELD_PLACEHOLDERS.role}
-          options={USER_ROLE_OPTIONS}
-        />
-      </Form.Item>
+      {isDispatcher ? (
+        <Form.Item
+          hidden
+          name="role"
+          initialValue="TECHNICIAN"
+        >
+          <Input />
+        </Form.Item>
+      ) : (
+        <Form.Item
+          label="Rol"
+          name="role"
+          rules={USER_VALIDATION_RULES.role}
+        >
+          <Select
+            allowClear
+            placeholder={FIELD_PLACEHOLDERS.role}
+            options={roleOptions}
+          />
+        </Form.Item>
+      )}
 
       <Form.Item
         label="Contraseña"
@@ -120,7 +147,10 @@ const CreateUserForm = ({ onClose }) => {
               if (!value || getFieldValue("password") === value) {
                 return Promise.resolve();
               }
-              return Promise.reject(new Error("Las contraseñas no coinciden"));
+
+              return Promise.reject(
+                new Error("Las contraseñas no coinciden.")
+              );
             },
           }),
         ]}
@@ -141,7 +171,11 @@ const CreateUserForm = ({ onClose }) => {
             htmlType="submit"
             loading={createUserMutation.isPending}
           >
-            {createUserMutation.isPending ? "Creando..." : "Crear usuario"}
+            {createUserMutation.isPending
+              ? "Creando..."
+              : isDispatcher
+                ? "Crear técnico"
+                : "Crear usuario"}
           </Button>
         </Space>
       </Form.Item>

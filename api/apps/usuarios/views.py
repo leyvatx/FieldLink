@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Count, Q
 
 from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfiguration
 from .serializers import (
     UserSerializer, UserDetailSerializer, CustomTokenObtainPairSerializer,
-    LoginSerializer, ChangePasswordSerializer, CompanySerializer,
+    LoginSerializer, RegisterSerializer, ChangePasswordSerializer, CompanySerializer,
     CompanyConfigurationSerializer, SubscriptionPlanSerializer, CompanyPlanSerializer
 )
 from .serializers import ROLE_PERMISSIONS
@@ -48,6 +49,30 @@ def login_view(request):
     if serializer.is_valid():
         tokens = serializer.save()
         return Response(tokens, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(request=RegisterSerializer, responses={201: inline_serializer('RegisterResponse', fields={'access': drf_serializers.CharField(), 'refresh': drf_serializers.CharField(), 'user': drf_serializers.DictField()})})
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_view(request):
+    """
+    Public registration endpoint.
+    POST /api/auth/register/
+    Body: {
+      "company_name": "Acme Telecom",
+      "company_slug": "acme-telecom",
+      "name": "Owner Name",
+      "phone": "5551234567",
+      "email": "owner@example.com",
+      "password": "password123",
+      "password_confirm": "password123"
+    }
+    """
+    serializer = RegisterSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        auth_payload = serializer.save()
+        return Response(auth_payload, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -166,16 +191,20 @@ def validate_password_view(request):
 
 class UserViewSet(viewsets.ModelViewSet):
     """
-    User management - OWNER ONLY.
-    Lists users in same company.
+    User management.
+    OWNER: manage all company users.
+    DISPATCHER: manage technicians only.
     """
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
     
     def get_queryset(self):
         """Filter users by company"""
         user = self.request.user
         queryset = User.objects.filter(company=user.company)
+
+        if user.role == User.Role.DISPATCHER:
+            queryset = queryset.filter(role=User.Role.TECHNICIAN)
         
         # Optional filters
         role = self.request.query_params.get('role')
@@ -225,9 +254,29 @@ class CompanyViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Owner can only see their own company"""
+        queryset = Company.objects.select_related('subscription_plan').annotate(
+            user_count=Count('users', distinct=True),
+            technician_count=Count(
+                'users',
+                filter=Q(users__role=User.Role.TECHNICIAN),
+                distinct=True,
+            ),
+            active_orders=Count(
+                'work_orders',
+                filter=Q(
+                    work_orders__status__in=[
+                        'PENDING',
+                        'ASSIGNED',
+                        'IN_TRANSIT',
+                        'IN_SERVICE',
+                    ]
+                ),
+                distinct=True,
+            ),
+        )
         if self.request.user.is_superuser:
-            return Company.objects.all()
-        return Company.objects.filter(id=self.request.user.company_id)
+            return queryset
+        return queryset.filter(id=self.request.user.company_id)
     
     @action(detail=False, methods=['get'])
     def my_company(self, request):

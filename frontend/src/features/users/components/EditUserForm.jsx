@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { Form, Alert } from "antd";
+import { useAuth } from "@context/AuthProvider";
 import { useDialog } from "@context/DialogProvider";
 import useEditUserForm from "@features/users/hooks/useEditUserForm";
+import { getAllowedUserRoleOptions } from "@features/users/constants/userValidations";
 import Loader from "@components/Loader";
 import AdminValidationModal from "./AdminValidationModal";
 import UserBasicFields from "./UserBasicFields";
@@ -9,6 +11,7 @@ import PasswordSection from "./PasswordSection";
 import FormActions from "./FormActions";
 
 const EditUserForm = ({ id, onClose }) => {
+  const { user } = useAuth();
   const { closeModal, closeDrawer } = useDialog();
 
   const handleClose = () => {
@@ -36,6 +39,8 @@ const EditUserForm = ({ id, onClose }) => {
   } = useEditUserForm(id, handleClose);
 
   const [form] = Form.useForm();
+  const roleOptions = getAllowedUserRoleOptions(user?.role);
+  const hideRole = user?.role === "DISPATCHER";
 
   useEffect(() => {
     if (userQuery.data) {
@@ -51,7 +56,7 @@ const EditUserForm = ({ id, onClose }) => {
     return (
       <Alert
         message="Error"
-        description="No se pudo cargar la información del usuario. Inténtelo de nuevo."
+        description="No se pudo cargar la información del usuario. Inténtalo de nuevo."
         type="error"
         showIcon
       />
@@ -65,7 +70,10 @@ const EditUserForm = ({ id, onClose }) => {
       onFinish={(values) => handleFormSubmit(values, form)}
       initialValues={initialValues}
     >
-      <UserBasicFields />
+      <UserBasicFields
+        roleOptions={roleOptions}
+        hideRole={hideRole}
+      />
 
       <PasswordSection
         passwordSection={passwordSection}

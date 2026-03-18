@@ -6,12 +6,15 @@ const useSidebarItems = () => {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
 
-  const filterItemsByPermissions = (items) => {
-    return items.reduce((acc, item) => {
-      const hasRoleAccess =
-        !item.roles || item.roles.includes(user?.role);
+  const filterItemsByPermissions = (entries) => {
+    return entries.reduce((acc, item) => {
+      const isSuperuser = !!user?.is_superuser;
+      const hasRoleAccess = !item.roles || item.roles.includes(user?.role);
       const hasPermissionAccess =
         !item.permission || user?.permissions?.includes(item.permission);
+      const passesSuperuserCheck =
+        (!item.superuserOnly || isSuperuser) &&
+        (!item.hideForSuperuser || !isSuperuser);
 
       const filteredChildren = item.children
         ? filterItemsByPermissions(item.children)
@@ -21,6 +24,7 @@ const useSidebarItems = () => {
       const isVisible =
         hasRoleAccess &&
         hasPermissionAccess &&
+        passesSuperuserCheck &&
         (item.path || hasVisibleChildren);
 
       if (!isVisible) {
@@ -36,7 +40,6 @@ const useSidebarItems = () => {
     }, []);
   };
 
-  // Generar los ítems iniciales según permisos
   const initialItems = useMemo(() => {
     if (!user) {
       return [];
@@ -45,16 +48,18 @@ const useSidebarItems = () => {
     return filterItemsByPermissions(sidebarItems);
   }, [user]);
 
-  // Establecer los ítems visibles
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
 
   const filterItems = (text) => {
-    if (!text) return setItems(initialItems);
+    if (!text) {
+      setItems(initialItems);
+      return;
+    }
 
-    const search = (items) => {
-      return items
+    const search = (entries) => {
+      return entries
         .map((item) => {
           const match = item.wordkeys?.some((word) =>
             word.toLowerCase().includes(text.toLowerCase())

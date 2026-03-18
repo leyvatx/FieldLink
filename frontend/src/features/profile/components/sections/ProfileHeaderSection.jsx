@@ -27,7 +27,7 @@ const ProfileHeaderSection = ({ profile }) => {
           type="secondary"
           style={{ marginLeft: 10, marginBottom: 0 }}
         >
-          Aqui puedes editar los detalles de tu perfil.
+          Aquí puedes editar los detalles de tu perfil.
         </Paragraph>
       </Col>
     </Row>

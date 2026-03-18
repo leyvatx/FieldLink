@@ -9,7 +9,7 @@ import useSidebarItems from "@layouts/auth-layout/sidebar/useSidebarItems";
 
 const Sidebar = () => {
   const [search, setSearch] = useState("");
-  const { toggleSidebar } = useSidebar();
+  const { isExpanded, toggleSidebar } = useSidebar();
   const { items, filterItems } = useSidebarItems();
 
   useEffect(() => {
@@ -19,12 +19,24 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <Link to="/dashboard">
-          <AppLogo compact />
+        <Link
+          to="/"
+          className="sidebar-brand-link"
+        >
+          <span className="sidebar-brand-mark">
+            <AppLogo
+              compact
+              showWordmark={false}
+              iconSize={isExpanded ? 48 : 34}
+            />
+          </span>
         </Link>
       </div>
       <div className="sidebar-body">
-        <Input onChange={(e) => setSearch(e.target.value)} />
+        <Input
+          placeholder="Buscar módulo"
+          onChange={(event) => setSearch(event.target.value)}
+        />
         <SidebarItems items={items} />
       </div>
       <button

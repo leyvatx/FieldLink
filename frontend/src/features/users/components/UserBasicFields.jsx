@@ -4,10 +4,9 @@ import {
   CHARACTER_LIMITS,
   FIELD_TOOLTIPS,
   FIELD_PLACEHOLDERS,
-  USER_ROLE_OPTIONS,
 } from "@features/users/constants/userValidations";
 
-const UserBasicFields = () => {
+const UserBasicFields = ({ roleOptions = [], hideRole = false }) => {
   return (
     <>
       <Form.Item
@@ -37,7 +36,7 @@ const UserBasicFields = () => {
       </Form.Item>
 
       <Form.Item
-        label="Email"
+        label="Correo"
         name="email"
         tooltip={FIELD_TOOLTIPS.email}
         rules={USER_VALIDATION_RULES.email}
@@ -49,17 +48,27 @@ const UserBasicFields = () => {
         />
       </Form.Item>
 
-      <Form.Item
-        label="Rol"
-        name="role"
-        rules={USER_VALIDATION_RULES.role}
-      >
-        <Select
-          allowClear
-          placeholder={FIELD_PLACEHOLDERS.role}
-          options={USER_ROLE_OPTIONS}
-        />
-      </Form.Item>
+      {hideRole ? (
+        <Form.Item
+          hidden
+          name="role"
+          initialValue="TECHNICIAN"
+        >
+          <Input />
+        </Form.Item>
+      ) : (
+        <Form.Item
+          label="Rol"
+          name="role"
+          rules={USER_VALIDATION_RULES.role}
+        >
+          <Select
+            allowClear
+            placeholder={FIELD_PLACEHOLDERS.role}
+            options={roleOptions}
+          />
+        </Form.Item>
+      )}
     </>
   );
 };
