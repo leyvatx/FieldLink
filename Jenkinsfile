@@ -7,7 +7,7 @@ pipeline {
     stage('Preflight') {
       steps {
         sh '''
-          set -euxo pipefail
+          set -eux
           command -v sudo
           test -x /usr/local/bin/fieldlink-deploy.sh
         '''
@@ -16,7 +16,7 @@ pipeline {
     stage('Deploy') {
       steps {
         sh '''
-          set -euxo pipefail
+          set -eux
           sudo -n /usr/local/bin/fieldlink-deploy.sh
         '''
       }
@@ -24,7 +24,7 @@ pipeline {
     stage('Smoke test') {
       steps {
         sh '''
-          set -euxo pipefail
+          set -eux
           for i in 1 2 3 4 5; do
             if curl -fsS --max-time 10 https://fieldlinkapp.com/ >/dev/null; then
               exit 0
