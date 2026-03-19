@@ -6,12 +6,12 @@ pipeline {
   stages {
     stage('Preflight') {
       steps {
-        sh '''
-          set -eux
-          command -v sudo
-          test -x /usr/local/bin/fieldlink-deploy.sh
-        '''
-      }
+    sh '''
+      set -eu
+      command -v sudo
+      sudo -n -l /usr/local/bin/fieldlink-deploy.sh >/dev/null
+    '''
+  }
     }
     stage('Deploy') {
       steps {
