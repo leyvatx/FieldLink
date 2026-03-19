@@ -10,6 +10,7 @@ import {
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useAuth } from "@context/AuthProvider";
+import { isCompanyAdmin } from "@utils/constants/roles";
 
 const Subscription = () => {
   const { success, error } = useMessage();
@@ -38,13 +39,13 @@ const Subscription = () => {
     onError: () => error("No se pudo actualizar el plan"),
   });
 
-  if (user?.role !== "OWNER") {
+  if (!isCompanyAdmin(user)) {
     return (
       <PageLayout title="Suscripción y planes">
         <Result
           status="403"
           title="Acceso restringido"
-          subTitle="Solo el propietario puede gestionar la suscripción."
+          subTitle="Solo la empresa puede gestionar la suscripción."
         />
       </PageLayout>
     );
@@ -95,7 +96,7 @@ const Subscription = () => {
           const isCurrent = currentPlanId === plan.id;
           return (
             <Card key={plan.id} className="rounded-2xl" loading={isLoading}>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
                 {isCurrent && <Tag color="green">Actual</Tag>}
               </div>
@@ -103,7 +104,7 @@ const Subscription = () => {
                 ${plan.monthly_price}
                 <span className="text-sm ui-text-muted"> / mes</span>
               </div>
-              <p className="text-sm ui-text-muted mt-2">{plan.description}</p>
+              <p className="mt-2 text-sm ui-text-muted">{plan.description}</p>
               <div className="mt-4 grid gap-2 text-sm">
                 <span>Hasta {plan.max_technicians} técnicos</span>
                 <span>{plan.max_work_orders_per_month} órdenes / mes</span>
@@ -119,7 +120,8 @@ const Subscription = () => {
                 className="mt-6 w-full"
                 disabled={isCurrent}
                 loading={upgradeMutation.isPending}
-                onClick={() => upgradeMutation.mutate(plan.id)}>
+                onClick={() => upgradeMutation.mutate(plan.id)}
+              >
                 {isCurrent ? "Plan activo" : "Pagar y activar"}
               </Button>
             </Card>

@@ -2,18 +2,7 @@ import { useMemo } from "react";
 import { Table, Tag } from "antd";
 import useUsers from "@features/users/hooks/useUsers";
 import useUsersContextMenu from "@features/users/hooks/useUsersContextMenu";
-
-const ROLE_COLORS = {
-  OWNER: "purple",
-  DISPATCHER: "blue",
-  TECHNICIAN: "green",
-};
-
-const ROLE_LABELS = {
-  OWNER: "Empresa",
-  DISPATCHER: "Coordinador",
-  TECHNICIAN: "Técnico",
-};
+import { ROLE_COLORS, ROLE_LABELS } from "@utils/constants/roles";
 
 const UsersTable = ({ filters }) => {
   const { data: users, isLoading } = useUsers({

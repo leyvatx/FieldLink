@@ -1,14 +1,9 @@
 import { Input, Tag, Typography, Form } from "antd";
 import { PiCalendar, PiClock } from "react-icons/pi";
 import dayjs from "dayjs";
+import { ROLE_LABELS } from "@utils/constants/roles";
 
 const { Title } = Typography;
-
-const ROLE_LABELS = {
-  OWNER: "Empresa",
-  DISPATCHER: "Coordinador",
-  TECHNICIAN: "Técnico",
-};
 
 const AdditionalDetailsSection = ({ profile }) => {
   return (

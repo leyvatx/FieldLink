@@ -175,7 +175,7 @@ class MaterialApproval(models.Model):
         null=True,
         blank=True,
         related_name='material_approvals',
-        limit_choices_to={'role__in': ['OWNER', 'DISPATCHER']}
+        limit_choices_to={'role__in': ['COMPANY', 'SUPERVISOR']}
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     

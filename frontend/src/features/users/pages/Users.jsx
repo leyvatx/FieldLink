@@ -7,6 +7,7 @@ import { PiPlus } from "react-icons/pi";
 import CreateUserForm from "@features/users/components/CreateUserForm";
 import UsersTable from "@features/users/components/UsersTable";
 import { getAllowedUserRoleOptions } from "@features/users/constants/userValidations";
+import { isSupervisor } from "@utils/constants/roles";
 
 const Users = () => {
   const { openDrawer } = useDialog();
@@ -17,11 +18,13 @@ const Users = () => {
     isActive: null,
   });
   const roleOptions = getAllowedUserRoleOptions(user?.role);
-  const isDispatcher = user?.role === "DISPATCHER";
+  const supervisorView = isSupervisor(user);
 
   const searchConfig = useMemo(
     () => ({
-      title: isDispatcher ? "Buscar y filtrar técnicos" : "Buscar y filtrar personal",
+      title: supervisorView
+        ? "Buscar y filtrar técnicos"
+        : "Buscar y filtrar personal",
       values: filters,
       fields: [
         {
@@ -29,7 +32,7 @@ const Users = () => {
           label: "Buscar",
           placeholder: "Nombre, correo o teléfono",
         },
-        ...(isDispatcher
+        ...(supervisorView
           ? []
           : [
               {
@@ -57,12 +60,12 @@ const Users = () => {
           isActive: null,
         }),
     }),
-    [filters, isDispatcher, roleOptions]
+    [filters, supervisorView, roleOptions]
   );
 
   return (
     <PageLayout
-      title={isDispatcher ? "Técnicos de campo" : "Personal de la empresa"}
+      title={supervisorView ? "Técnicos de campo" : "Personal de la empresa"}
       searchConfig={searchConfig}
       topbarOptions={
         <Button
@@ -71,7 +74,7 @@ const Users = () => {
           variant="filled"
           onClick={() =>
             openDrawer({
-              title: isDispatcher ? "Crear técnico" : "Crear integrante",
+              title: supervisorView ? "Crear técnico" : "Crear integrante",
               content: <CreateUserForm />,
             })
           }

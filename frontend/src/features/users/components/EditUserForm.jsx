@@ -9,6 +9,7 @@ import AdminValidationModal from "./AdminValidationModal";
 import UserBasicFields from "./UserBasicFields";
 import PasswordSection from "./PasswordSection";
 import FormActions from "./FormActions";
+import { isSupervisor } from "@utils/constants/roles";
 
 const EditUserForm = ({ id, onClose }) => {
   const { user } = useAuth();
@@ -40,7 +41,7 @@ const EditUserForm = ({ id, onClose }) => {
 
   const [form] = Form.useForm();
   const roleOptions = getAllowedUserRoleOptions(user?.role);
-  const hideRole = user?.role === "DISPATCHER";
+  const hideRole = isSupervisor(user);
 
   useEffect(() => {
     if (userQuery.data) {

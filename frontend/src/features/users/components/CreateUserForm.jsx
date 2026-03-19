@@ -12,11 +12,12 @@ import {
   FIELD_PLACEHOLDERS,
   getAllowedUserRoleOptions,
 } from "@features/users/constants/userValidations";
+import { TECHNICIAN_ROLE, isSupervisor } from "@utils/constants/roles";
 
 const CreateUserForm = ({ onClose }) => {
   const { closeModal, closeDrawer } = useDialog();
   const { user } = useAuth();
-  const isDispatcher = user?.role === "DISPATCHER";
+  const supervisorView = isSupervisor(user);
 
   const handleClose = () => {
     if (onClose) {
@@ -33,20 +34,20 @@ const CreateUserForm = ({ onClose }) => {
   const roleOptions = getAllowedUserRoleOptions(user?.role);
 
   useEffect(() => {
-    if (isDispatcher) {
-      form.setFieldValue("role", "TECHNICIAN");
+    if (supervisorView) {
+      form.setFieldValue("role", TECHNICIAN_ROLE);
     }
-  }, [form, isDispatcher]);
+  }, [form, supervisorView]);
 
   const onFinish = (values) => {
-    const payload = isDispatcher ? { ...values, role: "TECHNICIAN" } : values;
+    const payload = supervisorView ? { ...values, role: TECHNICIAN_ROLE } : values;
 
     createUserMutation.mutate(
       { payload },
       {
         onSuccess: () => {
           success(
-            isDispatcher
+            supervisorView
               ? "Técnico creado exitosamente."
               : "Usuario creado exitosamente."
           );
@@ -106,11 +107,11 @@ const CreateUserForm = ({ onClose }) => {
         />
       </Form.Item>
 
-      {isDispatcher ? (
+      {supervisorView ? (
         <Form.Item
           hidden
           name="role"
-          initialValue="TECHNICIAN"
+          initialValue={TECHNICIAN_ROLE}
         >
           <Input />
         </Form.Item>
@@ -173,7 +174,7 @@ const CreateUserForm = ({ onClose }) => {
           >
             {createUserMutation.isPending
               ? "Creando..."
-              : isDispatcher
+              : supervisorView
                 ? "Crear técnico"
                 : "Crear usuario"}
           </Button>

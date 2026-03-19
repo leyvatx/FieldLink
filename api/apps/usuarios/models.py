@@ -100,14 +100,16 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'OWNER')
+        extra_fields.setdefault('role', 'ADMIN')
+        extra_fields.setdefault('company', None)
         return self.create_user(email, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
     class Role(models.TextChoices):
-        OWNER = 'OWNER', 'Owner (Business Owner)'
-        DISPATCHER = 'DISPATCHER', 'Dispatcher (Operations Manager)'
+        ADMIN = 'ADMIN', 'Admin (Platform / Dev)'
+        COMPANY = 'COMPANY', 'Company (Business Admin)'
+        SUPERVISOR = 'SUPERVISOR', 'Supervisor (Operations Lead)'
         TECHNICIAN = 'TECHNICIAN', 'Technician (Field Worker)'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -144,7 +146,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['name', 'company_id']
+    REQUIRED_FIELDS = ['name']
 
     class Meta:
         db_table = 'users'
@@ -156,7 +158,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.role}) @ {self.company.name}"
+        company_name = self.company.name if self.company else 'Platform'
+        return f"{self.name} ({self.role}) @ {company_name}"
 
 
 

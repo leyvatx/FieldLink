@@ -10,8 +10,16 @@ export const AuthProvider = ({ children }) => {
   const logout = useLogout();
   const { data: user, isPending } = useAuthUser();
   const loadingUser = !!localStorage.getItem("token") && isPending;
+  const permissions = user?.permissions || [];
+  const hasPermission = (permission) => permissions.includes(permission);
 
-  return <AuthContext.Provider value={{user, loadingUser, login, logout}}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ user, loadingUser, login, logout, permissions, hasPermission }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

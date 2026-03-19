@@ -7,22 +7,37 @@ from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfigu
 
 
 ROLE_PERMISSIONS = {
-    User.Role.OWNER: [
+    User.Role.COMPANY: [
         'view.users.option',
+        'view.subscription.option',
     ],
-    User.Role.DISPATCHER: [
+    User.Role.SUPERVISOR: [
         'view.users.option',
     ],
     User.Role.TECHNICIAN: [],
 }
 
 PLATFORM_ADMIN_PERMISSIONS = [
+    'view.admin.menu',
     'view.companies.option',
+    'view.roles.option',
+    'view.log.option',
+    'view.release_notes.option',
+    'release_notes.general.manage_release_notes',
+    'view.permissions.both',
+    'permissions.view_both',
+    'permissions.view_name',
+    'roles.create',
+    'roles.edit',
+    'roles.delete',
+    'permissions.create',
+    'permissions.edit',
+    'permissions.delete',
 ]
 
 
 def _get_permissions_for_user(user):
-    if getattr(user, 'is_superuser', False):
+    if getattr(user, 'is_superuser', False) or getattr(user, 'role', None) == User.Role.ADMIN:
         return PLATFORM_ADMIN_PERMISSIONS
     return ROLE_PERMISSIONS.get(user.role, [])
 
@@ -83,12 +98,16 @@ class UserSerializer(serializers.ModelSerializer):
             request_user
             and request_user.is_authenticated
             and not request_user.is_superuser
-            and request_user.role == User.Role.DISPATCHER
-            and value != User.Role.TECHNICIAN
         ):
-            raise serializers.ValidationError(
-                'Dispatchers can only create or manage technicians.'
-            )
+            if value == User.Role.ADMIN:
+                raise serializers.ValidationError(
+                    'Only platform admins can assign the admin role.'
+                )
+
+            if request_user.role == User.Role.SUPERVISOR and value != User.Role.TECHNICIAN:
+                raise serializers.ValidationError(
+                    'Supervisors can only create or manage technicians.'
+                )
         return value
 
     def validate_company(self, value):
@@ -96,7 +115,12 @@ class UserSerializer(serializers.ModelSerializer):
         request_user = getattr(request, 'user', None)
 
         # Non-superusers cannot assign users to another company.
-        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+        if (
+            request_user
+            and request_user.is_authenticated
+            and not request_user.is_superuser
+            and request_user.role != User.Role.ADMIN
+        ):
             if value and request_user.company_id and value.id != request_user.company_id:
                 raise serializers.ValidationError('Cannot assign user to a different company.')
         return value
@@ -109,8 +133,15 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         request_user = getattr(request, 'user', None)
 
-        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+        if (
+            request_user
+            and request_user.is_authenticated
+            and not request_user.is_superuser
+            and request_user.role != User.Role.ADMIN
+        ):
             validated_data['company'] = request_user.company
+        elif validated_data.get('role') == User.Role.ADMIN:
+            validated_data['company'] = None
 
         email = validated_data.pop('email')
         user = User.objects.create_user(email=email, password=password, **validated_data)
@@ -121,8 +152,15 @@ class UserSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
         request_user = getattr(request, 'user', None)
-        if request_user and request_user.is_authenticated and not request_user.is_superuser:
+        if (
+            request_user
+            and request_user.is_authenticated
+            and not request_user.is_superuser
+            and request_user.role != User.Role.ADMIN
+        ):
             validated_data.pop('company', None)
+        elif validated_data.get('role') == User.Role.ADMIN:
+            validated_data['company'] = None
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -315,7 +353,7 @@ class RegisterSerializer(serializers.Serializer):
             password=password,
             name=owner_name,
             phone=phone,
-            role=User.Role.OWNER,
+            role=User.Role.COMPANY,
             company=company,
         )
 
@@ -357,7 +395,7 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'email', 'phone', 'address', 'city', 'country',
             'is_active', 'is_trial', 'plan_name', 'user_count', 'technician_count',
-            'active_orders', 'created_at'
+            'active_orders', 'subscription_plan', 'plan_start_date', 'plan_end_date', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
 

@@ -12,8 +12,15 @@ from .serializers import (
     LoginSerializer, RegisterSerializer, ChangePasswordSerializer, CompanySerializer,
     CompanyConfigurationSerializer, SubscriptionPlanSerializer, CompanyPlanSerializer
 )
-from .serializers import ROLE_PERMISSIONS
-from .permissions import IsOwner, IsDispatcherOrOwner, IsSameCompany, IsTechnician
+from .serializers import ROLE_PERMISSIONS, PLATFORM_ADMIN_PERMISSIONS
+from .permissions import (
+    IsPlatformAdmin,
+    IsCompanyAdmin,
+    IsCompanyOrSupervisor,
+    IsPlatformAdminOrCompanyAdmin,
+    IsSameCompany,
+    IsTechnician,
+)
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import serializers as drf_serializers
 import threading
@@ -192,18 +199,18 @@ def validate_password_view(request):
 class UserViewSet(viewsets.ModelViewSet):
     """
     User management.
-    OWNER: manage all company users.
-    DISPATCHER: manage technicians only.
+    COMPANY: manage all company users.
+    SUPERVISOR: manage technicians only.
     """
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsDispatcherOrOwner]
+    permission_classes = [IsAuthenticated, IsCompanyOrSupervisor]
     
     def get_queryset(self):
         """Filter users by company"""
         user = self.request.user
         queryset = User.objects.filter(company=user.company)
 
-        if user.role == User.Role.DISPATCHER:
+        if user.role == User.Role.SUPERVISOR:
             queryset = queryset.filter(role=User.Role.TECHNICIAN)
         
         # Optional filters
@@ -225,18 +232,28 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
-    def dispatchers(self, request):
-        """Get all dispatchers in company"""
-        dispatchers = self.get_queryset().filter(role='DISPATCHER')
-        serializer = self.get_serializer(dispatchers, many=True)
+    def supervisors(self, request):
+        """Get all supervisors in company"""
+        supervisors = self.get_queryset().filter(role=User.Role.SUPERVISOR)
+        serializer = self.get_serializer(supervisors, many=True)
         return Response(serializer.data)
-    
+
     @action(detail=False, methods=['get'])
-    def owners(self, request):
-        """Get all owners in company"""
-        owners = self.get_queryset().filter(role='OWNER')
+    def companies(self, request):
+        """Get all company admins in company"""
+        owners = self.get_queryset().filter(role=User.Role.COMPANY)
         serializer = self.get_serializer(owners, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def dispatchers(self, request):
+        """Backward-compatible alias for supervisors."""
+        return self.supervisors(request)
+
+    @action(detail=False, methods=['get'])
+    def owners(self, request):
+        """Backward-compatible alias for company admins."""
+        return self.companies(request)
 
 
 # ============================================================================
@@ -245,15 +262,17 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class CompanyViewSet(viewsets.ModelViewSet):
     """
-    Company management - OWNER ONLY.
+    Company management.
+    Platform admins can inspect every company.
+    Company admins can only access their own company.
     """
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsPlatformAdminOrCompanyAdmin]
     lookup_field = 'slug'
     
     def get_queryset(self):
-        """Owner can only see their own company"""
+        """Platform admins see all companies, company admins only their own."""
         queryset = Company.objects.select_related('subscription_plan').annotate(
             user_count=Count('users', distinct=True),
             technician_count=Count(
@@ -274,31 +293,43 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 distinct=True,
             ),
         )
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.role == User.Role.ADMIN:
             return queryset
         return queryset.filter(id=self.request.user.company_id)
     
     @action(detail=False, methods=['get'])
     def my_company(self, request):
         """Get current user's company"""
+        if not request.user.company:
+            return Response(
+                {'error': 'This user is not linked to a company.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         serializer = self.get_serializer(request.user.company)
         return Response(serializer.data)
 
 
 class CompanyConfigurationViewSet(viewsets.ModelViewSet):
     """
-    Company configuration for white-label setup - OWNER ONLY.
+    Company configuration for white-label setup.
     """
     serializer_class = CompanyConfigurationSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsPlatformAdminOrCompanyAdmin]
     
     def get_queryset(self):
-        """Get configuration for user's company"""
+        """Platform admins can inspect all configs, company admins only their own."""
+        if self.request.user.is_superuser or self.request.user.role == User.Role.ADMIN:
+            return CompanyConfiguration.objects.all()
         return CompanyConfiguration.objects.filter(company=self.request.user.company)
     
     @action(detail=False, methods=['get', 'put', 'patch'])
     def my_config(self, request):
         """Get or update current company config"""
+        if not request.user.company:
+            return Response(
+                {'error': 'This user is not linked to a company.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             config = CompanyConfiguration.objects.get(company=request.user.company)
         except CompanyConfiguration.DoesNotExist:
@@ -334,19 +365,27 @@ class SubscriptionPlanViewSet(viewsets.ReadOnlyModelViewSet):
 
 class CompanyPlanViewSet(viewsets.ModelViewSet):
     """
-    Company subscription management - OWNER ONLY.
-    Only the business owner can manage billing and subscription.
+    Company subscription management.
+    Platform admins can inspect plan records.
+    Company admins manage billing and subscription for their company.
     """
     serializer_class = CompanyPlanSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsPlatformAdminOrCompanyAdmin]
     
     def get_queryset(self):
-        """Get subscription for user's company"""
+        """Platform admins can inspect all plans, company admins only their own."""
+        if self.request.user.is_superuser or self.request.user.role == User.Role.ADMIN:
+            return CompanyPlan.objects.select_related('company', 'plan')
         return CompanyPlan.objects.filter(company=self.request.user.company)
     
     @action(detail=False, methods=['get'])
     def current_plan(self, request):
         """Get current active subscription"""
+        if not request.user.company:
+            return Response(
+                {'error': 'This user is not linked to a company.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         try:
             plan = CompanyPlan.objects.get(
                 company=request.user.company,
@@ -363,6 +402,11 @@ class CompanyPlanViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def upgrade(self, request):
         """Upgrade current company plan (simulated payment)."""
+        if not request.user.company:
+            return Response(
+                {'error': 'This user is not linked to a company.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         plan_id = request.data.get('plan_id')
         if not plan_id:
             return Response(
@@ -421,12 +465,14 @@ def _split_permission_code(code):
 def _build_initial_data():
     # Roles used across the UI
     roles = [
-        {"id": 1, "name": "owner"},
-        {"id": 2, "name": "dispatcher"},
-        {"id": 3, "name": "technician"},
+        {"id": 1, "name": "admin"},
+        {"id": 2, "name": "empresa"},
+        {"id": 3, "name": "supervisor"},
+        {"id": 4, "name": "tecnico"},
     ]
 
     base_permissions = set()
+    base_permissions.update(PLATFORM_ADMIN_PERMISSIONS)
     for perms in ROLE_PERMISSIONS.values():
         base_permissions.update(perms)
 
@@ -492,18 +538,20 @@ def _build_initial_data():
         next_permission_id += 1
 
     # Matrix: role_id -> permission_ids
-    matrix = {1: [], 2: [], 3: []}
+    matrix = {1: [], 2: [], 3: [], 4: []}
     role_map = {
-        User.Role.OWNER: 1,
-        User.Role.DISPATCHER: 2,
-        User.Role.TECHNICIAN: 3,
+        User.Role.ADMIN: 1,
+        User.Role.COMPANY: 2,
+        User.Role.SUPERVISOR: 3,
+        User.Role.TECHNICIAN: 4,
     }
     for role, perms in ROLE_PERMISSIONS.items():
         role_id = role_map.get(role)
         if not role_id:
             continue
         matrix[role_id] = [permission_id_map[p] for p in perms if p in permission_id_map]
-    # Give owner the extra permissions by default
+    matrix[1] = [permission_id_map[p] for p in PLATFORM_ADMIN_PERMISSIONS if p in permission_id_map]
+    # Give platform admin the full permissions set by default
     matrix[1] = sorted(set(matrix[1] + [permission_id_map[p] for p in base_permissions]))
 
     return {
@@ -513,7 +561,7 @@ def _build_initial_data():
         "permissions": permissions,
         "matrix": matrix,
         "next_ids": {
-            "roles": 4,
+            "roles": 5,
             "modules": next_module_id,
             "submodules": next_submodule_id,
             "permissions": next_permission_id,
@@ -566,7 +614,7 @@ def _next_id(data, key):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def roles_permissions_matrix_view(request):
     data = _get_data()
     permissions = [_serialize_permission(p, data) for p in data["permissions"]]
@@ -575,7 +623,7 @@ def roles_permissions_matrix_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def roles_permissions_batch_view(request):
     data = _get_data()
     payload = request.data or {}
@@ -600,7 +648,7 @@ def roles_permissions_batch_view(request):
 
 
 @api_view(["POST", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def role_permission_toggle_view(request, role_id, permission_id):
     data = _get_data()
     role_id = int(role_id)
@@ -617,7 +665,7 @@ def role_permission_toggle_view(request, role_id, permission_id):
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def roles_collection_view(request):
     data = _get_data()
     if request.method == "GET":
@@ -631,7 +679,7 @@ def roles_collection_view(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def roles_detail_view(request, role_id):
     data = _get_data()
     role_id = int(role_id)
@@ -652,7 +700,7 @@ def roles_detail_view(request, role_id):
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def permissions_collection_view(request):
     data = _get_data()
     if request.method == "GET":
@@ -675,7 +723,7 @@ def permissions_collection_view(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def permissions_detail_view(request, permission_id):
     data = _get_data()
     permission_id = int(permission_id)
@@ -701,7 +749,7 @@ def permissions_detail_view(request, permission_id):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def permissions_import_text_view(request):
     data = _get_data()
     text = "\n".join(sorted([p["name"] for p in data["permissions"]]))
@@ -709,7 +757,7 @@ def permissions_import_text_view(request):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def permissions_import_view(request):
     data = _get_data()
     text = (request.data or {}).get("text") or ""
@@ -731,7 +779,7 @@ def permissions_import_view(request):
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def modules_collection_view(request):
     data = _get_data()
     if request.method == "GET":
@@ -743,7 +791,7 @@ def modules_collection_view(request):
 
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def submodules_collection_view(request):
     data = _get_data()
     if request.method == "GET":
@@ -761,20 +809,20 @@ def submodules_collection_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def log_data_view(request):
     return Response({"data": {"data": [], "last_page": 1}})
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def projects_options_view(request):
     data = _get_data()
     return Response(data["projects"])
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def projects_collection_view(request):
     data = _get_data()
     payload = request.data or {}
@@ -789,14 +837,14 @@ def projects_collection_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_modules_options_view(request):
     data = _get_data()
     return Response(data["release_modules"])
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_modules_collection_view(request):
     data = _get_data()
     name = (request.data or {}).get("name") or "Module"
@@ -806,14 +854,14 @@ def release_modules_collection_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_submodules_options_view(request):
     data = _get_data()
     return Response(data["release_submodules"])
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_submodules_collection_view(request):
     data = _get_data()
     payload = request.data or {}
@@ -831,7 +879,7 @@ def release_submodules_collection_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_change_types_options_view(request):
     return Response(
         [
@@ -843,14 +891,14 @@ def release_change_types_options_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_pagination_view(request):
     data = _get_data()
     return Response({"data": data["release_notes"], "total": len(data["release_notes"])})
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_collection_view(request):
     data = _get_data()
     payload = request.data or {}
@@ -874,7 +922,7 @@ def release_notes_collection_view(request):
 
 
 @api_view(["GET", "POST", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_detail_view(request, note_id):
     data = _get_data()
     note_id = int(note_id)
@@ -901,7 +949,7 @@ def release_notes_detail_view(request, note_id):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_current_view(request):
     data = _get_data()
     if not data["release_notes"]:
@@ -910,7 +958,7 @@ def release_notes_current_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_current_version_view(request):
     data = _get_data()
     if not data["release_notes"]:
@@ -919,7 +967,7 @@ def release_notes_current_version_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_status_options_view(request):
     return Response(
         [
@@ -931,7 +979,7 @@ def release_notes_status_options_view(request):
 
 
 @api_view(["PUT"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_notes_update_status_view(request, note_id):
     data = _get_data()
     note_id = int(note_id)
@@ -943,7 +991,7 @@ def release_notes_update_status_view(request, note_id):
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPlatformAdmin])
 def release_sections_create_view(request, note_id):
     data = _get_data()
     note_id = int(note_id)

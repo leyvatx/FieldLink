@@ -2,6 +2,7 @@ import { Descriptions, Tag } from "antd";
 import Loader from "@components/Loader";
 import dayjs from "dayjs";
 import useUser from "@features/users/hooks/useUser";
+import { ROLE_LABELS } from "@utils/constants/roles";
 
 const UserDetailsForm = ({ id }) => {
   const { data: user, isLoading: loadingUser } = useUser(id);
@@ -29,7 +30,7 @@ const UserDetailsForm = ({ id }) => {
     },
     {
       label: "Rol",
-      children: <Tag>{user?.role || "N/A"}</Tag>,
+      children: <Tag>{ROLE_LABELS[user?.role] || user?.role || "N/A"}</Tag>,
     },
     {
       label: "Fecha de creación",

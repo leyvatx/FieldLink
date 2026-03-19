@@ -1,12 +1,18 @@
+import {
+  COMPANY_ROLE,
+  SUPERVISOR_ROLE,
+  TECHNICIAN_ROLE,
+} from "@utils/constants/roles";
+
 export const USER_ROLE_OPTIONS = [
-  { value: "OWNER", label: "Empresa" },
-  { value: "DISPATCHER", label: "Coordinador" },
-  { value: "TECHNICIAN", label: "Técnico" },
+  { value: COMPANY_ROLE, label: "Empresa" },
+  { value: SUPERVISOR_ROLE, label: "Supervisor" },
+  { value: TECHNICIAN_ROLE, label: "Técnico" },
 ];
 
 export const getAllowedUserRoleOptions = (currentUserRole) => {
-  if (currentUserRole === "DISPATCHER") {
-    return USER_ROLE_OPTIONS.filter((option) => option.value === "TECHNICIAN");
+  if (currentUserRole === SUPERVISOR_ROLE) {
+    return USER_ROLE_OPTIONS.filter((option) => option.value === TECHNICIAN_ROLE);
   }
 
   return USER_ROLE_OPTIONS;

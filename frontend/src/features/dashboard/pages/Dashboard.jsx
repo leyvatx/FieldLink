@@ -8,6 +8,7 @@ import { getWorkOrders } from "@api/workOrderService";
 import { getTechnicians } from "@api/userService";
 import { getTechnicianLocations } from "@api/trackingService";
 import queryClient from "@lib/queryClient";
+import { isSupervisor } from "@utils/constants/roles";
 
 const STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -61,7 +62,7 @@ const Dashboard = () => {
     search: "",
     priority: null,
   });
-  const isDispatcher = user?.role === "DISPATCHER";
+  const supervisorView = isSupervisor(user);
 
   const { data: workOrders = [], isLoading: loadingOrders } = useQuery({
     queryKey: ["work-orders"],
@@ -233,10 +234,10 @@ const Dashboard = () => {
 
   return (
     <PageLayout
-      title={isDispatcher ? "Centro de despacho" : "Resumen operativo"}
+      title={supervisorView ? "Centro de supervisión" : "Resumen operativo"}
       searchConfig={searchConfig}
       topbarOptions={
-        isDispatcher ? (
+        supervisorView ? (
           <Link to="/work-orders">
             <Button type="primary">Gestionar órdenes</Button>
           </Link>
