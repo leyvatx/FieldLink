@@ -4,14 +4,35 @@ pipeline {
   triggers { githubPush() }
 
   stages {
+    stage('Preflight') {
+      steps {
+        sh '''
+          set -euxo pipefail
+          command -v sudo
+          test -x /usr/local/bin/fieldlink-deploy.sh
+        '''
+      }
+    }
     stage('Deploy') {
       steps {
-        sh 'sudo /usr/local/bin/fieldlink-deploy.sh'
+        sh '''
+          set -euxo pipefail
+          sudo -n /usr/local/bin/fieldlink-deploy.sh
+        '''
       }
     }
     stage('Smoke test') {
       steps {
-        sh 'curl -fsS https://fieldlinkapp.com/ >/dev/null'
+        sh '''
+          set -euxo pipefail
+          for i in 1 2 3 4 5; do
+            if curl -fsS --max-time 10 https://fieldlinkapp.com/ >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+        '''
       }
     }
   }
