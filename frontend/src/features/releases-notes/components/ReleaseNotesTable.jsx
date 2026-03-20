@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Table, Tag } from "antd";
+import { Table, Tag } from "@/lib/antd-compat";
 import useReleaseNotesPagination from "@features/releases-notes/hooks/useReleaseNotesPagination";
 import useReleaseNotesContextMenu from "@features/releases-notes/hooks/useReleaseNotesContextMenu";
 import ReleaseNoteStatusTag from "@features/releases-notes/components/ReleaseNoteStatusTag";

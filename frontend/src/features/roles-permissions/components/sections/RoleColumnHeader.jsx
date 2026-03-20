@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Button, Dropdown } from "antd";
+import { Button, Dropdown } from "@/lib/antd-compat";
 import { PiDotsThreeVertical, PiPencilSimple, PiEyeSlash, PiTrash } from "react-icons/pi";
 import useRoleActions from "../../hooks/useRoleActions.jsx";
 

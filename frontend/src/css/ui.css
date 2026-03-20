@@ -1,0 +1,233 @@
+.ui-spinner {
+  animation: ui-spin 0.8s linear infinite;
+}
+
+@keyframes ui-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fd-select__menu-portal {
+  z-index: 1200;
+}
+
+.fd-select__menu {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-popover);
+  box-shadow: var(--ui-shadow-card);
+  backdrop-filter: blur(18px);
+}
+
+.fd-select__control {
+  min-height: 40px;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-input);
+  box-shadow: var(--ui-shadow-soft);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.fd-select__control--is-focused {
+  border-color: var(--ui-ring-strong);
+  box-shadow: 0 0 0 3px var(--ui-ring);
+}
+
+.fd-select__control--is-disabled {
+  background: var(--ui-secondary);
+  opacity: 0.7;
+}
+
+.fd-select__value-container {
+  padding: 2px 10px;
+  color: var(--sk-color-text);
+}
+
+.fd-select__placeholder {
+  color: var(--ui-muted-foreground);
+}
+
+.fd-select__single-value,
+.fd-select__input-container {
+  color: var(--sk-color-text);
+}
+
+.fd-select__indicators {
+  gap: 2px;
+  padding-right: 4px;
+}
+
+.fd-select__indicator {
+  color: var(--ui-muted-foreground);
+}
+
+.fd-select__indicator:hover {
+  color: var(--sk-color-text);
+}
+
+.fd-select__indicator-separator {
+  background: var(--ui-border);
+}
+
+.fd-select__menu-list {
+  padding: 8px;
+}
+
+.fd-select__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--sk-color-text);
+  cursor: pointer;
+}
+
+.fd-select__option--is-focused {
+  background: var(--ui-accent);
+}
+
+.fd-select__option--is-selected {
+  background: var(--sk-control-item-bg-active);
+  color: var(--sk-color-text);
+}
+
+.fd-select__multi-value {
+  border: 1px solid var(--ui-border);
+  border-radius: 999px;
+  background: var(--ui-secondary);
+}
+
+.fd-select__multi-value__label {
+  color: var(--sk-color-text);
+}
+
+.fd-select__multi-value__remove {
+  color: var(--ui-muted-foreground);
+}
+
+.fd-select__multi-value__remove:hover {
+  background: transparent;
+  color: var(--ui-destructive);
+}
+
+.fd-select__group {
+  padding-top: 6px;
+}
+
+.fd-select__group-heading {
+  padding: 4px 10px 6px;
+  color: var(--ui-muted-foreground);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fd-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.fd-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--ui-card) 90%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.fd-table tbody tr {
+  transition: background-color 0.16s ease;
+}
+
+.fd-table tbody tr:hover {
+  background: var(--row-hover-bg-color);
+}
+
+.fd-table th,
+.fd-table td {
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.fd-table-bordered th,
+.fd-table-bordered td {
+  border-right: 1px solid var(--ui-border);
+}
+
+.fd-table-bordered th:first-child,
+.fd-table-bordered td:first-child {
+  border-left: 1px solid var(--ui-border);
+}
+
+.fd-table-row-clickable {
+  cursor: pointer;
+}
+
+.fd-upload-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fd-upload-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  background: var(--ui-card);
+}
+
+[data-sonner-toast] {
+  border: 1px solid var(--ui-border) !important;
+  background: var(--ui-popover) !important;
+  color: var(--ui-popover-foreground) !important;
+  box-shadow: var(--ui-shadow-card) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-family: var(--ui-font-sans);
+}
+
+.location-picker-map {
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--ui-accent) 50%, transparent), transparent 62%),
+    var(--ui-secondary);
+}
+
+.location-picker-map.leaflet-container {
+  font-family: var(--ui-font-sans);
+}
+
+.location-picker-map .leaflet-control-zoom a,
+.location-picker-map .leaflet-control-attribution {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-card) 92%, transparent);
+  color: var(--ui-foreground);
+  backdrop-filter: blur(14px);
+}
+
+.location-picker-map .leaflet-control-attribution a {
+  color: var(--ui-foreground);
+}
+
+.location-picker-map .leaflet-bar {
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.location-picker-map .leaflet-bar a:hover {
+  background: var(--ui-accent);
+  color: var(--ui-foreground);
+}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import debounce from 'lodash/debounce';
-import { Select, Spin, Tag } from 'antd';
+import { Select, Spin, Tag } from '@/lib/antd-compat';
 
 const tagRender = (props) => {
   const { label, value, closable, onClose } = props;

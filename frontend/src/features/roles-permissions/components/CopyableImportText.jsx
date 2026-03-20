@@ -1,4 +1,4 @@
-import { Typography } from "antd";
+import { Typography } from "@/lib/antd-compat";
 import { PiCheckBold, PiCopyFill, PiDiscordLogoFill } from "react-icons/pi";
 
 const { Text } = Typography;

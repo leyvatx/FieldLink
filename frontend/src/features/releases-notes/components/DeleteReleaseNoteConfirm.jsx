@@ -1,4 +1,4 @@
-import { Button, Divider, Spin } from "antd";
+import { Button, Divider, Spin } from "@/lib/antd-compat";
 import { useDialog } from "@context/DialogProvider";
 import useDeleteReleaseNote from "@features/releases-notes/hooks/useDeleteReleaseNote";
 import ConfirmDescription from "@features/releases-notes/components/ConfirmDescription";

@@ -8,11 +8,11 @@ const AppLogo = ({
 }) => {
   const { isDark } = useTheme();
 
-  const primaryColor = isDark ? "#5AA7FF" : "#1D4ED8";
-  const accentColor = isDark ? "#8EDB5B" : "#52C41A";
-  const neutralColor = isDark ? "#F4F6FF" : "#1F2937";
-  const surfaceColor = isDark ? "#171237" : "#FFFFFF";
-  const haloColor = isDark ? "rgba(90, 167, 255, 0.16)" : "rgba(29, 78, 216, 0.12)";
+  const primaryColor = isDark ? "#93C5FD" : "#2563EB";
+  const accentColor = isDark ? "#5EEAD4" : "#0F766E";
+  const neutralColor = isDark ? "#F8FAFC" : "#0F172A";
+  const surfaceColor = isDark ? "#0B1120" : "#FFFFFF";
+  const strokeColor = isDark ? "rgba(248, 250, 252, 0.18)" : "rgba(15, 23, 42, 0.12)";
   const resolvedIconSize =
     iconSize || (showWordmark ? (compact ? 34 : 92) : compact ? 42 : 92);
 
@@ -41,58 +41,40 @@ const AppLogo = ({
           flexShrink: 0,
         }}
       >
-        <circle
-          cx="48"
-          cy="48"
-          r="42"
-          fill={haloColor}
+        <rect
+          x="14"
+          y="14"
+          width="68"
+          height="68"
+          rx="24"
+          fill={surfaceColor}
+          stroke={strokeColor}
+          strokeWidth="2"
         />
-        <g transform="rotate(-45 48 48)">
-          <rect
-            x="19"
-            y="25"
-            width="26"
-            height="46"
-            rx="13"
-            fill={primaryColor}
-          />
-          <rect
-            x="51"
-            y="25"
-            width="26"
-            height="46"
-            rx="13"
-            fill={accentColor}
-          />
-          <rect
-            x="34"
-            y="34"
-            width="28"
-            height="28"
-            rx="10"
-            fill={surfaceColor}
-          />
-          <rect
-            x="23"
-            y="29"
-            width="18"
-            height="38"
-            rx="9"
-            fill="none"
-            stroke="rgba(255,255,255,0.20)"
-            strokeWidth="1.4"
-          />
-          <rect
-            x="55"
-            y="29"
-            width="18"
-            height="38"
-            rx="9"
-            fill="none"
-            stroke="rgba(255,255,255,0.20)"
-            strokeWidth="1.4"
-          />
-        </g>
+        <path
+          d="M33 61c-8.837 0-16-7.163-16-16s7.163-16 16-16h10"
+          fill="none"
+          stroke={primaryColor}
+          strokeLinecap="round"
+          strokeWidth="11"
+        />
+        <path
+          d="M63 35c8.837 0 16 7.163 16 16s-7.163 16-16 16H53"
+          fill="none"
+          stroke={accentColor}
+          strokeLinecap="round"
+          strokeWidth="11"
+        />
+        <path
+          d="M41 48h14"
+          fill="none"
+          stroke={neutralColor}
+          strokeLinecap="round"
+          strokeOpacity="0.9"
+          strokeWidth="7"
+        />
+        <circle cx="33" cy="61" r="4.5" fill={primaryColor} />
+        <circle cx="63" cy="35" r="4.5" fill={accentColor} />
       </svg>
 
       {showWordmark ? (
@@ -100,7 +82,7 @@ const AppLogo = ({
           style={{
             display: "inline-flex",
             alignItems: "baseline",
-            fontFamily: "Heebo, sans-serif",
+            fontFamily: "Geist Variable, Geist, Heebo, sans-serif",
             fontWeight: 700,
             fontSize: compact ? 18 : 46,
             letterSpacing: compact ? "-0.02em" : "-0.045em",
@@ -109,7 +91,7 @@ const AppLogo = ({
           }}
         >
           <span style={{ color: neutralColor }}>Field</span>
-          <span style={{ color: accentColor }}>Link</span>
+          <span style={{ color: primaryColor }}>Link</span>
         </span>
       ) : null}
     </span>

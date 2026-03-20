@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, memo } from "react";
+import { forwardRef, useImperativeHandle } from "react";
 import Loader from "@components/Loader";
 import { useTheme } from "@context/ThemeProvider";
 import useProfileForm from "../hooks/useProfileForm";
@@ -33,30 +33,23 @@ const ProfileMain = forwardRef(({ isEditing }, ref) => {
   if (!profile) return <div className="text-center text-gray-500">No se pudo cargar el perfil.</div>;
 
   return (
-    <div
-      className="rounded-lg shadow-sm p-6"
-      style={{
-        backgroundColor: 'var(--sidebar-bg-color, white)',
-        color: 'var(--color, inherit)',
-        boxShadow: 'var(--card-box-shadow)',
-      }}
-    >
-      <ProfileHeaderSection 
-        profile={profile}
-      />
-      <div className="flex flex-col lg:flex-row gap-6">
-        <BasicInfoSection 
+    <div className="grid gap-6">
+      <ProfileHeaderSection profile={profile} />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+        <BasicInfoSection
           formData={formData}
           fieldErrors={fieldErrors}
           handleChange={handleChange}
           isEditing={isEditing}
         />
-        <AdditionalDetailsSection profile={profile} />
-        <PreferencesSection 
-          profile={profile}
-          mode={mode}
-          toggleTheme={toggleTheme}
-        />
+        <div className="grid gap-6">
+          <AdditionalDetailsSection profile={profile} />
+          <PreferencesSection
+            profile={profile}
+            mode={mode}
+            toggleTheme={toggleTheme}
+          />
+        </div>
       </div>
     </div>
   );

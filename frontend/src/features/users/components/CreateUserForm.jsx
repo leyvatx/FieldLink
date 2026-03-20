@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Button, Form, Input, Select, Space } from "antd";
+import { Button, Form, Input, Select, Space } from "@/lib/antd-compat";
 import { useMessage } from "@context/MessageProvider";
 import { useAuth } from "@context/AuthProvider";
 import useCreateUser from "@features/users/hooks/useCreateUser";

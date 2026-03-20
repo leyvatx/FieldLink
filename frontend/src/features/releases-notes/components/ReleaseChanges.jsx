@@ -1,4 +1,4 @@
-import { Empty } from "antd";
+import { Empty } from "@/lib/antd-compat";
 import ReleaseChange from "@features/releases-notes/components/ReleaseChange";
 
 const ReleaseChanges = ({ changes }) => {

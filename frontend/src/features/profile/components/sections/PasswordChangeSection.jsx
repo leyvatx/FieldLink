@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Form, Input, Alert, Divider } from "antd";
+import { Button, Form, Input, Alert, Divider } from "@/lib/antd-compat";
 import { useMessage } from "@context/MessageProvider";
 import { changePassword } from "@api/profileService";
 

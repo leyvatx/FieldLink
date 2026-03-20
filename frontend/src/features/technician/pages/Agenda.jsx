@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dayjs from "dayjs";
 import {
   Button,
   Card,
@@ -8,8 +9,10 @@ import {
   Input,
   InputNumber,
   Select,
+  Steps,
+  Tabs,
   Tag,
-} from "antd";
+} from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   PiCameraBold,
@@ -29,19 +32,19 @@ import {
 } from "@api/workOrderService";
 import { getTechnicianInventory } from "@api/inventoryService";
 import { createEvidence, createSignature } from "@api/evidenceService";
-import {
-  createUsedMaterial,
-  getUsedMaterials,
-} from "@api/materialApprovalService";
+import { createUsedMaterial, getUsedMaterials } from "@api/materialApprovalService";
 import { useMessage } from "@context/MessageProvider";
 import queryClient from "@lib/queryClient";
 import SignaturePad from "@features/technician/components/SignaturePad";
+import StaticLocationMap from "@/common/components/location/StaticLocationMap";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_OPTIONS = [
   { value: "ASSIGNED", label: "Asignada" },
   { value: "IN_TRANSIT", label: "En ruta" },
   { value: "IN_SERVICE", label: "En servicio" },
   { value: "COMPLETED", label: "Completada" },
+  { value: "CANCELLED", label: "Cancelada" },
 ];
 
 const STATUS_LABELS = {
@@ -62,17 +65,57 @@ const STATUS_COLORS = {
   CANCELLED: "red",
 };
 
+const MATERIAL_STATUS_LABELS = {
+  PENDING: "En revision",
+  APPROVED: "Aprobado",
+  REJECTED: "Rechazado",
+  ADJUSTED: "Ajustado",
+};
+
+const MATERIAL_STATUS_COLORS = {
+  PENDING: "gold",
+  APPROVED: "green",
+  REJECTED: "red",
+  ADJUSTED: "blue",
+};
+
 const INITIAL_SIGNATURE_DATA = {
   signer_name: "",
   signer_phone: "",
   signer_email: "",
 };
 
+const SERVICE_STEPS = [
+  { key: "assigned", title: "Revisa la orden" },
+  { key: "transit", title: "Ve al sitio" },
+  { key: "service", title: "Trabaja y documenta" },
+  { key: "complete", title: "Cierra el servicio" },
+];
+
+const TERMINAL_STATUSES = ["COMPLETED", "CANCELLED"];
+
+function getServiceStepIndex(status) {
+  if (status === "COMPLETED") return 3;
+  if (status === "IN_SERVICE") return 2;
+  if (status === "IN_TRANSIT") return 1;
+  return 0;
+}
+
+function formatMoment(value) {
+  if (!value) {
+    return "Sin fecha";
+  }
+
+  return dayjs(value).format("DD/MM/YYYY HH:mm");
+}
+
 const Agenda = () => {
   const { success, error } = useMessage();
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [filters, setFilters] = useState({
-    search: "",
+    customer: "",
+    address: "",
+    priority: "",
     status: null,
   });
   const [evidenceFiles, setEvidenceFiles] = useState([]);
@@ -208,7 +251,7 @@ const Agenda = () => {
   const materialMutation = useMutation({
     mutationFn: createUsedMaterial,
     onSuccess: () => {
-      success("Material registrado");
+      success("Material enviado a solicitudes");
       materialForm.resetFields();
       refreshWorkspace();
     },
@@ -225,15 +268,13 @@ const Agenda = () => {
       if (filters.status && record.status !== filters.status) {
         return false;
       }
-
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
+      if (!matchesText(record.customer_name, filters.customer)) {
+        return false;
       }
-
-      return [record.customer_name, record.service_location_address, record.priority]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
+      if (!matchesText(record.service_location_address, filters.address)) {
+        return false;
+      }
+      return matchesText(record.priority, filters.priority);
     });
   }, [filters, workOrders]);
 
@@ -277,13 +318,24 @@ const Agenda = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Buscar y filtrar agenda",
+      title: "Filtros de agenda",
+      description: "Busca por cliente, direccion, prioridad y estado sin mezclar todo en una sola lupa.",
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
-          placeholder: "Cliente, dirección o prioridad",
+          key: "customer",
+          label: "Cliente",
+          placeholder: "Nombre del cliente",
+        },
+        {
+          key: "address",
+          label: "Direccion",
+          placeholder: "Direccion del servicio",
+        },
+        {
+          key: "priority",
+          label: "Prioridad",
+          placeholder: "Urgente, alta o media",
         },
         {
           key: "status",
@@ -295,12 +347,13 @@ const Agenda = () => {
       onChange: (nextFilters) => setFilters((previous) => ({ ...previous, ...nextFilters })),
       onReset: () =>
         setFilters({
-          search: "",
+          customer: "",
+          address: "",
+          priority: "",
           status: null,
         }),
-      onRefresh: refreshWorkspace,
     }),
-    [filters, refreshWorkspace]
+    [filters]
   );
 
   const handleEvidenceSelection = (event) => {
@@ -314,6 +367,10 @@ const Agenda = () => {
   };
 
   const handleEvidenceUpload = () => {
+    if (!canCaptureEvidence) {
+      error("Solo puedes subir evidencia cuando la orden esta en servicio");
+      return;
+    }
     if (!selectedOrderId || !evidenceFiles.length) {
       error("Selecciona una orden y al menos una imagen");
       return;
@@ -326,6 +383,10 @@ const Agenda = () => {
   };
 
   const handleSignatureUpload = () => {
+    if (!canCaptureSignature) {
+      error("La firma solo se puede capturar mientras la orden esta en servicio");
+      return;
+    }
     if (!selectedOrderId || !signatureFile || !signatureData.signer_name.trim()) {
       error("Completa el nombre y la firma del cliente");
       return;
@@ -340,6 +401,451 @@ const Agenda = () => {
     });
   };
 
+  const handleSignaturePadChange = useCallback(({ file }) => {
+    setSignatureFile(file);
+  }, []);
+
+  const selectedLatitude =
+    selectedWorkOrder?.customer_latitude != null
+      ? Number(selectedWorkOrder.customer_latitude)
+      : null;
+  const selectedLongitude =
+    selectedWorkOrder?.customer_longitude != null
+      ? Number(selectedWorkOrder.customer_longitude)
+      : null;
+  const hasOrderLocation = selectedLatitude != null && selectedLongitude != null;
+  const mapUrl = hasOrderLocation
+    ? `https://www.openstreetmap.org/?mlat=${selectedLatitude}&mlon=${selectedLongitude}#map=16/${selectedLatitude}/${selectedLongitude}`
+    : null;
+  const selectedStatus = selectedWorkOrder?.status ?? null;
+  const isClosedOrder = TERMINAL_STATUSES.includes(selectedStatus);
+  const canCaptureEvidence = selectedStatus === "IN_SERVICE";
+  const canCaptureSignature =
+    selectedStatus === "IN_SERVICE" && !selectedWorkOrder?.signature;
+  const canRequestMaterials = selectedStatus === "IN_SERVICE";
+  const readOnlyOrderMessage =
+    selectedStatus === "COMPLETED"
+      ? "La orden ya esta completada. Solo puedes consultar lo que ya quedo guardado."
+      : selectedStatus === "CANCELLED"
+        ? "La orden fue cancelada. Ya no admite evidencia, firma ni solicitudes."
+        : "Estas acciones se habilitan cuando marques llegada y la orden pase a En servicio.";
+
+  const overviewTab = selectedWorkOrder ? (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+      <Card className="rounded-[28px]">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="font-semibold">Resumen del servicio</div>
+            <div className="text-xs ui-text-muted">
+              Datos operativos y checklist para saber exactamente en que etapa vas.
+            </div>
+          </div>
+          <Tag color={STATUS_COLORS[selectedWorkOrder.status] || "default"}>
+            {STATUS_LABELS[selectedWorkOrder.status] || selectedWorkOrder.status}
+          </Tag>
+        </div>
+
+        <Steps current={getServiceStepIndex(selectedWorkOrder.status)} items={SERVICE_STEPS} />
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl ui-bg-soft p-4">
+            <div className="text-xs ui-text-muted">Telefono</div>
+            <div className="mt-1 font-medium">
+              {selectedWorkOrder.customer_phone || "Sin dato"}
+            </div>
+          </div>
+          <div className="rounded-2xl ui-bg-soft p-4">
+            <div className="text-xs ui-text-muted">Firma</div>
+            <div className="mt-1 font-medium">
+              {selectedWorkOrder.signature ? "Lista" : "Pendiente"}
+            </div>
+          </div>
+          <div className="rounded-2xl ui-bg-soft p-4">
+            <div className="text-xs ui-text-muted">Evidencias</div>
+            <div className="mt-1 font-medium">
+              {selectedWorkOrder.evidences?.length || 0}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-[24px] border ui-border-subtle p-4">
+          <div className="mb-2 font-semibold">Notas del trabajo</div>
+          <div className="text-sm text-[var(--ui-muted-foreground)]">
+            {selectedWorkOrder.notes || "Sin notas registradas"}
+          </div>
+        </div>
+      </Card>
+
+      <Card className="rounded-[28px]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">Mapa del servicio</div>
+            <div className="text-xs ui-text-muted">
+              La ubicacion queda visible para que no trabajes a ciegas.
+            </div>
+          </div>
+          {mapUrl ? (
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium text-[var(--ui-foreground)] underline-offset-4 transition hover:underline"
+            >
+              Abrir mapa
+            </a>
+          ) : null}
+        </div>
+
+        {hasOrderLocation ? (
+          <div className="overflow-hidden rounded-[24px] border border-[var(--ui-border)]">
+            <StaticLocationMap
+              latitude={selectedLatitude}
+              longitude={selectedLongitude}
+              address={selectedWorkOrder.service_location_address}
+              className="h-[320px]"
+            />
+          </div>
+        ) : (
+          <Empty description="Esta orden no tiene coordenadas para mostrar en el mapa." />
+        )}
+
+        <div className="mt-4 rounded-2xl border border-dashed border-[var(--ui-border)] bg-[var(--ui-secondary)] px-4 py-3 text-sm text-[var(--ui-muted-foreground)]">
+          {selectedWorkOrder.service_location_address || "Sin direccion registrada"}
+        </div>
+      </Card>
+    </div>
+  ) : (
+    <Card className="rounded-[28px]">
+      <Empty description="Selecciona una orden para ver el flujo del servicio." />
+    </Card>
+  );
+
+  const evidenceTab = selectedWorkOrder ? (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)]">
+      <Card className="rounded-[28px]">
+        <div className="mb-4 flex items-center gap-2">
+          <PiCameraBold size={18} />
+          <div className="font-semibold">
+            {canCaptureEvidence ? "Cargar evidencia nueva" : "Captura de evidencia"}
+          </div>
+        </div>
+
+        <div className="grid gap-4">
+          {canCaptureEvidence ? (
+            <>
+              <input
+                ref={evidenceInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleEvidenceSelection}
+              />
+
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => evidenceInputRef.current?.click()}>
+                  Seleccionar fotos
+                </Button>
+                <Button onClick={clearEvidenceSelection} disabled={!evidenceFiles.length}>
+                  Limpiar seleccion
+                </Button>
+                <Button
+                  type="primary"
+                  loading={evidenceMutation.isPending}
+                  disabled={!evidenceFiles.length}
+                  onClick={handleEvidenceUpload}
+                >
+                  Subir evidencia
+                </Button>
+              </div>
+
+              {evidenceFiles.length ? (
+                <div className="grid gap-3">
+                  <div className="text-xs ui-text-muted">
+                    {evidenceFiles.length} archivo(s) listos para subir
+                  </div>
+                  <Image.PreviewGroup>
+                    <div className="grid grid-cols-2 gap-3">
+                      {evidenceFiles.map((entry) => (
+                        <Image
+                          key={entry.id}
+                          src={entry.previewUrl}
+                          alt={entry.file.name}
+                          className="rounded-xl"
+                        />
+                      ))}
+                    </div>
+                  </Image.PreviewGroup>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-[var(--ui-border)] px-4 py-5 text-sm text-[var(--ui-muted-foreground)]">
+                  Selecciona fotos para enviarlas al expediente del trabajo.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-2xl border ui-border-subtle bg-[var(--ui-secondary)] px-4 py-4 text-sm text-[var(--ui-muted-foreground)]">
+              {readOnlyOrderMessage}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <Card className="rounded-[28px]">
+        <div className="mb-4 font-semibold">Evidencia ya guardada</div>
+        {selectedWorkOrder.evidences?.length ? (
+          <Image.PreviewGroup>
+            <div className="grid grid-cols-2 gap-3">
+              {selectedWorkOrder.evidences.map((photo) => (
+                <Image
+                  key={photo.id}
+                  src={photo.file}
+                  alt="Evidencia guardada"
+                  className="rounded-xl"
+                />
+              ))}
+            </div>
+          </Image.PreviewGroup>
+        ) : (
+          <Empty description="Aun no hay evidencias guardadas para esta orden." />
+        )}
+      </Card>
+    </div>
+  ) : (
+    <Card className="rounded-[28px]">
+      <Empty description="Selecciona una orden para gestionar evidencia." />
+    </Card>
+  );
+
+  const signatureTab = selectedWorkOrder ? (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)]">
+      <Card className="rounded-[28px]">
+        <div className="mb-4 flex items-center gap-2">
+          <PiPenNibStraightBold size={18} />
+          <div className="font-semibold">Firma del cliente</div>
+        </div>
+
+        {selectedWorkOrder.signature ? (
+          <div className="grid gap-3">
+            <div className="text-sm">
+              Firmado por <strong>{selectedWorkOrder.signature.signer_name}</strong>
+            </div>
+            <Image
+              src={selectedWorkOrder.signature.image}
+              alt="Firma guardada"
+              className="rounded-xl"
+            />
+          </div>
+        ) : !canCaptureSignature ? (
+          <div className="rounded-2xl border ui-border-subtle bg-[var(--ui-secondary)] px-4 py-4 text-sm text-[var(--ui-muted-foreground)]">
+            {readOnlyOrderMessage}
+          </div>
+        ) : (
+          <div className="grid max-w-2xl gap-3 md:grid-cols-2">
+            <Input
+              className="md:col-span-2"
+              placeholder="Nombre de quien firma"
+              value={signatureData.signer_name}
+              onChange={(event) =>
+                setSignatureData((previous) => ({
+                  ...previous,
+                  signer_name: event.target.value,
+                }))
+              }
+            />
+            <Input
+              placeholder="Telefono"
+              value={signatureData.signer_phone}
+              onChange={(event) =>
+                setSignatureData((previous) => ({
+                  ...previous,
+                  signer_phone: event.target.value,
+                }))
+              }
+            />
+            <Input
+              placeholder="Correo"
+              value={signatureData.signer_email}
+              onChange={(event) =>
+                setSignatureData((previous) => ({
+                  ...previous,
+                  signer_email: event.target.value,
+                }))
+              }
+            />
+            <div className="md:col-span-2">
+              <SignaturePad
+                resetToken={signatureResetToken}
+                onChange={handleSignaturePadChange}
+              />
+            </div>
+            <Button
+              className="md:col-span-2"
+              type="primary"
+              loading={signatureMutation.isPending}
+              disabled={!signatureFile}
+              onClick={handleSignatureUpload}
+            >
+              Guardar firma
+            </Button>
+          </div>
+        )}
+      </Card>
+
+      <Card className="rounded-[28px]">
+        <div className="mb-4 font-semibold">Checklist antes de cerrar</div>
+        <div className="grid gap-3 text-sm text-[var(--ui-muted-foreground)]">
+          <div className="rounded-2xl border ui-border-subtle p-4">
+            1. Confirma que el cliente ya reviso el trabajo terminado.
+          </div>
+          <div className="rounded-2xl border ui-border-subtle p-4">
+            2. Completa nombre, telefono o correo para dejar trazabilidad.
+          </div>
+          <div className="rounded-2xl border ui-border-subtle p-4">
+            3. Dibuja una firma continua y guardala antes de cerrar la orden.
+          </div>
+        </div>
+      </Card>
+    </div>
+  ) : (
+    <Card className="rounded-[28px]">
+      <Empty description="Selecciona una orden para capturar la firma." />
+    </Card>
+  );
+
+  const materialsTab = (
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+      <Card className="rounded-[28px]">
+        <div className="mb-4 flex items-center gap-2">
+          <PiPackageBold size={18} />
+          <div>
+            <div className="font-semibold">Solicitar revision de material</div>
+            <div className="text-xs ui-text-muted">
+              Cada consumo se descuenta de tu inventario y queda visible en solicitudes.
+            </div>
+          </div>
+        </div>
+
+        {selectedWorkOrder ? (
+          canRequestMaterials ? (
+            <Form
+              form={materialForm}
+              layout="vertical"
+              onFinish={(values) =>
+                materialMutation.mutate({
+                  work_order: selectedOrderId,
+                  material: values.material,
+                  quantity_used: Number(values.quantity_used),
+                })
+              }
+            >
+              <Form.Item
+                label="Material"
+                name="material"
+                rules={[{ required: true, message: "Selecciona un material" }]}
+              >
+                <Select
+                  options={materialOptions}
+                  placeholder="Material de tu inventario"
+                />
+              </Form.Item>
+              <Form.Item
+                label="Cantidad"
+                name="quantity_used"
+                rules={[{ required: true, message: "Ingresa una cantidad" }]}
+              >
+                <InputNumber className="w-full" min={1} />
+              </Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={materialMutation.isPending}
+                block
+                disabled={!materialOptions.length}
+              >
+                Enviar a solicitudes
+              </Button>
+            </Form>
+          ) : (
+            <div className="rounded-2xl border ui-border-subtle bg-[var(--ui-secondary)] px-4 py-4 text-sm text-[var(--ui-muted-foreground)]">
+              {readOnlyOrderMessage}
+            </div>
+          )
+        ) : (
+          <Empty description="Selecciona una orden para registrar material." />
+        )}
+      </Card>
+
+      <div className="grid gap-6">
+        <Card className="rounded-[28px]">
+          <div className="mb-4 font-semibold">Solicitudes enviadas</div>
+          {selectedWorkOrder ? (
+            usedMaterials.length ? (
+              <div className="grid gap-3">
+                {usedMaterials.map((item) => {
+                  const status = item.approval_status || "PENDING";
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border ui-border-subtle p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="font-medium">{item.material_name}</div>
+                          <div className="text-sm ui-text-muted">
+                            Cantidad: {item.quantity_used} {item.material_unit || ""}
+                          </div>
+                        </div>
+                        <Tag color={MATERIAL_STATUS_COLORS[status] || "default"}>
+                          {MATERIAL_STATUS_LABELS[status] || status}
+                        </Tag>
+                      </div>
+                      <div className="mt-3 text-xs ui-text-muted">
+                        Enviado: {formatMoment(item.created_at)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Empty description="Todavia no has enviado materiales a revision en esta orden." />
+            )
+          ) : (
+            <Empty description="Selecciona una orden para ver sus solicitudes." />
+          )}
+        </Card>
+
+        <Card className="rounded-[28px]">
+          <div className="mb-4 font-semibold">Mi inventario disponible</div>
+          <div className="grid gap-3">
+            {technicianInventory.length ? (
+              technicianInventory.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border ui-border-subtle p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{item.material_name}</div>
+                      <div className="text-xs ui-text-muted">
+                        Unidad: {item.material_unit}
+                      </div>
+                    </div>
+                    <Tag color={item.current_quantity > 0 ? "green" : "red"}>
+                      {item.current_quantity}
+                    </Tag>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <Empty description="Sin inventario asignado" />
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+
   return (
     <PageLayout
       title="Mi agenda"
@@ -347,52 +853,64 @@ const Agenda = () => {
     >
       <div className="grid gap-6">
         <div className="grid gap-4 md:grid-cols-4">
-          <Card className="rounded-2xl">
+          <Card className="rounded-[28px]">
             <div className="text-sm ui-text-muted">Por iniciar</div>
             <div className="mt-2 text-3xl font-semibold">{metrics.assigned}</div>
           </Card>
-          <Card className="rounded-2xl">
+          <Card className="rounded-[28px]">
             <div className="text-sm ui-text-muted">En ruta</div>
             <div className="mt-2 text-3xl font-semibold">{metrics.inTransit}</div>
           </Card>
-          <Card className="rounded-2xl">
+          <Card className="rounded-[28px]">
             <div className="text-sm ui-text-muted">En servicio</div>
             <div className="mt-2 text-3xl font-semibold">{metrics.inService}</div>
           </Card>
-          <Card className="rounded-2xl">
+          <Card className="rounded-[28px]">
             <div className="text-sm ui-text-muted">Completadas</div>
             <div className="mt-2 text-3xl font-semibold">{metrics.completed}</div>
           </Card>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
-          <Card className="rounded-2xl">
-            <div className="mb-4">
-              <div className="font-semibold">Órdenes asignadas</div>
-              <div className="text-xs ui-text-muted">
-                Selecciona una orden para habilitar evidencia, firma y materiales.
+        <div className="grid gap-6 xl:grid-cols-[23rem_minmax(0,1fr)] xl:items-start">
+          <Card className="self-start rounded-[28px]">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold">Ordenes asignadas</div>
+                <div className="text-xs ui-text-muted">
+                  Selecciona una orden y sigue el flujo por pasos.
+                </div>
               </div>
+              {selectedOrderId ? (
+                <Button size="small" onClick={() => setSelectedOrderId(null)}>
+                  Quitar seleccion
+                </Button>
+              ) : null}
             </div>
             <div className="grid gap-3">
-              {!filteredOrders.length && !isLoading && (
-                <Empty description="Sin órdenes asignadas" />
-              )}
+              {!filteredOrders.length && !isLoading ? (
+                <Empty description="Sin ordenes asignadas" />
+              ) : null}
+
               {filteredOrders.map((order) => (
                 <button
                   key={order.id}
                   type="button"
-                  className={`rounded-2xl border p-4 text-left transition ${
+                  className={`rounded-[24px] border p-4 text-left transition ${
                     selectedOrderId === order.id
                       ? "ui-border-default ui-bg-elevated"
                       : "ui-border-subtle ui-bg-surface"
                   }`}
-                  onClick={() => setSelectedOrderId(order.id)}
+                  onClick={() =>
+                    setSelectedOrderId((currentValue) =>
+                      currentValue === order.id ? null : order.id
+                    )
+                  }
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="font-semibold">{order.customer_name}</div>
-                      <div className="text-xs ui-text-muted">
-                        {order.service_location_address || "Sin dirección"}
+                      <div className="mt-1 text-xs ui-text-muted">
+                        {order.service_location_address || "Sin direccion"}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -407,23 +925,32 @@ const Agenda = () => {
             </div>
           </Card>
 
-          <div className="grid gap-6">
-            <Card className="rounded-2xl" loading={loadingDetail}>
+          <div className="min-w-0 grid gap-6">
+            <Card className="rounded-[28px]" loading={loadingDetail}>
               {selectedWorkOrder ? (
-                <div className="grid gap-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="grid gap-6">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <div className="text-xs ui-text-muted">Orden seleccionada</div>
-                      <div className="text-xl font-semibold">
+                      <div className="text-xs ui-text-muted">Servicio seleccionado</div>
+                      <div className="text-2xl font-semibold text-[var(--ui-foreground)]">
                         {selectedWorkOrder.customer_name}
                       </div>
                       <div className="mt-1 text-sm ui-text-muted">
-                        {selectedWorkOrder.service_location_address || "Sin dirección"}
+                        {selectedWorkOrder.service_location_address || "Sin direccion"}
                       </div>
                     </div>
-                    <Tag color={STATUS_COLORS[selectedWorkOrder.status] || "default"}>
-                      {STATUS_LABELS[selectedWorkOrder.status] || selectedWorkOrder.status}
-                    </Tag>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="small" onClick={() => setSelectedOrderId(null)}>
+                        Quitar seleccion
+                      </Button>
+                      {isClosedOrder ? (
+                        <Tag color="default">Solo lectura</Tag>
+                      ) : null}
+                      <Tag color={STATUS_COLORS[selectedWorkOrder.status] || "default"}>
+                        {STATUS_LABELS[selectedWorkOrder.status] || selectedWorkOrder.status}
+                      </Tag>
+                      <Tag>{selectedWorkOrder.priority}</Tag>
+                    </div>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-3">
@@ -453,317 +980,37 @@ const Agenda = () => {
                       Completar servicio
                     </Button>
                   </div>
-
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div className="rounded-2xl ui-bg-soft p-4">
-                      <div className="text-xs ui-text-muted">Teléfono</div>
-                      <div className="mt-1 font-medium">
-                        {selectedWorkOrder.customer_phone || "Sin dato"}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl ui-bg-soft p-4">
-                      <div className="text-xs ui-text-muted">Firma requerida</div>
-                      <div className="mt-1 font-medium">
-                        {selectedWorkOrder.signature ? "Lista" : "Pendiente"}
-                      </div>
-                    </div>
-                    <div className="rounded-2xl ui-bg-soft p-4">
-                      <div className="text-xs ui-text-muted">Fotos cargadas</div>
-                      <div className="mt-1 font-medium">
-                        {selectedWorkOrder.evidences?.length || 0}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <div className="font-semibold">Notas del trabajo</div>
-                    <div className="rounded-2xl border ui-border-subtle p-4 text-sm">
-                      {selectedWorkOrder.notes || "Sin notas registradas"}
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <Empty description="Selecciona una orden para comenzar" />
               )}
             </Card>
 
-            {selectedWorkOrder ? (
-              <>
-                <div className="grid gap-6 xl:grid-cols-2">
-                  <Card className="rounded-2xl">
-                    <div className="mb-4 flex items-center gap-2">
-                      <PiCameraBold size={18} />
-                      <div className="font-semibold">Evidencia del servicio</div>
-                    </div>
-                    <input
-                      ref={evidenceInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handleEvidenceSelection}
-                    />
-                    <div className="grid gap-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button onClick={() => evidenceInputRef.current?.click()}>
-                          Seleccionar fotos
-                        </Button>
-                        <Button
-                          onClick={clearEvidenceSelection}
-                          disabled={!evidenceFiles.length}
-                        >
-                          Limpiar selección
-                        </Button>
-                        <Button
-                          type="primary"
-                          loading={evidenceMutation.isPending}
-                          disabled={!evidenceFiles.length}
-                          onClick={handleEvidenceUpload}
-                        >
-                          Subir evidencia
-                        </Button>
-                      </div>
-
-                      {evidenceFiles.length ? (
-                        <div className="grid gap-3">
-                          <div className="text-xs ui-text-muted">
-                            {evidenceFiles.length} archivo(s) listos para subir
-                          </div>
-                          <Image.PreviewGroup>
-                            <div className="grid grid-cols-2 gap-3">
-                              {evidenceFiles.map((entry) => (
-                                <Image
-                                  key={entry.id}
-                                  src={entry.previewUrl}
-                                  alt={entry.file.name}
-                                  className="rounded-xl"
-                                />
-                              ))}
-                            </div>
-                          </Image.PreviewGroup>
-                        </div>
-                      ) : (
-                        <div className="text-sm ui-text-muted">
-                          Aún no has seleccionado fotos nuevas para esta orden.
-                        </div>
-                      )}
-
-                      {selectedWorkOrder.evidences?.length ? (
-                        <div className="grid gap-3">
-                          <div className="text-xs ui-text-muted">
-                            Evidencia ya guardada
-                          </div>
-                          <Image.PreviewGroup>
-                            <div className="grid grid-cols-2 gap-3">
-                              {selectedWorkOrder.evidences.map((photo) => (
-                                <Image
-                                  key={photo.id}
-                                  src={photo.file}
-                                  alt="Evidencia guardada"
-                                  className="rounded-xl"
-                                />
-                              ))}
-                            </div>
-                          </Image.PreviewGroup>
-                        </div>
-                      ) : null}
-                    </div>
-                  </Card>
-
-                  <Card className="rounded-2xl">
-                    <div className="mb-4 flex items-center gap-2">
-                      <PiPenNibStraightBold size={18} />
-                      <div className="font-semibold">Firma del cliente</div>
-                    </div>
-                    {selectedWorkOrder.signature ? (
-                      <div className="grid gap-3">
-                        <div className="text-sm">
-                          Firmado por <strong>{selectedWorkOrder.signature.signer_name}</strong>
-                        </div>
-                        <Image
-                          src={selectedWorkOrder.signature.image}
-                          alt="Firma guardada"
-                          className="rounded-xl"
-                        />
-                      </div>
-                    ) : (
-                      <div className="grid gap-3">
-                        <Input
-                          placeholder="Nombre de quien firma"
-                          value={signatureData.signer_name}
-                          onChange={(event) =>
-                            setSignatureData((previous) => ({
-                              ...previous,
-                              signer_name: event.target.value,
-                            }))
-                          }
-                        />
-                        <Input
-                          placeholder="Teléfono"
-                          value={signatureData.signer_phone}
-                          onChange={(event) =>
-                            setSignatureData((previous) => ({
-                              ...previous,
-                              signer_phone: event.target.value,
-                            }))
-                          }
-                        />
-                        <Input
-                          placeholder="Correo"
-                          value={signatureData.signer_email}
-                          onChange={(event) =>
-                            setSignatureData((previous) => ({
-                              ...previous,
-                              signer_email: event.target.value,
-                            }))
-                          }
-                        />
-                        <SignaturePad
-                          resetToken={signatureResetToken}
-                          onChange={({ file }) => setSignatureFile(file)}
-                        />
-                        <Button
-                          type="primary"
-                          loading={signatureMutation.isPending}
-                          disabled={!signatureFile}
-                          onClick={handleSignatureUpload}
-                        >
-                          Guardar firma
-                        </Button>
-                      </div>
-                    )}
-                  </Card>
-                </div>
-
-                <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                  <Card className="rounded-2xl">
-                    <div className="mb-4 flex items-center gap-2">
-                      <PiPackageBold size={18} />
-                      <div className="font-semibold">Registrar material usado</div>
-                    </div>
-                    <Form
-                      form={materialForm}
-                      layout="vertical"
-                      onFinish={(values) =>
-                        materialMutation.mutate({
-                          work_order: selectedOrderId,
-                          material: values.material,
-                          quantity_used: Number(values.quantity_used),
-                        })
-                      }
-                    >
-                      <Form.Item
-                        label="Material"
-                        name="material"
-                        rules={[{ required: true, message: "Selecciona un material" }]}
-                      >
-                        <Select
-                          options={materialOptions}
-                          placeholder="Material de tu inventario"
-                        />
-                      </Form.Item>
-                      <Form.Item
-                        label="Cantidad"
-                        name="quantity_used"
-                        rules={[{ required: true, message: "Ingresa una cantidad" }]}
-                      >
-                        <InputNumber className="w-full" min={1} />
-                      </Form.Item>
-                      <Button
-                        type="primary"
-                        htmlType="submit"
-                        loading={materialMutation.isPending}
-                        block
-                      >
-                        Registrar consumo
-                      </Button>
-                    </Form>
-
-                    <div className="mt-5 grid gap-2">
-                      <div className="font-semibold">Materiales ya registrados</div>
-                      {usedMaterials.length ? (
-                        usedMaterials.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-xl border ui-border-subtle p-3 text-sm"
-                          >
-                            <div className="font-medium">{item.material_name}</div>
-                            <div className="ui-text-muted">
-                              Cantidad usada: {item.quantity_used}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-sm ui-text-muted">
-                          Aún no has registrado materiales en esta orden.
-                        </div>
-                      )}
-                    </div>
-                  </Card>
-
-                  <Card className="rounded-2xl">
-                    <div className="mb-4 font-semibold">Mi inventario disponible</div>
-                    <div className="grid gap-3">
-                      {technicianInventory.length ? (
-                        technicianInventory.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-xl border ui-border-subtle p-3"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <div className="font-medium">{item.material_name}</div>
-                                <div className="text-xs ui-text-muted">
-                                  Unidad: {item.material_unit}
-                                </div>
-                              </div>
-                              <Tag color={item.current_quantity > 0 ? "green" : "red"}>
-                                {item.current_quantity}
-                              </Tag>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <Empty description="Sin inventario asignado" />
-                      )}
-                    </div>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <Card className="rounded-2xl">
-                  <Empty description="Selecciona una orden para cargar evidencia, firma y materiales" />
-                </Card>
-                <Card className="rounded-2xl">
-                  <div className="mb-4 font-semibold">Mi inventario disponible</div>
-                  <div className="grid gap-3">
-                    {technicianInventory.length ? (
-                      technicianInventory.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-xl border ui-border-subtle p-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <div className="font-medium">{item.material_name}</div>
-                              <div className="text-xs ui-text-muted">
-                                Unidad: {item.material_unit}
-                              </div>
-                            </div>
-                            <Tag color={item.current_quantity > 0 ? "green" : "red"}>
-                              {item.current_quantity}
-                            </Tag>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <Empty description="Sin inventario asignado" />
-                    )}
-                  </div>
-                </Card>
-              </div>
-            )}
+            <Tabs
+              defaultActiveKey="overview"
+              items={[
+                {
+                  key: "overview",
+                  label: "Servicio",
+                  children: overviewTab,
+                },
+                {
+                  key: "evidence",
+                  label: "Evidencia",
+                  children: evidenceTab,
+                },
+                {
+                  key: "signature",
+                  label: "Firma",
+                  children: signatureTab,
+                },
+                {
+                  key: "materials",
+                  label: "Solicitudes",
+                  children: materialsTab,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>

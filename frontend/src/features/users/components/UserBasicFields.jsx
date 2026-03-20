@@ -1,4 +1,4 @@
-import { Form, Input, Select } from "antd";
+import { Form, Input, Select } from "@/lib/antd-compat";
 import {
   USER_VALIDATION_RULES,
   CHARACTER_LIMITS,

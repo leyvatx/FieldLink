@@ -1,4 +1,4 @@
-import { Button, Divider } from "antd";
+import { Button, Divider } from "@/lib/antd-compat";
 import BaseSelect from "@components/BaseSelect";
 import { useDialog } from "@context/DialogProvider";
 import useReleaseSubmodulesOptions from "@features/releases-notes/hooks/useReleaseSubmodulesOptions";

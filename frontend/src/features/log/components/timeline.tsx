@@ -3,7 +3,7 @@ import { ILog } from '../types';
 import TimelineItem from './timeline-item';
 import classNames from 'classnames';
 import { getMovements } from '@api/logService';
-import { Divider, Empty, Spin } from 'antd';
+import { Divider, Empty, Spin } from '@/lib/antd-compat';
 import { LogContext } from '../contexts/log-context';
 import './timeline.css';
 

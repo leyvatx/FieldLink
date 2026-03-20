@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Image, Modal, Table, Tag } from "antd";
+import { Image, Modal, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -12,6 +12,7 @@ import {
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useDialog } from "@context/DialogProvider";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_COLORS = {
   PENDING: "default",
@@ -28,7 +29,8 @@ const MaterialApprovals = () => {
   const [reason, setReason] = useState("");
   const [adjustQty, setAdjustQty] = useState(0);
   const [filters, setFilters] = useState({
-    search: "",
+    order: "",
+    material: "",
     status: null,
   });
 
@@ -59,7 +61,7 @@ const MaterialApprovals = () => {
       success("Revisión actualizada");
       queryClient.invalidateQueries({ queryKey: ["used-materials"] });
     },
-    onError: () => error("No se pudo actualizar la evidencia"),
+    onError: () => error("No se pudo actualizar la solicitud"),
   });
 
   const openApprovalContextMenu = useCallback(
@@ -69,13 +71,13 @@ const MaterialApprovals = () => {
         items: [
           {
             key: "approve",
-            label: "Aprobar evidencia",
+            label: "Aprobar material",
             disabled: record.approval_status === "APPROVED",
             onClick: () => approvalMutation.mutate({ action: "approve", record }),
           },
           {
             key: "reject",
-            label: "Rechazar evidencia",
+            label: "Rechazar material",
             danger: true,
             disabled: record.approval_status === "REJECTED",
             onClick: () => setRejecting(record),
@@ -97,14 +99,10 @@ const MaterialApprovals = () => {
         return false;
       }
 
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
+      if (!matchesText(record.work_order_id, filters.order)) {
+        return false;
       }
-
-      return [record.work_order_id, record.material_name, record.approval_status]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(search));
+      return matchesText(record.material_name, filters.material);
     });
   }, [filters, usedMaterials]);
 
@@ -135,13 +133,18 @@ const MaterialApprovals = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Buscar y filtrar evidencias",
+      title: "Solicitudes de material",
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
-          placeholder: "Orden, material o estado",
+          key: "order",
+          label: "Orden",
+          placeholder: "ID de la orden",
+        },
+        {
+          key: "material",
+          label: "Material",
+          placeholder: "Nombre del material",
         },
         {
           key: "status",
@@ -158,7 +161,8 @@ const MaterialApprovals = () => {
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
       onReset: () =>
         setFilters({
-          search: "",
+          order: "",
+          material: "",
           status: null,
         }),
       onRefresh: () => queryClient.invalidateQueries({ queryKey: ["used-materials"] }),
@@ -173,7 +177,7 @@ const MaterialApprovals = () => {
     >
       <div className="grid gap-3">
         <span className="text-xs ui-text-muted">
-          Clic derecho en una fila para aprobar, rechazar o ajustar el material usado.
+          Clic derecho en una fila para aprobar, rechazar o ajustar una solicitud de material.
         </span>
         <Table
           rowKey="id"

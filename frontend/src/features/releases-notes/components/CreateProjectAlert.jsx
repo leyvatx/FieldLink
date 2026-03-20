@@ -1,4 +1,4 @@
-import { Alert, Button } from "antd";
+import { Alert, Button } from "@/lib/antd-compat";
 import { useDialog } from "@context/DialogProvider";
 import CreateProjectForm from "@features/releases-notes/components/CreateProjectForm";
 

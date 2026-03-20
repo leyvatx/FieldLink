@@ -1,17 +1,21 @@
 import { useCallback, useMemo, useState } from "react";
-import { Card, Table, Tag } from "antd";
+import { Card, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { getCompanies, updateCompany } from "@api/companyService";
 import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
 import queryClient from "@lib/queryClient";
+import { matchesText } from "@/lib/filtering";
 
 const Companies = () => {
   const { success, error } = useMessage();
   const { openContextMenu } = useDialog();
   const [filters, setFilters] = useState({
-    search: "",
+    name: "",
+    slug: "",
+    email: "",
+    city: "",
     status: null,
     plan: null,
   });
@@ -47,14 +51,16 @@ const Companies = () => {
         return false;
       }
 
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
+      if (!matchesText(company.name, filters.name)) {
+        return false;
       }
-
-      return [company.name, company.slug, company.email, company.city, company.country]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
+      if (!matchesText(company.slug, filters.slug)) {
+        return false;
+      }
+      if (!matchesText(company.email, filters.email)) {
+        return false;
+      }
+      return matchesText(`${company.city || ""} ${company.country || ""}`, filters.city);
     });
   }, [companies, filters]);
 
@@ -176,9 +182,24 @@ const Companies = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
-          placeholder: "Empresa, slug, correo o ciudad",
+          key: "name",
+          label: "Empresa",
+          placeholder: "Nombre de la empresa",
+        },
+        {
+          key: "slug",
+          label: "Slug",
+          placeholder: "Slug o identificador",
+        },
+        {
+          key: "email",
+          label: "Correo",
+          placeholder: "Correo de contacto",
+        },
+        {
+          key: "city",
+          label: "Ciudad / pais",
+          placeholder: "Ciudad o pais",
         },
         {
           key: "status",
@@ -199,7 +220,10 @@ const Companies = () => {
       onChange: (nextFilters) => setFilters((prev) => ({ ...prev, ...nextFilters })),
       onReset: () =>
         setFilters({
-          search: "",
+          name: "",
+          slug: "",
+          email: "",
+          city: "",
           status: null,
           plan: null,
         }),

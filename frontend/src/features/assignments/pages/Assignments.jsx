@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Empty, Tag } from "antd";
+import { Button, Card, Empty, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   PiCheckCircleBold,
@@ -12,6 +12,7 @@ import { getWorkOrders, assignWorkOrder, cancelWorkOrder } from "@api/workOrderS
 import { getTechnicians } from "@api/userService";
 import { useMessage } from "@context/MessageProvider";
 import queryClient from "@lib/queryClient";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -44,7 +45,9 @@ const Assignments = () => {
   const { success, error } = useMessage();
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [filters, setFilters] = useState({
-    search: "",
+    customer: "",
+    address: "",
+    technician: "",
     priority: null,
     availability: null,
   });
@@ -96,19 +99,13 @@ const Assignments = () => {
           return false;
         }
 
-        const search = filters.search.trim().toLowerCase();
-        if (!search) {
-          return true;
+        if (!matchesText(order.customer_name, filters.customer)) {
+          return false;
         }
-
-        return [
-          order.customer_name,
-          order.service_location_address,
-          order.customer_phone,
-          order.technician_name,
-        ]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(search));
+        if (!matchesText(order.service_location_address, filters.address)) {
+          return false;
+        }
+        return matchesText(order.technician_name, filters.technician);
       })
       .sort((left, right) => {
         if (left.status === "PENDING" && right.status !== "PENDING") {
@@ -136,14 +133,10 @@ const Assignments = () => {
           return false;
         }
 
-        const search = filters.search.trim().toLowerCase();
-        if (!search) {
-          return true;
+        if (!matchesText(technician.name, filters.technician)) {
+          return false;
         }
-
-        return [technician.name, technician.email]
-          .filter(Boolean)
-          .some((value) => value.toLowerCase().includes(search));
+        return true;
       })
       .sort((left, right) => left.activeOrders - right.activeOrders);
   }, [filters, technicianLoad, technicians]);
@@ -182,9 +175,19 @@ const Assignments = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "customer",
+          label: "Cliente",
           placeholder: "Cliente, dirección, teléfono o técnico",
+        },
+        {
+          key: "address",
+          label: "Direccion",
+          placeholder: "Direccion o correo tecnico",
+        },
+        {
+          key: "technician",
+          label: "Tecnico",
+          placeholder: "Tecnico asignado",
         },
         {
           key: "priority",
@@ -205,7 +208,9 @@ const Assignments = () => {
       onChange: (nextFilters) => setFilters((prev) => ({ ...prev, ...nextFilters })),
       onReset: () =>
         setFilters({
-          search: "",
+          customer: "",
+          address: "",
+          technician: "",
           priority: null,
           availability: null,
         }),

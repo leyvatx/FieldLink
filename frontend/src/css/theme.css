@@ -1,3 +1,19 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--ui-font-sans);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 38%),
+    var(--bg-color);
+  color: var(--color);
+  letter-spacing: -0.01em;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -52,6 +68,7 @@
     background: var(--login-card-bg);
     border-color: var(--login-card-border-color);
     box-shadow: var(--login-card-box-shadow);
+    backdrop-filter: blur(20px);
 
     & .ant-input,
     .ant-input-password {
@@ -223,6 +240,11 @@
 
 .layout {
   @apply h-screen text-(--color) bg-(--bg-color);
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.03), transparent 28%),
+    var(--bg-color);
+  overflow: hidden;
 }
 
 .color-green {

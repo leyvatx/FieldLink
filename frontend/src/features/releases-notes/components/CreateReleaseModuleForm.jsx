@@ -1,4 +1,4 @@
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input } from "@/lib/antd-compat";
 import { useDialog } from "@context/DialogProvider";
 import useCreateReleaseModule from "@features/releases-notes/hooks/useCreateReleaseModule";
 import formatErrors from "@lib/formatErrors";

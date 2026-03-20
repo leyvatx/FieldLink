@@ -1,4 +1,4 @@
-import { Button, Form, Input, Alert, Divider } from "antd";
+import { Button, Form, Input, Alert, Divider } from "@/lib/antd-compat";
 import { USER_VALIDATION_RULES } from "@features/users/constants/userValidations";
 
 const PasswordSection = ({ 

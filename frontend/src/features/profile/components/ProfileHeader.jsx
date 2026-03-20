@@ -1,4 +1,4 @@
-import { Row, Col, Typography, Card } from "antd";
+import { Row, Col, Typography, Card } from "@/lib/antd-compat";
 import UserAvatar from "@components/UserAvatar";
 
 const { Title } = Typography;

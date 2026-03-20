@@ -333,7 +333,7 @@ class UsedMaterialViewSet(viewsets.ModelViewSet):
         """Filter by company"""
         queryset = UsedMaterial.objects.filter(
             work_order__company=self.request.user.company
-        ).select_related('work_order', 'material')
+        ).select_related('work_order', 'material', 'approval')
         
         # Technicians only see their own
         if self.request.user.role == 'TECHNICIAN':
@@ -364,6 +364,10 @@ class UsedMaterialViewSet(viewsets.ModelViewSet):
             and work_order.technician_id != self.request.user.id
         ):
             raise PermissionDenied('You can only register materials for your own orders')
+        if work_order.status in ['COMPLETED', 'CANCELLED']:
+            raise ValidationError('Cannot register materials for completed or cancelled orders')
+        if work_order.status != 'IN_SERVICE':
+            raise ValidationError('Materials can only be registered while the order is in service')
 
         technician_inventory = None
         if self.request.user.role == 'TECHNICIAN':
@@ -382,7 +386,15 @@ class UsedMaterialViewSet(viewsets.ModelViewSet):
             if technician_inventory is not None:
                 technician_inventory.current_quantity -= quantity_used
                 technician_inventory.save(update_fields=['current_quantity', 'updated_at'])
-            serializer.save(mobile_id=self.request.user.mobile_id)
+
+            used_material = serializer.save(mobile_id=self.request.user.mobile_id)
+            MaterialApproval.objects.get_or_create(
+                used_material=used_material,
+                defaults={
+                    'work_order': work_order,
+                    'status': MaterialApproval.ApprovalStatus.PENDING,
+                }
+            )
 
 
 class MaterialApprovalViewSet(viewsets.ModelViewSet):

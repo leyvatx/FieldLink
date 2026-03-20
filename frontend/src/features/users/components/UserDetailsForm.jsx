@@ -1,4 +1,4 @@
-import { Descriptions, Tag } from "antd";
+import { Descriptions, Tag } from "@/lib/antd-compat";
 import Loader from "@components/Loader";
 import dayjs from "dayjs";
 import useUser from "@features/users/hooks/useUser";

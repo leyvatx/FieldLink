@@ -1,4 +1,4 @@
-import { Alert, Button, Form, Input } from "antd";
+import { Alert, Button, Form, Input } from "@/lib/antd-compat";
 import { useMessage } from "@context/MessageProvider";
 import useRegister from "@features/auth/hooks/useRegister";
 import formatErrors from "@lib/formatErrors";

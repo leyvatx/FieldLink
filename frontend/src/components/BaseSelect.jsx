@@ -1,4 +1,4 @@
-import { Select } from "antd";
+import { Select } from "@/lib/antd-compat";
 import onSelectFilter from "@lib/onSelectFilter";
 
 const BaseSelect = (props = {}) => {

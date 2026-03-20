@@ -1,8 +1,9 @@
-import { Button, Form, Input, Space } from "antd";
+import { Button, Form, Input, Space } from "@/lib/antd-compat";
 import { useMutation } from "@tanstack/react-query";
 import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
 import { createCustomer } from "@api/customerService";
+import LocationPicker from "@/common/components/location/LocationPicker";
 import { formatErrors } from "@lib/formatErrors";
 import queryClient from "@lib/queryClient";
 
@@ -10,6 +11,9 @@ const CreateCustomerForm = ({ onCreated }) => {
   const { closeDrawer, closeModal } = useDialog();
   const { success, error } = useMessage();
   const [form] = Form.useForm();
+  const address = Form.useWatch("address", form);
+  const latitude = Form.useWatch("latitude", form);
+  const longitude = Form.useWatch("longitude", form);
 
   const handleClose = () => {
     closeDrawer();
@@ -93,11 +97,27 @@ const CreateCustomerForm = ({ onCreated }) => {
         label="Dirección"
         name="address"
         rules={[{ required: true, message: "La dirección es obligatoria" }]}
+        extra="Busca la dirección y ajusta el punto exacto en el mapa."
       >
-        <Input.TextArea
-          rows={3}
-          placeholder="Dirección del servicio o domicilio"
+        <LocationPicker
+          value={address}
+          latitude={latitude}
+          longitude={longitude}
+          onLocationSelect={(location) => {
+            form.setFieldsValue({
+              latitude: location?.latitude ?? "",
+              longitude: location?.longitude ?? "",
+            });
+          }}
         />
+      </Form.Item>
+
+      <Form.Item hidden name="latitude">
+        <input type="hidden" />
+      </Form.Item>
+
+      <Form.Item hidden name="longitude">
+        <input type="hidden" />
       </Form.Item>
 
       <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>

@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Button, Divider } from "antd";
+import { Button, Divider } from "@/lib/antd-compat";
 import useProjectsOptions from "@features/releases-notes/hooks/useProjectsOptions";
 import { useDialog } from "@context/DialogProvider";
 import useSuspense from "@hooks/useSuspense";

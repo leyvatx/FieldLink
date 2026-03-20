@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Button, Card, Form, Input, Select, Table, Tag } from "antd";
+import { Button, Card, Form, Input, Select, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -10,6 +10,7 @@ import {
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useDialog } from "@context/DialogProvider";
+import { matchesText } from "@/lib/filtering";
 
 const EVENT_TYPES = [
   { value: "INCIDENT", label: "Incidente" },
@@ -22,7 +23,7 @@ const Simulator = () => {
   const { openContextMenu } = useDialog();
   const [form] = Form.useForm();
   const [filters, setFilters] = useState({
-    search: "",
+    description: "",
     eventType: null,
     status: null,
   });
@@ -77,14 +78,7 @@ const Simulator = () => {
         return false;
       }
 
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
-      }
-
-      return [record.event_type, record.description, record.status]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
+      return matchesText(record.description, filters.description);
     });
   }, [events, filters]);
 
@@ -115,8 +109,8 @@ const Simulator = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "description",
+          label: "Descripcion",
           placeholder: "Tipo, descripción o estado",
         },
         {
@@ -139,7 +133,7 @@ const Simulator = () => {
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
       onReset: () =>
         setFilters({
-          search: "",
+          description: "",
           eventType: null,
           status: null,
         }),

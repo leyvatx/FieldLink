@@ -1,4 +1,4 @@
-import { Card, Divider } from "antd";
+import { Card, Divider } from "@/lib/antd-compat";
 import ReleaseSections from "@features/releases-notes/components/ReleaseSections";
 import ReleaseNoteResume from "@features/releases-notes/components/ReleaseNoteResume";
 

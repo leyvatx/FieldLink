@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Skeleton, Card, Table } from "antd";
+import { Skeleton, Card, Table } from "@/lib/antd-compat";
 
 /**
  * Componente de carga para la sección de la tabla de roles y permiso

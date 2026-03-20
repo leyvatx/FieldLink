@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Form, Input } from "antd";
+import { Modal, Form, Input } from "@/lib/antd-compat";
 import { validateAdminPassword } from "@api/userService";
 
 const AdminValidationModal = ({ open, onClose, onSuccess }) => {

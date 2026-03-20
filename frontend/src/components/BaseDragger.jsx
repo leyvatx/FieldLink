@@ -1,4 +1,4 @@
-import Dragger from "antd/es/upload/Dragger";
+import Dragger from "@/lib/antd-compat/dragger";
 
 const BaseDragger = ({ ...props }) => {
   return (

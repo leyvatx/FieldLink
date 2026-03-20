@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Form, Alert } from "antd";
+import { Form, Alert } from "@/lib/antd-compat";
 import { useAuth } from "@context/AuthProvider";
 import { useDialog } from "@context/DialogProvider";
 import useEditUserForm from "@features/users/hooks/useEditUserForm";

@@ -1,29 +1,32 @@
-import { Input, Tag, Typography, Form } from "antd";
-import { PiCalendar, PiClock } from "react-icons/pi";
 import dayjs from "dayjs";
+import { Input, Tag, Typography } from "@/lib/antd-compat";
+import { PiCalendar, PiClock } from "react-icons/pi";
 import { ROLE_LABELS } from "@utils/constants/roles";
 
-const { Title } = Typography;
+const { Title, Paragraph } = Typography;
 
 const AdditionalDetailsSection = ({ profile }) => {
   return (
-    <div className="w-full lg:w-1/3">
-      <Title
-        level={3}
-        style={{ marginBottom: 24, fontWeight: 600 }}
-      >
-        Detalles adicionales
-      </Title>
-      <Form layout="vertical">
-        <Form.Item label="Rol">
-          <div className="flex flex-wrap gap-2">
-            <Tag>{ROLE_LABELS[profile.role] || profile.role || "N/A"}</Tag>
-          </div>
-        </Form.Item>
+    <div className="rounded-[28px] border border-[var(--ui-border)] bg-[var(--ui-card)] p-6 shadow-[var(--ui-shadow-soft)]">
+      <div className="mb-6">
+        <Title level={3}>Contexto de cuenta</Title>
+        <Paragraph type="secondary" className="mt-2 text-sm">
+          Informacion operativa y marcas de tiempo para saber desde cuando forma parte del sistema.
+        </Paragraph>
+      </div>
 
-        <Form.Item label="Fecha de registro">
+      <div className="mb-5 flex flex-wrap gap-2">
+        <Tag color="blue">{ROLE_LABELS[profile.role] || profile.role || "N/A"}</Tag>
+        <Tag color={profile.is_active ? "green" : "red"}>
+          {profile.is_active ? "Activo" : "Inactivo"}
+        </Tag>
+      </div>
+
+      <div className="grid gap-4">
+        <div>
+          <div className="mb-2 text-sm font-medium text-[var(--ui-foreground)]">Fecha de registro</div>
           <Input
-            prefix={<PiCalendar className="text-gray-400" size={18} />}
+            prefix={<PiCalendar className="text-[var(--ui-muted-foreground)]" size={18} />}
             value={
               profile.created_at
                 ? dayjs(profile.created_at).format("DD/MM/YYYY HH:mm")
@@ -32,11 +35,12 @@ const AdditionalDetailsSection = ({ profile }) => {
             disabled
             style={{ width: "100%" }}
           />
-        </Form.Item>
+        </div>
 
-        <Form.Item label="Última modificación">
+        <div>
+          <div className="mb-2 text-sm font-medium text-[var(--ui-foreground)]">Ultima modificacion</div>
           <Input
-            prefix={<PiClock className="text-gray-400" size={18} />}
+            prefix={<PiClock className="text-[var(--ui-muted-foreground)]" size={18} />}
             value={
               profile.updated_at
                 ? dayjs(profile.updated_at).format("DD/MM/YYYY HH:mm")
@@ -45,8 +49,8 @@ const AdditionalDetailsSection = ({ profile }) => {
             disabled
             style={{ width: "100%" }}
           />
-        </Form.Item>
-      </Form>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Table, Tag } from "antd";
+import { Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -11,6 +11,7 @@ import { getTechnicians } from "@api/userService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useDialog } from "@context/DialogProvider";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_COLORS = {
   PENDING: "default",
@@ -51,7 +52,10 @@ const ServiceRequests = () => {
   const { success, error } = useMessage();
   const { openContextMenu } = useDialog();
   const [filters, setFilters] = useState({
-    search: "",
+    customer: "",
+    phone: "",
+    address: "",
+    technician: "",
     status: null,
   });
 
@@ -151,23 +155,19 @@ const ServiceRequests = () => {
   );
 
   const filteredRequests = useMemo(() => {
-    const searchTerm = filters.search.trim().toLowerCase();
-    if (!searchTerm) {
-      return requests;
-    }
-
-    return requests.filter((record) =>
-      [
-        record.customer_name,
-        record.phone,
-        record.address,
-        record.service_type,
-        record.technician_name,
-      ]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(searchTerm))
-    );
-  }, [filters.search, requests]);
+    return requests.filter((record) => {
+      if (!matchesText(record.customer_name, filters.customer)) {
+        return false;
+      }
+      if (!matchesText(record.phone, filters.phone)) {
+        return false;
+      }
+      if (!matchesText(`${record.address || ""} ${record.service_type || ""}`, filters.address)) {
+        return false;
+      }
+      return matchesText(record.technician_name, filters.technician);
+    });
+  }, [filters.address, filters.customer, filters.phone, filters.technician, requests]);
 
   const columns = [
     {
@@ -241,9 +241,24 @@ const ServiceRequests = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "customer",
+          label: "Cliente",
           placeholder: "Cliente, teléfono, dirección o técnico",
+        },
+        {
+          key: "phone",
+          label: "Telefono",
+          placeholder: "Telefono del solicitante",
+        },
+        {
+          key: "address",
+          label: "Direccion / servicio",
+          placeholder: "Direccion o tipo de servicio",
+        },
+        {
+          key: "technician",
+          label: "Tecnico",
+          placeholder: "Tecnico asignado",
         },
         {
           key: "status",
@@ -259,7 +274,10 @@ const ServiceRequests = () => {
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
       onReset: () =>
         setFilters({
-          search: "",
+          customer: "",
+          phone: "",
+          address: "",
+          technician: "",
           status: null,
         }),
       onRefresh: () => queryClient.invalidateQueries({ queryKey: ["service-requests"] }),

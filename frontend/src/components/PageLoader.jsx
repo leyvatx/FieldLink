@@ -1,4 +1,4 @@
-import { Spin } from "antd";
+import { Spin } from "@/lib/antd-compat";
 
 const PageLoader = () => {
   return (

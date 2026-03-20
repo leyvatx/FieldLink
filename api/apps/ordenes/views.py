@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.utils import timezone
 from .models import WorkOrder, Evidence, Signature, SimulationEvent
 from .serializers import (
@@ -216,6 +216,10 @@ class EvidenceViewSet(viewsets.ModelViewSet):
             and work_order.technician_id != self.request.user.id
         ):
             raise PermissionDenied('You can only upload evidence for your own orders')
+        if work_order.status in [WorkOrder.Status.COMPLETED, WorkOrder.Status.CANCELLED]:
+            raise ValidationError('Cannot upload evidence for completed or cancelled orders')
+        if work_order.status != WorkOrder.Status.IN_SERVICE:
+            raise ValidationError('Evidence can only be uploaded while the order is in service')
         serializer.save(mobile_id=self.request.user.mobile_id)
 
 
@@ -248,6 +252,12 @@ class SignatureViewSet(viewsets.ModelViewSet):
             and work_order.technician_id != self.request.user.id
         ):
             raise PermissionDenied('You can only upload signatures for your own orders')
+        if work_order.status in [WorkOrder.Status.COMPLETED, WorkOrder.Status.CANCELLED]:
+            raise ValidationError('Cannot upload signatures for completed or cancelled orders')
+        if work_order.status != WorkOrder.Status.IN_SERVICE:
+            raise ValidationError('Signatures can only be collected while the order is in service')
+        if hasattr(work_order, 'signature') and work_order.signature is not None:
+            raise ValidationError('This order already has a saved signature')
         serializer.save(mobile_id=self.request.user.mobile_id)
 
 

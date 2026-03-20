@@ -1,4 +1,4 @@
-import { Spin } from "antd";
+import { Spin } from "@/lib/antd-compat";
 import usePermissionsImportText from "@features/roles-permissions/hooks/usePermissionsImportText";
 import CopyableImportText from "@features/roles-permissions/components/CopyableImportText";
 

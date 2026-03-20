@@ -10,7 +10,7 @@ import {
   Table,
   Tabs,
   Tag,
-} from "antd";
+} from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PiArrowDownBold, PiPackageBold, PiPlusBold, PiUsersThreeBold } from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
@@ -27,11 +27,21 @@ import { getTechnicians } from "@api/userService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useDialog } from "@context/DialogProvider";
+import { matchesText } from "@/lib/filtering";
 
 const Inventory = () => {
   const { success, error } = useMessage();
   const { openContextMenu } = useDialog();
-  const [filters, setFilters] = useState({ search: "" });
+  const [filters, setFilters] = useState({
+    material: "",
+    sku: "",
+    unit: "",
+    technician: "",
+    movement: "",
+    actor: "",
+    notes: "",
+    warehouseState: null,
+  });
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -141,52 +151,69 @@ const Inventory = () => {
     [technicians]
   );
 
-  const filterBySearch = useCallback(
-    (records, fields) => {
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return records;
-      }
-
-      return records.filter((record) =>
-        fields
-          .map((field) => record[field])
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(search))
-      );
-    },
-    [filters.search]
-  );
-
   const filteredMaterials = useMemo(
-    () => filterBySearch(materials, ["name", "description", "sku", "unit"]),
-    [filterBySearch, materials]
+    () =>
+      materials.filter((record) => {
+        if (!matchesText(`${record.name} ${record.description || ""}`, filters.material)) {
+          return false;
+        }
+        if (!matchesText(record.sku, filters.sku)) {
+          return false;
+        }
+        return matchesText(record.unit, filters.unit);
+      }),
+    [filters.material, filters.sku, filters.unit, materials]
   );
 
   const filteredWarehouse = useMemo(
-    () => filterBySearch(warehouse, ["material_name", "material_unit"]),
-    [filterBySearch, warehouse]
+    () =>
+      warehouse.filter((record) => {
+        if (!matchesText(record.material_name, filters.material)) {
+          return false;
+        }
+        if (!matchesText(record.material_unit, filters.unit)) {
+          return false;
+        }
+        if (filters.warehouseState === "LOW" && !record.needs_restock) {
+          return false;
+        }
+        if (filters.warehouseState === "OK" && record.needs_restock) {
+          return false;
+        }
+        return true;
+      }),
+    [filters.material, filters.unit, filters.warehouseState, warehouse]
   );
 
   const filteredTechnicianInventory = useMemo(
     () =>
-      filterBySearch(technicianInventory, [
-        "technician_name",
-        "material_name",
-        "material_unit",
-      ]),
-    [filterBySearch, technicianInventory]
+      technicianInventory.filter((record) => {
+        if (!matchesText(record.technician_name, filters.technician)) {
+          return false;
+        }
+        if (!matchesText(record.material_name, filters.material)) {
+          return false;
+        }
+        return matchesText(record.material_unit, filters.unit);
+      }),
+    [filters.material, filters.technician, filters.unit, technicianInventory]
   );
 
   const filteredHistory = useMemo(
     () =>
-      filterBySearch(restockHistory, [
-        "warehouse_material",
-        "restock_type",
-        "notes",
-        "performed_by_name",
-      ]),
-    [filterBySearch, restockHistory]
+      restockHistory.filter((record) => {
+        if (!matchesText(record.warehouse_material, filters.material)) {
+          return false;
+        }
+        if (!matchesText(record.restock_type, filters.movement)) {
+          return false;
+        }
+        if (!matchesText(record.performed_by_name, filters.actor)) {
+          return false;
+        }
+        return matchesText(record.notes, filters.notes);
+      }),
+    [filters.actor, filters.material, filters.movement, filters.notes, restockHistory]
   );
 
   const openWarehouseEntry = useCallback(
@@ -363,17 +390,68 @@ const Inventory = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Buscar y filtrar inventario",
+      title: "Filtros de inventario",
+      description: "Usa un campo por dato en lugar de una busqueda general.",
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "sku",
+          label: "SKU",
+          placeholder: "Codigo del material",
+        },
+        {
+          key: "unit",
+          label: "Unidad",
+          placeholder: "Unidad de medida",
+        },
+        {
+          key: "technician",
+          label: "Tecnico",
+          placeholder: "Nombre del tecnico",
+        },
+        {
+          key: "movement",
+          label: "Movimiento",
+          placeholder: "Compra, ajuste o consumo",
+        },
+        {
+          key: "actor",
+          label: "Responsable",
+          placeholder: "Quien hizo el movimiento",
+        },
+        {
+          key: "notes",
+          label: "Notas",
+          placeholder: "Comentario o detalle",
+          fullWidth: true,
+        },
+        {
+          key: "warehouseState",
+          label: "Estado de almacen",
+          type: "select",
+          options: [
+            { value: "LOW", label: "Reabastecer" },
+            { value: "OK", label: "Stock saludable" },
+          ],
+        },
+        {
+          key: "material",
+          label: "Material",
           placeholder: "Material, técnico, movimiento o nota",
         },
       ],
       onChange: (nextFilters) => setFilters((prev) => ({ ...prev, ...nextFilters })),
-      onReset: () => setFilters({ search: "" }),
+      onReset: () =>
+        setFilters({
+          material: "",
+          sku: "",
+          unit: "",
+          technician: "",
+          movement: "",
+          actor: "",
+          notes: "",
+          warehouseState: null,
+        }),
       onRefresh: refreshInventoryData,
     }),
     [filters, refreshInventoryData]

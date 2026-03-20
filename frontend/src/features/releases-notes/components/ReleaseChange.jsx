@@ -1,4 +1,4 @@
-import { Image, Space, Tag } from "antd";
+import { Image, Space, Tag } from "@/lib/antd-compat";
 import ReleaseChangeTypeTag from "@features/releases-notes/components/ReleaseChangeTypeTag";
 
 const ReleaseChangeDetails = ({ change }) => {

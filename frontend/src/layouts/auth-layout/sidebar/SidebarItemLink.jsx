@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import sidebarIcons from "@layouts/auth-layout/sidebar/sidebarIcons";
+import { cn } from "@/lib/utils";
 
 const SidebarItemLink = ({ item }) => {
   const ItemIcon = sidebarIcons[item.icon];
@@ -8,7 +9,7 @@ const SidebarItemLink = ({ item }) => {
     <NavLink
       key={item.key}
       to={item.path}
-      className={({ isActive }) => `sidebar-item-link ${isActive && "active"}`}>
+      className={({ isActive }) => cn("sidebar-item-link", isActive && "active")}>
       <div className="sidebar-item-link-icon-content">
         <ItemIcon size={18} />
       </div>

@@ -17,10 +17,13 @@ const SidebarItemGroup = ({ item }) => {
   const [open, setOpen] = useState(hasActiveChild || item.defaultOpen);
 
   useEffect(() => {
-    if (hasActiveChild) {
+    if (hasActiveChild || item.defaultOpen) {
       setOpen(true);
+      return;
     }
-  }, [hasActiveChild]);
+
+    setOpen(false);
+  }, [hasActiveChild, item.defaultOpen]);
 
   const toggleOpen = () => {
     setOpen((prevValue) => !prevValue);
@@ -36,7 +39,7 @@ const SidebarItemGroup = ({ item }) => {
     <div className={groupClassName}>
       <button
         className="sidebar-item-group-btn"
-        type="text"
+        type="button"
         onClick={toggleOpen}>
         <div className="flex items-center">
           <div className="sidebar-item-group-btn-icon">

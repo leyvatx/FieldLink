@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useState } from "react";
-import { Drawer, Dropdown, Modal } from "antd";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useRef, useState } from "react";
+import { Drawer, Dropdown, Modal } from "@/lib/antd-compat";
 
 const DialogContext = createContext();
 
@@ -9,6 +10,7 @@ export const DialogProvider = ({ children }) => {
   const [modalOptions, setModalOptions] = useState(null);
   const [contextMenuOptions, setContextMenuOptions] = useState(null);
   const [modals, setModals] = useState([]);
+  const contextMenuCloseTimeoutRef = useRef(null);
 
   // Drawer methods
   const openDrawer = useCallback((props) => {
@@ -16,7 +18,9 @@ export const DialogProvider = ({ children }) => {
   }, []);
 
   const closeDrawer = useCallback(() => {
-    setDrawerOptions(null);
+    setDrawerOptions((previous) =>
+      previous ? { ...previous, open: false } : null
+    );
   }, []);
 
   // Modal methods
@@ -25,7 +29,9 @@ export const DialogProvider = ({ children }) => {
   }, []);
 
   const closeModal = useCallback(() => {
-    setModalOptions(null);
+    setModalOptions((previous) =>
+      previous ? { ...previous, open: false } : null
+    );
   }, []);
 
   const openModalConfirm = useCallback(
@@ -43,6 +49,11 @@ export const DialogProvider = ({ children }) => {
 
     event.preventDefault();
 
+    if (contextMenuCloseTimeoutRef.current) {
+      window.clearTimeout(contextMenuCloseTimeoutRef.current);
+      contextMenuCloseTimeoutRef.current = null;
+    }
+
     setContextMenuOptions({
       ...rest,
       left: event.clientX,
@@ -52,7 +63,18 @@ export const DialogProvider = ({ children }) => {
   }, []);
 
   const closeContextMenu = useCallback(() => {
-    setContextMenuOptions(null);
+    if (contextMenuCloseTimeoutRef.current) {
+      window.clearTimeout(contextMenuCloseTimeoutRef.current);
+    }
+
+    setContextMenuOptions((previous) =>
+      previous ? { ...previous, open: false } : null
+    );
+
+    contextMenuCloseTimeoutRef.current = window.setTimeout(() => {
+      setContextMenuOptions(null);
+      contextMenuCloseTimeoutRef.current = null;
+    }, 180);
   }, []);
 
   const openMultipleModal = useCallback((key, props) => {
@@ -80,6 +102,10 @@ export const DialogProvider = ({ children }) => {
   }, []);
 
   const closeDialogs = useCallback(() => {
+    if (contextMenuCloseTimeoutRef.current) {
+      window.clearTimeout(contextMenuCloseTimeoutRef.current);
+      contextMenuCloseTimeoutRef.current = null;
+    }
     setDrawerOptions(null);
     setModalOptions(null);
     setContextMenuOptions(null);
@@ -105,6 +131,12 @@ export const DialogProvider = ({ children }) => {
         title={drawerOptions?.title || "Sin título"}
         open={drawerOptions?.open || false}
         onClose={closeDrawer}
+        afterOpenChange={(open) => {
+          drawerOptions?.afterOpenChange?.(open);
+          if (!open) {
+            setDrawerOptions(null);
+          }
+        }}
         width={drawerOptions?.width || 378}
         destroyOnHidden>
         {drawerOptions?.content}
@@ -115,6 +147,12 @@ export const DialogProvider = ({ children }) => {
         title={modalOptions?.title || "Sin título"}
         open={modalOptions?.open || false}
         onCancel={closeModal}
+        afterOpenChange={(open) => {
+          modalOptions?.afterOpenChange?.(open);
+          if (!open) {
+            setModalOptions(null);
+          }
+        }}
         width={modalOptions?.width || 520}
         footer={modalOptions?.footer || null}
         destroyOnHidden>

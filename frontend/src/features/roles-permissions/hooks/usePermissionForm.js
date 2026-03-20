@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo } from 'react';
-import { Form } from 'antd';
+import { Form } from '@/lib/antd-compat';
 
 /**
  * Hook para manejar la lógica del formulario de permisos

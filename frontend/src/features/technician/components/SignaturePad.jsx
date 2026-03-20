@@ -1,26 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Image } from "antd";
-import { PiArrowClockwiseBold, PiEraserBold } from "react-icons/pi";
+import { Button } from "@/lib/antd-compat";
+import { PiEraserBold } from "react-icons/pi";
 
-const PAD_HEIGHT = 180;
+const PAD_HEIGHT = 220;
 
 const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const onChangeRef = useRef(onChange);
   const isDrawingRef = useRef(false);
-  const previewUrlRef = useRef("");
-  const [previewUrl, setPreviewUrl] = useState("");
+  const hasSignatureRef = useRef(false);
+  const [hasSignature, setHasSignature] = useState(false);
 
-  const configureCanvas = useCallback((preserveDrawing = true) => {
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const configureCanvas = useCallback((preserveDrawing = false) => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
     if (!container || !canvas) {
       return;
     }
 
-    const previousImage = preserveDrawing && previewUrlRef.current
-      ? previewUrlRef.current
-      : null;
+    const snapshot =
+      preserveDrawing && hasSignatureRef.current ? canvas.toDataURL("image/png") : null;
     const ratio = window.devicePixelRatio || 1;
     const width = Math.max(container.clientWidth, 280);
     const height = PAD_HEIGHT;
@@ -36,15 +40,15 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
     context.lineCap = "round";
     context.lineJoin = "round";
     context.strokeStyle = "#111827";
-    context.lineWidth = 2.4;
     context.fillStyle = "#111827";
+    context.lineWidth = 2.6;
 
-    if (previousImage) {
+    if (snapshot) {
       const image = new window.Image();
       image.onload = () => {
         context.drawImage(image, 0, 0, width, height);
       };
-      image.src = previousImage;
+      image.src = snapshot;
     }
   }, []);
 
@@ -59,19 +63,13 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
         return;
       }
 
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-      }
-
-      const nextPreviewUrl = URL.createObjectURL(blob);
-      previewUrlRef.current = nextPreviewUrl;
-      setPreviewUrl(nextPreviewUrl);
-      onChange?.({
+      hasSignatureRef.current = true;
+      setHasSignature(true);
+      onChangeRef.current?.({
         file: new File([blob], "firma-cliente.png", { type: "image/png" }),
-        previewUrl: nextPreviewUrl,
       });
     }, "image/png");
-  }, [onChange]);
+  }, []);
 
   const clearSignature = useCallback(() => {
     const canvas = canvasRef.current;
@@ -80,36 +78,26 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
       context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = "";
-    }
-
-    setPreviewUrl("");
-    onChange?.({ file: null, previewUrl: "" });
-  }, [onChange]);
+    hasSignatureRef.current = false;
+    setHasSignature(false);
+    onChangeRef.current?.({ file: null });
+  }, []);
 
   useEffect(() => {
-    configureCanvas(false);
-
+    const frame = window.requestAnimationFrame(() => configureCanvas(false));
     const handleResize = () => configureCanvas(true);
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
+    };
   }, [configureCanvas]);
 
   useEffect(() => {
     clearSignature();
     configureCanvas(false);
-  }, [clearSignature, configureCanvas, resetToken]);
-
-  useEffect(
-    () => () => {
-      if (previewUrlRef.current) {
-        URL.revokeObjectURL(previewUrlRef.current);
-      }
-    },
-    []
-  );
+  }, [configureCanvas, clearSignature, resetToken]);
 
   const getPoint = (event) => {
     const canvas = canvasRef.current;
@@ -133,7 +121,7 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
     isDrawingRef.current = true;
     canvas.setPointerCapture?.(event.pointerId);
     context.beginPath();
-    context.arc(point.x, point.y, 1.2, 0, Math.PI * 2);
+    context.arc(point.x, point.y, 1.25, 0, Math.PI * 2);
     context.fill();
     context.beginPath();
     context.moveTo(point.x, point.y);
@@ -165,19 +153,14 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
 
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs ui-text-muted">
-          Firma con el dedo, mouse o stylus.
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs text-[var(--ui-muted-foreground)]">
+          Firma continua del cliente. Si necesitas reiniciar, usa limpiar.
+        </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="small"
-            icon={<PiArrowClockwiseBold size={14} />}
-            onClick={() => configureCanvas(true)}
-            disabled={disabled}
-          >
-            Ajustar
-          </Button>
+          <span className="text-xs font-medium text-[var(--ui-foreground)]">
+            {hasSignature ? "Firma lista" : "Pendiente"}
+          </span>
           <Button
             size="small"
             icon={<PiEraserBold size={14} />}
@@ -191,34 +174,18 @@ const SignaturePad = ({ onChange, resetToken = 0, disabled = false }) => {
 
       <div
         ref={containerRef}
-        className="rounded-2xl border ui-border-subtle bg-white p-2"
+        className="rounded-[28px] border border-[var(--ui-border)] bg-white p-3 shadow-[var(--ui-shadow-soft)]"
       >
         <canvas
           ref={canvasRef}
-          className="block w-full rounded-xl"
-          style={{ touchAction: "none", background: "#ffffff" }}
+          className="block w-full rounded-[20px] bg-white"
+          style={{ touchAction: "none" }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={finishStroke}
-          onPointerLeave={finishStroke}
           onPointerCancel={finishStroke}
         />
       </div>
-
-      {previewUrl ? (
-        <div className="grid gap-2">
-          <span className="text-xs ui-text-muted">Vista previa de firma</span>
-          <Image
-            src={previewUrl}
-            alt="Vista previa de firma"
-            className="max-w-full rounded-xl"
-          />
-        </div>
-      ) : (
-        <div className="text-sm ui-text-muted">
-          Aún no se ha dibujado una firma.
-        </div>
-      )}
     </div>
   );
 };

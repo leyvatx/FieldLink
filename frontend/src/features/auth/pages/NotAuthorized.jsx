@@ -1,4 +1,4 @@
-import { Result } from "antd";
+import { Result } from "@/lib/antd-compat";
 import PageLayout from "@layouts/page-layout/PageLayout";
 
 const NotAuthorized = () => {

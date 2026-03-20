@@ -1,4 +1,4 @@
-import { Descriptions } from "antd";
+import { Descriptions } from "@/lib/antd-compat";
 import ReleaseNoteStatusTag from "@features/releases-notes/components/ReleaseNoteStatusTag";
 
 const ConfirmDescription = ({ releaseNote }) => {

@@ -1,4 +1,4 @@
-import { Button, Col, Flex, Form, Input, Row } from "antd";
+import { Button, Col, Flex, Form, Input, Row } from "@/lib/antd-compat";
 import { PiFloppyDiskBackFill, PiMinusBold, PiPlusBold } from "react-icons/pi";
 import { useDialog } from "@context/DialogProvider";
 import BaseDragger from "@components/BaseDragger";

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Table } from "antd";
+import { Table } from "@/lib/antd-compat";
 import TableLoadingSection from "./sections/TableLoadingSection";
 
 const RolesPermissionsTable = memo(({ 

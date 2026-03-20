@@ -1,4 +1,4 @@
-import { Alert } from "antd";
+import { Alert } from "@/lib/antd-compat";
 
 const ImportPermissionsResults = ({ results = {} }) => {
   const { created = 0, updated = 0, duplicated = 0, errors = 0 } = results ?? {};

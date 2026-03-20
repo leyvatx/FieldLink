@@ -18,7 +18,7 @@ const DeleteUserForm = lazy(() =>
 );
 
 const useUsersContextMenu = () => {
-  const { openContextMenu, openDrawer, openModal } = useDialog();
+  const { openContextMenu, openModal } = useDialog();
   const suspense = useSuspense();
 
   const handleContextMenu = useCallback(
@@ -30,9 +30,10 @@ const useUsersContextMenu = () => {
           label: "Ver detalles",
           icon: <PiEyeFill size={16} />,
           onClick: () => {
-            openDrawer({
+            openModal({
               title: "Detalles del usuario",
               content: suspense(<UserDetailsForm id={record.id} />),
+              width: 640,
             });
           },
         },
@@ -40,9 +41,10 @@ const useUsersContextMenu = () => {
           label: "Editar",
           icon: <PiPencilSimpleFill size={16} />,
           onClick: () =>
-            openDrawer({
+            openModal({
               title: "Editar usuario",
               content: suspense(<EditUserForm id={record.id} />),
+              width: 720,
             }),
         },
         {
@@ -64,7 +66,7 @@ const useUsersContextMenu = () => {
         items,
       });
     },
-    [openContextMenu, openDrawer, openModal, suspense]
+    [openContextMenu, openModal, suspense]
   );
 
   return handleContextMenu;

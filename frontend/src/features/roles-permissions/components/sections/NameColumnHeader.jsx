@@ -1,7 +1,6 @@
 import { memo } from "react";
-import { Input, Button, Dropdown } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
-import { PiPlusBold } from "react-icons/pi";
+import { Input, Button, Dropdown } from "@/lib/antd-compat";
+import { PiMagnifyingGlassBold, PiPlusBold } from "react-icons/pi";
 
 const NameColumnHeader = memo(({
   value,
@@ -14,7 +13,7 @@ const NameColumnHeader = memo(({
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <Input
         placeholder="Buscar permiso, módulo o submódulo"
-        prefix={<SearchOutlined />}
+        prefix={<PiMagnifyingGlassBold />}
         value={value}
         onChange={onChange}
         onPressEnter={onPressEnter}

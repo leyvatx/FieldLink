@@ -1,4 +1,4 @@
-import { Divider, Empty, Space } from "antd";
+import { Divider, Empty, Space } from "@/lib/antd-compat";
 import ReleaseSection from "@features/releases-notes/components/ReleaseSection";
 
 const ReleaseSections = ({ sections }) => {

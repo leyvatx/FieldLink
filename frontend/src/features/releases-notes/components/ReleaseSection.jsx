@@ -1,4 +1,4 @@
-import { Space } from "antd";
+import { Space } from "@/lib/antd-compat";
 import ReleaseChanges from "@features/releases-notes/components/ReleaseChanges";
 
 const ReleaseSection = ({ section }) => {

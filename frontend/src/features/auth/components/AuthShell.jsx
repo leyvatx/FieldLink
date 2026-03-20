@@ -1,4 +1,4 @@
-import { Card } from "antd";
+import { Card } from "@/lib/antd-compat";
 import AppLogo from "@components/AppLogo";
 
 const AuthShell = ({

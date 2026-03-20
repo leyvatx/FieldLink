@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { Tooltip, Button } from "antd";
+import { Tooltip, Button } from "@/lib/antd-compat";
 import { PiPlusBold } from "react-icons/pi";
 import { useDialog } from "@context/DialogProvider";
 import useSuspense from "@hooks/useSuspense";

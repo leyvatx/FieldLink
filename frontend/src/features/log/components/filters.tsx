@@ -1,4 +1,4 @@
-import { Input, Segmented, Select, Tag, DatePicker, Divider } from "antd";
+import { Input, Segmented, Select, Tag, DatePicker, Divider } from "@/lib/antd-compat";
 const { RangePicker } = DatePicker;
 import { PiListBullets, PiRows, PiUserCircle } from "react-icons/pi";
 import SelectUsers from "../../../common/components/users/autocomplete";

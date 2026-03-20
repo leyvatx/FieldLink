@@ -1,5 +1,5 @@
 import { useEffect, memo } from 'react';
-import { Form, Input, Button } from 'antd';
+import { Form, Input, Button } from '@/lib/antd-compat';
 import useErrorHandler from '../../hooks/useErrorHandler';
 
 /**

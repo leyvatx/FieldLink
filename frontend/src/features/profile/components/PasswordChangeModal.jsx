@@ -1,4 +1,4 @@
-import { Form, Input, Button, Modal } from "antd";
+import { Form, Input, Button, Modal } from "@/lib/antd-compat";
 import { useEffect, useCallback } from "react";
 import { useMessage } from "@context/MessageProvider";
 import useChangePassword from "../hooks/useChangePassword";

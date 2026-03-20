@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Form, Input, Button, AutoComplete } from 'antd';
+import { Form, Input, Button, AutoComplete } from '@/lib/antd-compat';
 import useErrorHandler from '../../hooks/useErrorHandler';
 import usePermissionForm from '../../hooks/usePermissionForm';
 import usePermissionAutoComplete from '../../hooks/usePermissionAutoComplete';

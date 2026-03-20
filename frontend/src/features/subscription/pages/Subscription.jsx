@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Card, Result, Tag } from "antd";
+import { Button, Card, Result, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -11,12 +11,14 @@ import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useAuth } from "@context/AuthProvider";
 import { isCompanyAdmin } from "@utils/constants/roles";
+import { matchesText } from "@/lib/filtering";
 
 const Subscription = () => {
   const { success, error } = useMessage();
   const { user } = useAuth();
   const [filters, setFilters] = useState({
-    search: "",
+    name: "",
+    feature: "",
   });
 
   const { data: plans = [], isLoading } = useQuery({
@@ -39,8 +41,10 @@ const Subscription = () => {
     onError: () => error("No se pudo actualizar el plan"),
   });
 
-  if (!isCompanyAdmin(user)) {
-    return (
+  const isAdmin = isCompanyAdmin(user);
+
+  const blockedView = !isAdmin ? (
+    
       <PageLayout title="Suscripción y planes">
         <Result
           status="403"
@@ -48,20 +52,16 @@ const Subscription = () => {
           subTitle="Solo la empresa puede gestionar la suscripción."
         />
       </PageLayout>
-    );
-  }
+  ) : null;
 
   const filteredPlans = useMemo(() => {
-    const search = filters.search.trim().toLowerCase();
-    if (!search) {
-      return plans;
-    }
-    return plans.filter((plan) =>
-      [plan.name, plan.description]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search))
-    );
-  }, [filters.search, plans]);
+    return plans.filter((plan) => {
+      if (!matchesText(plan.name, filters.name)) {
+        return false;
+      }
+      return matchesText(plan.description, filters.feature);
+    });
+  }, [filters.feature, filters.name, plans]);
 
   const searchConfig = useMemo(
     () => ({
@@ -69,13 +69,18 @@ const Subscription = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "name",
+          label: "Plan",
           placeholder: "Nombre o descripción del plan",
+        },
+        {
+          key: "feature",
+          label: "Descripcion",
+          placeholder: "Beneficio o descripcion",
         },
       ],
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
-      onReset: () => setFilters({ search: "" }),
+      onReset: () => setFilters({ name: "", feature: "" }),
       onRefresh: () => {
         queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
         queryClient.invalidateQueries({ queryKey: ["current-plan"] });
@@ -85,6 +90,10 @@ const Subscription = () => {
   );
 
   const currentPlanId = currentPlan?.plan;
+
+  if (blockedView) {
+    return blockedView;
+  }
 
   return (
     <PageLayout

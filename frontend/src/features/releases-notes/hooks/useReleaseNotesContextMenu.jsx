@@ -9,7 +9,6 @@ import {
   PiRowsPlusBottomFill,
   PiTrashFill,
 } from "react-icons/pi";
-import { Link } from "react-router-dom";
 import useSuspense from "@hooks/useSuspense";
 
 // Lazy imports
@@ -21,6 +20,12 @@ const UpdateReleaseNoteStatusConfirm = lazy(() =>
 );
 const DeleteReleaseNoteConfirm = lazy(() =>
   import("@features/releases-notes/components/DeleteReleaseNoteConfirm")
+);
+const ViewReleaseNoteModal = lazy(() =>
+  import("@features/releases-notes/components/ViewReleaseNoteModal")
+);
+const EditReleaseNoteForm = lazy(() =>
+  import("@features/releases-notes/components/EditReleaseNoteForm")
 );
 
 const useReleaseNotesContextMenu = () => {
@@ -44,14 +49,24 @@ const useReleaseNotesContextMenu = () => {
             },
           },
           {
-            label: (
-              <Link to={`/release-notes/${record.id}/view`}>Ver detalles</Link>
-            ),
+            label: "Ver detalles",
             icon: <PiEyeFill size={16} />,
+            onClick: () =>
+              openModal({
+                title: "Detalles de la nota",
+                content: suspense(<ViewReleaseNoteModal id={record.id} />),
+                width: 1040,
+              }),
           },
           {
-            label: <Link to={`/release-notes/${record.id}/edit`}>Editar</Link>,
+            label: "Editar",
             icon: <PiPencilSimpleFill size={16} />,
+            onClick: () =>
+              openModal({
+                title: "Editar nota",
+                content: suspense(<EditReleaseNoteForm id={record.id} />),
+                width: 1180,
+              }),
           },
           ...(record.status !== "published"
             ? [

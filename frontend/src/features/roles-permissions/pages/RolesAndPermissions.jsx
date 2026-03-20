@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useRolesPermissionsTable } from "../hooks/useRolesPermissionsTable";
-import { Button, Popover, Tooltip } from "antd";
+import { Button, Popover, Tooltip } from "@/lib/antd-compat";
 import {
   PiCheck,
   PiX,

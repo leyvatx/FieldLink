@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Spin, Tag } from "antd";
+import { Card, Spin, Tag } from "@/lib/antd-compat";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicTracking } from "@api/trackingService";
 import PublicLayout from "@layouts/public-layout/PublicLayout";

@@ -1,37 +1,42 @@
-import { Segmented, Select, Typography, Form } from "antd";
-import { PiTranslate, PiPaintBrush } from "react-icons/pi";
+import { Form, Segmented, Select, Typography } from "@/lib/antd-compat";
+import { PiPaintBrush, PiTranslate } from "react-icons/pi";
 
-const { Title } = Typography;
+const { Title, Paragraph } = Typography;
 
 const PreferencesSection = ({ profile, mode, toggleTheme }) => {
   return (
-    <div className="w-full lg:w-1/3">
-      <Title level={3} style={{ marginBottom: 24, fontWeight: 600 }}>
-        Preferencias
-      </Title>
+    <div className="rounded-[28px] border border-[var(--ui-border)] bg-[var(--ui-card)] p-6 shadow-[var(--ui-shadow-soft)]">
+      <div className="mb-6">
+        <Title level={3}>Preferencias</Title>
+        <Paragraph type="secondary" className="mt-2 text-sm">
+          Ajustes personales para que la interfaz se sienta consistente en claro y oscuro.
+        </Paragraph>
+      </div>
+
       <Form layout="vertical">
         <Form.Item
           label={
-            <span>
-              <PiTranslate className="mr-2 text-gray-400" size={18} />
+            <span className="inline-flex items-center gap-2">
+              <PiTranslate className="text-[var(--ui-muted-foreground)]" size={18} />
               Idioma
             </span>
           }
         >
           <Select
-            value={profile.language || "Español"}
+            value={profile.language || "Espanol"}
             disabled
             style={{ width: "100%" }}
-          >
-            <Select.Option value="Español">Español</Select.Option>
-            <Select.Option value="Inglés">Inglés</Select.Option>
-          </Select>
+            options={[
+              { value: "Espanol", label: "Espanol" },
+              { value: "Ingles", label: "Ingles" },
+            ]}
+          />
         </Form.Item>
 
         <Form.Item
           label={
-            <span>
-              <PiPaintBrush className="mr-2 text-gray-400" size={18} />
+            <span className="inline-flex items-center gap-2">
+              <PiPaintBrush className="text-[var(--ui-muted-foreground)]" size={18} />
               Tema
             </span>
           }

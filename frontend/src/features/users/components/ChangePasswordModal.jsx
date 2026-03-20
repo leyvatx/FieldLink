@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Modal, Form, Input, Alert } from "antd";
+import { Modal, Form, Input, Alert } from "@/lib/antd-compat";
 import { useMessage } from "@context/MessageProvider";
 import { validateAdminPassword, changeUserPassword } from "@api/userService";
 

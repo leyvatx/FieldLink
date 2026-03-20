@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Button, Card, Flex, Form, Col, DatePicker, Input, Row } from "antd";
+import { Button, Card, Flex, Form, Col, DatePicker, Input, Row } from "@/lib/antd-compat";
 import { PiFloppyDiskBackFill, PiMinusBold, PiPlusBold } from "react-icons/pi";
 import useProjectsOptions from "@features/releases-notes/hooks/useProjectsOptions";
 import ProjectSelect from "@features/releases-notes/components/ProjectSelect";

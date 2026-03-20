@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { Table, Tag } from "antd";
+import { Table, Tag } from "@/lib/antd-compat";
 import useUsers from "@features/users/hooks/useUsers";
 import useUsersContextMenu from "@features/users/hooks/useUsersContextMenu";
 import { ROLE_COLORS, ROLE_LABELS } from "@utils/constants/roles";
+import { matchesText } from "@/lib/filtering";
 
 const UsersTable = ({ filters }) => {
   const { data: users, isLoading } = useUsers({
@@ -12,17 +13,16 @@ const UsersTable = ({ filters }) => {
   const handleContextMenu = useUsersContextMenu();
 
   const filteredUsers = useMemo(() => {
-    const search = filters?.search?.trim().toLowerCase();
-    if (!search) {
-      return users;
-    }
-
-    return (users || []).filter((record) =>
-      [record.name, record.email, record.phone]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search))
-    );
-  }, [filters?.search, users]);
+    return (users || []).filter((record) => {
+      if (!matchesText(record.name, filters?.name)) {
+        return false;
+      }
+      if (!matchesText(record.email, filters?.email)) {
+        return false;
+      }
+      return matchesText(record.phone, filters?.phone);
+    });
+  }, [filters?.email, filters?.name, filters?.phone, users]);
 
   const columns = [
     {

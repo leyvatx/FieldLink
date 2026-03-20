@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from "react";
-import { ConfigProvider, theme } from "antd";
+import { ConfigProvider, theme } from "@/lib/antd-compat";
+import { Toaster } from "sonner";
 import { useAuth } from "@context/AuthProvider";
 import { useMessage } from "@context/MessageProvider";
 import useUpdateSettings from "@features/settings/hooks/useUpdateSettings";
@@ -57,10 +59,10 @@ export const ThemeProvider = ({ children }) => {
           hashed: false,
           algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
           token: {
-            colorPrimary: "#6E59E2",
-            colorBgContainer: isDark ? "#242334" : "#fff",
-            colorBgElevated: isDark ? "#313046" : "#fff",
-            fontFamily: "Heebo, system-ui, sans-serif",
+            colorPrimary: isDark ? "#fafafa" : "#18181b",
+            colorBgContainer: isDark ? "#111113" : "#ffffff",
+            colorBgElevated: isDark ? "#161619" : "#ffffff",
+            fontFamily: "Geist Variable, Geist, Heebo, system-ui, sans-serif",
           },
           components: {
             Card: {
@@ -72,6 +74,15 @@ export const ThemeProvider = ({ children }) => {
           },
         }}>
         {contextHolder}
+        <Toaster
+          theme={isDark ? "dark" : "light"}
+          closeButton
+          richColors
+          expand
+          toastOptions={{
+            className: "fd-toast",
+          }}
+        />
         {children}
       </ConfigProvider>
     </ThemeContext.Provider>

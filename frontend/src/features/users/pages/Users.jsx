@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button } from "antd";
+import { Button } from "@/lib/antd-compat";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useDialog } from "@context/DialogProvider";
 import { useAuth } from "@context/AuthProvider";
@@ -13,7 +13,9 @@ const Users = () => {
   const { openDrawer } = useDialog();
   const { user } = useAuth();
   const [filters, setFilters] = useState({
-    search: "",
+    name: "",
+    email: "",
+    phone: "",
     role: null,
     isActive: null,
   });
@@ -28,9 +30,19 @@ const Users = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "name",
+          label: "Nombre",
           placeholder: "Nombre, correo o teléfono",
+        },
+        {
+          key: "email",
+          label: "Correo",
+          placeholder: "Correo del usuario",
+        },
+        {
+          key: "phone",
+          label: "Telefono",
+          placeholder: "Telefono del usuario",
         },
         ...(supervisorView
           ? []
@@ -55,7 +67,9 @@ const Users = () => {
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
       onReset: () =>
         setFilters({
-          search: "",
+          name: "",
+          email: "",
+          phone: "",
           role: null,
           isActive: null,
         }),

@@ -1,10 +1,15 @@
-/* @import url('./variables.css'); */
-
 .main {
-  @apply fixed top-2 right-2 bottom-2 left-[96px] transition-all box-border;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  left: 112px;
+  overflow: hidden;
+  transition: left 0.28s ease;
 }
+
 .sidebar-expanded .main {
-  @apply fixed top-2 right-2 bottom-2 left-[310px];
+  left: 328px;
 }
 
 .ui-text-muted {
@@ -28,25 +33,23 @@
 }
 
 .ui-bg-surface {
-  background: var(--sk-color-bg-container);
+  background: var(--ui-card);
 }
 
 .ui-bg-elevated {
-  background: var(--sk-color-bg-elevated);
+  background: var(--ui-popover);
 }
 
 .ui-bg-soft {
-  background: var(--sk-color-fill-tertiary);
+  background: var(--ui-secondary);
 }
 
 .dashboard-map {
   position: relative;
   border: 1px solid var(--sk-color-border-secondary);
-  background: linear-gradient(
-    140deg,
-    var(--sk-color-bg-container) 0%,
-    var(--sk-color-bg-layout) 100%
-  );
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 42%),
+    linear-gradient(160deg, var(--ui-card) 0%, var(--sk-color-bg-layout) 100%);
   overflow: hidden;
 }
 
@@ -54,24 +57,19 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: linear-gradient(
-      to right,
-      var(--sk-color-text-quaternary) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      to bottom,
-      var(--sk-color-text-quaternary) 1px,
-      transparent 1px
-    );
+  background-image:
+    linear-gradient(to right, var(--sk-color-text-quaternary) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--sk-color-text-quaternary) 1px, transparent 1px);
   background-size: 48px 48px;
-  opacity: 0.15;
+  opacity: 0.12;
 }
 
 .dashboard-map-marker-tech {
-  background: var(--sk-color-info);
+  background: var(--sk-color-blue);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--sk-color-blue) 18%, transparent);
 }
 
 .dashboard-map-marker-order {
-  background: var(--sk-color-warning);
+  background: var(--sk-color-yellow);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--sk-color-yellow) 18%, transparent);
 }

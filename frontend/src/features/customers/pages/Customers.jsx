@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Button, Card, Table, Tag } from "antd";
+import { Button, Card, Table, Tag } from "@/lib/antd-compat";
 import { useQuery } from "@tanstack/react-query";
 import { PiPlusBold } from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
@@ -8,6 +8,7 @@ import { getCustomers } from "@api/customerService";
 import { getWorkOrders } from "@api/workOrderService";
 import CreateCustomerForm from "@features/customers/components/CreateCustomerForm";
 import queryClient from "@lib/queryClient";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_COLORS = {
   PENDING: "default",
@@ -28,7 +29,10 @@ const Customers = () => {
   const { openDrawer } = useDialog();
   const [selected, setSelected] = useState(null);
   const [filters, setFilters] = useState({
-    search: "",
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
     status: null,
   });
 
@@ -50,14 +54,16 @@ const Customers = () => {
         return false;
       }
 
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
+      if (!matchesText(record.name, filters.name)) {
+        return false;
       }
-
-      return [record.name, record.phone, record.email, record.address]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
+      if (!matchesText(record.phone, filters.phone)) {
+        return false;
+      }
+      if (!matchesText(record.email, filters.email)) {
+        return false;
+      }
+      return matchesText(record.address, filters.address);
     });
   }, [customers, filters]);
 
@@ -113,13 +119,28 @@ const Customers = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Buscar y filtrar clientes",
+      title: "Filtros de clientes",
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "name",
+          label: "Cliente",
           placeholder: "Cliente, teléfono, correo o dirección",
+        },
+        {
+          key: "phone",
+          label: "Telefono",
+          placeholder: "Numero o parte del numero",
+        },
+        {
+          key: "email",
+          label: "Correo",
+          placeholder: "Correo del cliente",
+        },
+        {
+          key: "address",
+          label: "Direccion",
+          placeholder: "Direccion del servicio",
         },
         {
           key: "status",
@@ -135,7 +156,10 @@ const Customers = () => {
       onChange: (patch) => setFilters((prev) => ({ ...prev, ...patch })),
       onReset: () =>
         setFilters({
-          search: "",
+          name: "",
+          phone: "",
+          email: "",
+          address: "",
           status: null,
         }),
       onRefresh: () => queryClient.invalidateQueries({ queryKey: ["customers"] }),

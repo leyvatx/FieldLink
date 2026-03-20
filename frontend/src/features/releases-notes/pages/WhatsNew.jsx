@@ -1,4 +1,4 @@
-import { Empty } from "antd";
+import { Empty } from "@/lib/antd-compat";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import useCurrentReleaseNote from "@features/releases-notes/hooks/useCurrentReleaseNote";
 import ReleaseNote from "@features/releases-notes/components/ReleaseNote";

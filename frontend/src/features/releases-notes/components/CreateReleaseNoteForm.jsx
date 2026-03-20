@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Col, DatePicker, Form, Input, Row, Spin } from "antd";
+import { Button, Col, DatePicker, Form, Input, Row, Spin } from "@/lib/antd-compat";
 import { useDrawer } from "@context/DialogProvider";
 import useCreateReleaseNote from "@features/releases-notes/hooks/useCreateReleaseNote";
 import ProjectSelect from "@features/releases-notes/components/ProjectSelect";

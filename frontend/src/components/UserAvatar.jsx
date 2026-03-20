@@ -1,6 +1,6 @@
-import { Avatar, Upload, Spin } from "antd";
-import { EditOutlined } from "@ant-design/icons";
+import { Avatar, Upload, Spin } from "@/lib/antd-compat";
 import { useMemo } from "react";
+import { PiPencilSimpleFill } from "react-icons/pi";
 import useAvatarUpload from "../features/profile/hooks/useAvatarUpload";
 
 const getInitials = (name = "", lastname = "") => {
@@ -69,7 +69,7 @@ const UserAvatar = ({
           size="large"
         >
           {renderAvatar()}
-          <EditOutlined
+          <PiPencilSimpleFill
             className="absolute bottom-1 right-1 text-white bg-opacity-50 rounded-full p-1"
             style={{
               fontSize: typeof size === "number" ? (size > 50 ? 20 : 14) : 14,

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect } from "react";
-import { message } from "antd";
+import { message } from "@/lib/antd-compat";
 import { setGlobalMessageFunctions } from "@lib/globalMessages";
 
 const MessageContext = createContext();

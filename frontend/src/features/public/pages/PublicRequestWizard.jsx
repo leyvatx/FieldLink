@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Button, Card, Form, Input, Result, Select, Steps } from "antd";
+import { Button, Card, Form, Input, Result, Select, Steps } from "@/lib/antd-compat";
 import { createPublicServiceRequest } from "@api/serviceRequestService";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";

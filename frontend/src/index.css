@@ -1,3 +1,6 @@
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 @import "./css/variables.css";
 
@@ -11,6 +14,7 @@
 @import "./css/sidebar.css";
 @import "./css/main.css";
 @import "./css/public-portal.css";
+@import "./css/ui.css";
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 

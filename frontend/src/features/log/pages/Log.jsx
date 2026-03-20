@@ -3,7 +3,7 @@ import Filters from "@features/log/components/filters";
 import TimeLine from "@features/log/components/timeline";
 // import { useState } from "react";
 import { PiFunnelFill } from "react-icons/pi";
-import { Drawer, Card } from "antd";
+import { Drawer, Card } from "@/lib/antd-compat";
 import { LogProvider } from "@features/log/contexts/log-context";
 // import { useWindowSize } from "@hooks/useWindowSize";
 

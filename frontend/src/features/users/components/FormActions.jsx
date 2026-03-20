@@ -1,4 +1,4 @@
-import { Button, Form, Space, Tooltip } from "antd";
+import { Button, Form, Space, Tooltip } from "@/lib/antd-compat";
 import { PiInfo } from "react-icons/pi";
 
 const FormActions = ({ onCancel, isLoading }) => {

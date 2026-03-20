@@ -1,5 +1,5 @@
 import classNames from "classnames";
-import { Card, Typography } from "antd";
+import { Card, Typography } from "@/lib/antd-compat";
 import { useState } from "react";
 import constants from "@shared/constants.json";
 import {

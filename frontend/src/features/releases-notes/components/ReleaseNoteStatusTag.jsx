@@ -1,4 +1,4 @@
-import { Tag } from "antd";
+import { Tag } from "@/lib/antd-compat";
 
 const ReleaseNoteStatusTag = ({ status }) => {
   const statusTags = {

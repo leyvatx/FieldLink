@@ -9,7 +9,7 @@ import { ILog } from "../types";
 import { modules, movementsType } from "@utils/constants/intranet-log";
 import constants from "../../../../../shared/constants.json";
 import { useState } from "react";
-import { Avatar, Popover, message } from "antd";
+import { Avatar, Popover, message } from "@/lib/antd-compat";
 import { getImageUrl } from "@api/profileService";
 // import InfoUser from '@common/components/info-users';
 

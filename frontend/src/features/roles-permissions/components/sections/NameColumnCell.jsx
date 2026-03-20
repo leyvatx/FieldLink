@@ -1,5 +1,5 @@
 import { useMemo, useCallback, memo } from "react";
-import { Button, Dropdown, Row, Col, Typography, Space} from "antd";
+import { Button, Dropdown, Row, Col, Typography, Space} from "@/lib/antd-compat";
 import { PiPencilSimple, PiTrashSimple, PiDotsThreeVertical } from "react-icons/pi";
 
 const { Text } = Typography;

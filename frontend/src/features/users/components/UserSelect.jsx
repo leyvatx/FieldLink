@@ -1,4 +1,4 @@
-import { Select } from "antd";
+import { Select } from "@/lib/antd-compat";
 import useUsers from "@features/users/hooks/useUsers";
 
 const UserSelect = ({ value, onChange, ...props }) => {

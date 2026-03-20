@@ -1,4 +1,4 @@
-import { Button, Typography } from "antd";
+import { Button, Typography } from "@/lib/antd-compat";
 import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
 import useUser from "@features/users/hooks/useUser";

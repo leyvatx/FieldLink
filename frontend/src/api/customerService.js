@@ -11,6 +11,8 @@ const normalizeCustomerPayload = (payload = {}) => {
     phone: payload.phone?.trim(),
     email: payload.email?.trim() || "",
     address: payload.address?.trim(),
+    latitude: payload.latitude !== "" ? payload.latitude ?? undefined : undefined,
+    longitude: payload.longitude !== "" ? payload.longitude ?? undefined : undefined,
   };
 
   return Object.fromEntries(

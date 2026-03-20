@@ -1,4 +1,4 @@
-import { Checkbox } from 'antd';
+import { Checkbox } from '@/lib/antd-compat';
 import { memo } from 'react';
 
 const PermissionCheckbox = memo(({ checked, disabled, onToggle, stopPropagation = true, roleName, permissionName }) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Select, Spin } from 'antd';
+import { Select, Spin } from '@/lib/antd-compat';
 import { getUsers } from '../../../../api/userService';
 import { PiUserCircle } from 'react-icons/pi';
 
@@ -49,7 +49,6 @@ export default function Autocomplete({ onChange, value, tagRender = false }) {
   const [filtering, setFiltering] = useState(false);
   const [users, setUsers] = useState<IUser[]>([]);
   const [visibleUsers, setVisibleUsers] = useState<IUser[]>([]);
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     getUsers({ page: 1, size: 10 })
@@ -91,11 +90,8 @@ export default function Autocomplete({ onChange, value, tagRender = false }) {
       options={visibleUsers}
       optionRender={optionRender}
       value={value}
-      open={open}
-      onDropdownVisibleChange={(visible) => setOpen(visible)}
       onSelect={() => {
         filterUsers('');
-        //setOpen(false);
       }}
       onChange={(value) => {
         const usersSelected = users.filter((user) => value.includes(user.value));

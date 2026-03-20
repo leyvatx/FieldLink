@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Divider, Form, Input } from "antd";
+import { Button, Divider, Form, Input } from "@/lib/antd-compat";
 import useImportPermissions from "@features/roles-permissions/hooks/useImportPermissions";
 import ImportPermissionsResults from "@features/roles-permissions/components/ImportPermissionsResults";
 import formatErrors from "@lib/formatErrors";

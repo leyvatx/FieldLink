@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
-import { Button, Card, Form, Input, Modal, Select, Table, Tag } from "antd";
+import dayjs from "dayjs";
+import { Button, Card, DatePicker, Form, Input, Modal, Select, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PiPlusBold } from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
@@ -9,11 +10,13 @@ import {
   createWorkOrder,
   getWorkOrders,
 } from "@api/workOrderService";
+import LocationPicker from "@/common/components/location/LocationPicker";
 import { getCustomers } from "@api/customerService";
 import { getTechnicians } from "@api/userService";
 import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
 import queryClient from "@lib/queryClient";
+import { matchesText } from "@/lib/filtering";
 
 const STATUS_LABELS = {
   PENDING: "Pendiente",
@@ -44,12 +47,19 @@ const WorkOrders = () => {
   const { success, error } = useMessage();
   const { openContextMenu } = useDialog();
   const [filters, setFilters] = useState({
-    search: "",
+    customer: "",
+    address: "",
+    phone: "",
+    technician: "",
     status: null,
     priority: null,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const selectedCustomerId = Form.useWatch("customer", form);
+  const serviceAddress = Form.useWatch("service_location_address", form);
+  const serviceLatitude = Form.useWatch("customer_latitude", form);
+  const serviceLongitude = Form.useWatch("customer_longitude", form);
 
   const { data: workOrders = [], isLoading } = useQuery({
     queryKey: ["work-orders"],
@@ -66,28 +76,59 @@ const WorkOrders = () => {
     queryFn: getTechnicians,
   });
 
+  const selectedCustomer = useMemo(
+    () => customers.find((customer) => customer.id === selectedCustomerId) || null,
+    [customers, selectedCustomerId]
+  );
+
   const refreshOrders = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["work-orders"] });
   }, []);
 
   const createMutation = useMutation({
     mutationFn: async (values) => {
-      const selectedCustomer = customers.find(
-        (customer) => customer.id === values.customer
-      );
+      const customer = customers.find((item) => item.id === values.customer);
+      const resolvedAddress =
+        values.service_location_address?.trim() || customer?.address?.trim() || "";
+      const customerAddress = customer?.address?.trim() || "";
 
       const payload = {
         customer: values.customer,
         priority: values.priority,
         notes: values.notes || "",
-        service_location_address:
-          values.service_location_address || selectedCustomer?.address || "",
-        customer_phone: selectedCustomer?.phone || "",
-        customer_email: selectedCustomer?.email || "",
+        service_location_address: resolvedAddress,
+        customer_phone: customer?.phone || "",
+        customer_email: customer?.email || "",
       };
 
+      const latitude =
+        values.customer_latitude != null && values.customer_latitude !== ""
+          ? Number(values.customer_latitude)
+          : null;
+      const longitude =
+        values.customer_longitude != null && values.customer_longitude !== ""
+          ? Number(values.customer_longitude)
+          : null;
+
+      if (latitude != null && longitude != null) {
+        payload.customer_latitude = latitude;
+        payload.customer_longitude = longitude;
+      }
+
+      if (
+        payload.customer_latitude == null &&
+        payload.customer_longitude == null &&
+        customer &&
+        resolvedAddress &&
+        customerAddress &&
+        resolvedAddress === customerAddress
+      ) {
+        payload.customer_latitude = customer.latitude ?? null;
+        payload.customer_longitude = customer.longitude ?? null;
+      }
+
       if (values.scheduled_date) {
-        payload.scheduled_date = new Date(values.scheduled_date).toISOString();
+        payload.scheduled_date = dayjs(values.scheduled_date).toISOString();
       }
 
       const order = await createWorkOrder(payload);
@@ -107,6 +148,7 @@ const WorkOrders = () => {
     onError: (requestError) =>
       error(
         requestError.response?.data?.error ||
+          requestError.response?.data?.service_location_address?.[0] ||
           requestError.response?.data?.customer?.[0] ||
           "No se pudo crear la orden"
       ),
@@ -140,19 +182,16 @@ const WorkOrders = () => {
         return false;
       }
 
-      const search = filters.search.trim().toLowerCase();
-      if (!search) {
-        return true;
+      if (!matchesText(record.customer_name, filters.customer)) {
+        return false;
       }
-
-      return [
-        record.customer_name,
-        record.service_location_address,
-        record.customer_phone,
-        record.technician_name,
-      ]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(search));
+      if (!matchesText(record.service_location_address, filters.address)) {
+        return false;
+      }
+      if (!matchesText(record.customer_phone, filters.phone)) {
+        return false;
+      }
+      return matchesText(record.technician_name, filters.technician);
     });
   }, [filters, workOrders]);
 
@@ -224,9 +263,24 @@ const WorkOrders = () => {
       values: filters,
       fields: [
         {
-          key: "search",
-          label: "Buscar",
+          key: "customer",
+          label: "Cliente",
           placeholder: "Cliente, dirección, teléfono o técnico",
+        },
+        {
+          key: "address",
+          label: "Direccion",
+          placeholder: "Direccion del servicio",
+        },
+        {
+          key: "phone",
+          label: "Telefono",
+          placeholder: "Telefono del cliente",
+        },
+        {
+          key: "technician",
+          label: "Tecnico",
+          placeholder: "Tecnico asignado",
         },
         {
           key: "status",
@@ -247,7 +301,10 @@ const WorkOrders = () => {
       onChange: (nextFilters) => setFilters((previous) => ({ ...previous, ...nextFilters })),
       onReset: () =>
         setFilters({
-          search: "",
+          customer: "",
+          address: "",
+          phone: "",
+          technician: "",
           status: null,
           priority: null,
         }),
@@ -266,7 +323,24 @@ const WorkOrders = () => {
       title: "Dirección",
       dataIndex: "service_location_address",
       key: "service_location_address",
-      render: (value) => value || "-",
+      width: "42%",
+      render: (value) =>
+        value ? (
+          <div
+            className="max-w-[40rem] break-words text-sm leading-5 text-[var(--ui-foreground)]"
+            style={{
+              display: "-webkit-box",
+              WebkitBoxOrient: "vertical",
+              WebkitLineClamp: 2,
+              overflow: "hidden",
+            }}
+            title={value}
+          >
+            {value}
+          </div>
+        ) : (
+          "-"
+        ),
     },
     {
       title: "Prioridad",
@@ -353,6 +427,8 @@ const WorkOrders = () => {
               }
               form.setFieldsValue({
                 service_location_address: customer.address || "",
+                customer_latitude: customer.latitude ?? "",
+                customer_longitude: customer.longitude ?? "",
               });
             }}
             onFinish={(values) => createMutation.mutate(values)}
@@ -389,13 +465,42 @@ const WorkOrders = () => {
               label="Fecha programada"
               name="scheduled_date"
             >
-              <Input type="datetime-local" />
+              <DatePicker
+                showTime
+                className="w-full"
+                format="YYYY-MM-DD HH:mm"
+                placeholder="Selecciona fecha y hora"
+              />
             </Form.Item>
             <Form.Item
               label="Dirección del servicio"
               name="service_location_address"
+              rules={[{ required: true, message: "Ingresa la ubicación del servicio" }]}
+              extra={
+                selectedCustomer
+                  ? selectedCustomer.address
+                    ? "Se cargó la dirección del cliente. Ajústala si el servicio será en otro punto."
+                    : "Este cliente no tiene dirección guardada. Debes indicar la ubicación antes de crear la orden."
+                  : "La orden necesita una ubicación clara para que el técnico sepa a dónde ir."
+              }
             >
-              <Input.TextArea rows={2} placeholder="Dirección del servicio" />
+              <LocationPicker
+                value={serviceAddress}
+                latitude={serviceLatitude}
+                longitude={serviceLongitude}
+                onLocationSelect={(location) => {
+                  form.setFieldsValue({
+                    customer_latitude: location?.latitude ?? "",
+                    customer_longitude: location?.longitude ?? "",
+                  });
+                }}
+              />
+            </Form.Item>
+            <Form.Item hidden name="customer_latitude">
+              <input type="hidden" />
+            </Form.Item>
+            <Form.Item hidden name="customer_longitude">
+              <input type="hidden" />
             </Form.Item>
             <Form.Item label="Notas" name="notes">
               <Input.TextArea rows={3} placeholder="Detalles de la orden" />

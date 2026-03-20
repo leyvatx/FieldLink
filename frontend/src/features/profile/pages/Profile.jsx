@@ -1,4 +1,4 @@
-import { Button, Tooltip, Space } from "antd";
+import { Button, Tooltip, Space } from "@/lib/antd-compat";
 import { PiPencilSimple, PiFloppyDisk, PiX } from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import ProfileMain from "@features/profile/components/ProfileMain";
