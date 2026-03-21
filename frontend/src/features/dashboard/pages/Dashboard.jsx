@@ -341,147 +341,149 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] xl:items-start">
-          <Card className="self-start rounded-[28px]">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="font-semibold">Mapa operativo en vivo</div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] xl:items-start">
+          <div className="grid gap-6">
+            <Card className="self-start rounded-[28px]">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold">Mapa operativo en vivo</div>
+                  <div className="text-xs ui-text-muted">
+                    Posicion real de tecnicos y ubicacion estimada cuando aun no han reportado GPS.
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <Tag color="blue">GPS en vivo</Tag>
+                  <Tag color="gold">Ubicacion estimada</Tag>
+                </div>
+              </div>
+              {mapPoints.length ? (
+                <div className="overflow-hidden rounded-[24px] border border-[var(--ui-border)]">
+                  <OperationsLiveMap points={mapPoints} className="h-[240px] lg:h-[270px]" />
+                </div>
+              ) : (
+                <Empty description="Todavia no hay posiciones o coordenadas disponibles para mostrar en el mapa." />
+              )}
+            </Card>
+
+            <Card className="rounded-[28px]">
+              <div className="mb-4">
+                <div className="font-semibold">Ordenes que requieren atencion</div>
                 <div className="text-xs ui-text-muted">
-                  Posicion real de tecnicos y ubicacion estimada cuando aun no han reportado GPS.
+                  Prioriza pendientes, urgencias y servicios abiertos del dia.
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Tag color="blue">GPS en vivo</Tag>
-                <Tag color="gold">Ubicacion estimada</Tag>
-              </div>
-            </div>
-            {mapPoints.length ? (
-              <div className="overflow-hidden rounded-[24px] border border-[var(--ui-border)]">
-                <OperationsLiveMap points={mapPoints} className="h-[240px] lg:h-[270px]" />
-              </div>
-            ) : (
-              <Empty description="Todavia no hay posiciones o coordenadas disponibles para mostrar en el mapa." />
-            )}
-          </Card>
-
-          <Card className="self-start rounded-[28px]">
-            <div className="mb-4">
-              <div className="font-semibold">Rastreo del equipo</div>
-              <div className="text-xs ui-text-muted">
-                Tecnicos visibles en mapa con su ultimo reporte y carga actual.
-              </div>
-            </div>
-            <div className="grid gap-3">
-              {!trackedTechnicians.length && !loadingTechnicians ? (
-                <Empty description="Sin tecnicos con posicion disponible." />
-              ) : null}
-              {trackedTechnicians.map((technician) => (
-                <div
-                  key={technician.id}
-                  className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold">{technician.name}</div>
-                      <div className="text-xs ui-text-muted">
-                        {technician.activeOrders[0]?.service_location_address || "Sin orden activa"}
+              <div className="grid gap-3">
+                {!attentionOrders.length && !loadingOrders ? (
+                  <Empty description="No hay ordenes abiertas con los filtros actuales." />
+                ) : null}
+                {attentionOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold">{order.customer_name}</div>
+                        <div className="text-xs ui-text-muted">
+                          {order.service_location_address || "Sin direccion"}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Tag color={STATUS_COLORS[order.status] || "default"}>
+                          {STATUS_LABELS[order.status] || order.status}
+                        </Tag>
+                        <Tag>{order.priority}</Tag>
                       </div>
                     </div>
-                    <Tag color={technician.activeOrders.length ? "gold" : "green"}>
-                      {technician.activeOrders.length ? "Ocupado" : "Disponible"}
-                    </Tag>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs ui-text-muted">
+                      <span>Tecnico: {order.technician_name || "Sin asignar"}</span>
+                      <span>Telefono: {order.customer_phone || "Sin dato"}</span>
+                    </div>
                   </div>
-                  <div className="mt-3 grid gap-1 text-sm ui-text-muted">
-                    <span>Ordenes activas: {technician.activeOrders.length}</span>
-                    <span>
-                      Ultimo reporte: {formatReportTime(technician.latestLocation?.timestamp)}
-                    </span>
-                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid gap-6">
+            <Card className="self-start rounded-[28px]">
+              <div className="mb-4">
+                <div className="font-semibold">Rastreo del equipo</div>
+                <div className="text-xs ui-text-muted">
+                  Tecnicos visibles en mapa con su ultimo reporte y carga actual.
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <Card className="rounded-[28px]">
-            <div className="mb-4">
-              <div className="font-semibold">Ordenes que requieren atencion</div>
-              <div className="text-xs ui-text-muted">
-                Prioriza pendientes, urgencias y servicios abiertos del dia.
               </div>
-            </div>
-            <div className="grid gap-3">
-              {!attentionOrders.length && !loadingOrders ? (
-                <Empty description="No hay ordenes abiertas con los filtros actuales." />
-              ) : null}
-              {attentionOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold">{order.customer_name}</div>
-                      <div className="text-xs ui-text-muted">
-                        {order.service_location_address || "Sin direccion"}
+              <div className="grid gap-3">
+                {!trackedTechnicians.length && !loadingTechnicians ? (
+                  <Empty description="Sin tecnicos con posicion disponible." />
+                ) : null}
+                {trackedTechnicians.map((technician) => (
+                  <div
+                    key={technician.id}
+                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold">{technician.name}</div>
+                        <div className="text-xs ui-text-muted">
+                          {technician.activeOrders[0]?.service_location_address || "Sin orden activa"}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Tag color={STATUS_COLORS[order.status] || "default"}>
-                        {STATUS_LABELS[order.status] || order.status}
+                      <Tag color={technician.activeOrders.length ? "gold" : "green"}>
+                        {technician.activeOrders.length ? "Ocupado" : "Disponible"}
                       </Tag>
-                      <Tag>{order.priority}</Tag>
+                    </div>
+                    <div className="mt-3 grid gap-1 text-sm ui-text-muted">
+                      <span>Ordenes activas: {technician.activeOrders.length}</span>
+                      <span>
+                        Ultimo reporte: {formatReportTime(technician.latestLocation?.timestamp)}
+                      </span>
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-3 text-xs ui-text-muted">
-                    <span>Tecnico: {order.technician_name || "Sin asignar"}</span>
-                    <span>Telefono: {order.customer_phone || "Sin dato"}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="rounded-[28px]">
-            <div className="mb-4">
-              <div className="font-semibold">Carga por tecnico</div>
-              <div className="text-xs ui-text-muted">
-                Quien esta libre, quien esta saturado y quien necesita seguimiento.
+                ))}
               </div>
-            </div>
-            <div className="grid gap-3">
-              {!technicianBoard.length && !loadingTechnicians ? (
-                <Empty description="Sin tecnicos registrados." />
-              ) : null}
-              {technicianBoard.map((technician) => (
-                <div
-                  key={technician.id}
-                  className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold">{technician.name}</div>
-                      <div className="text-xs ui-text-muted">{technician.email}</div>
-                    </div>
-                    <Tag color={technician.activeOrders.length > 1 ? "red" : technician.activeOrders.length ? "gold" : "green"}>
-                      {technician.activeOrders.length > 1
-                        ? "Alta carga"
-                        : technician.activeOrders.length
-                          ? "En campo"
-                          : "Libre"}
-                    </Tag>
-                  </div>
-                  <div className="mt-3 grid gap-1 text-sm ui-text-muted">
-                    <span>Ordenes activas: {technician.activeOrders.length}</span>
-                    <span>
-                      Visibilidad: {technician.latestLocation ? "GPS en vivo" : "Sin GPS en vivo"}
-                    </span>
-                  </div>
+            </Card>
+
+            <Card className="rounded-[28px]">
+              <div className="mb-4">
+                <div className="font-semibold">Carga por tecnico</div>
+                <div className="text-xs ui-text-muted">
+                  Quien esta libre, quien esta saturado y quien necesita seguimiento.
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
+              <div className="grid gap-3">
+                {!technicianBoard.length && !loadingTechnicians ? (
+                  <Empty description="Sin tecnicos registrados." />
+                ) : null}
+                {technicianBoard.map((technician) => (
+                  <div
+                    key={technician.id}
+                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold">{technician.name}</div>
+                        <div className="text-xs ui-text-muted">{technician.email}</div>
+                      </div>
+                      <Tag color={technician.activeOrders.length > 1 ? "red" : technician.activeOrders.length ? "gold" : "green"}>
+                        {technician.activeOrders.length > 1
+                          ? "Alta carga"
+                          : technician.activeOrders.length
+                            ? "En campo"
+                            : "Libre"}
+                      </Tag>
+                    </div>
+                    <div className="mt-3 grid gap-1 text-sm ui-text-muted">
+                      <span>Ordenes activas: {technician.activeOrders.length}</span>
+                      <span>
+                        Visibilidad: {technician.latestLocation ? "GPS en vivo" : "Sin GPS en vivo"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </PageLayout>
