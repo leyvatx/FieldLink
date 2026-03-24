@@ -84,22 +84,33 @@ export function Button({
   variant,
   className,
   htmlType = "button",
+  title,
+  "aria-label": ariaLabel,
   ...props
 }) {
   const effectiveSize = sizeMap[size] || size;
   const buttonVariant = resolveButtonVariant(type, danger, color, variant);
+  const textLabel = typeof children === "string" ? children : undefined;
 
   return (
     <UIButton
       type={htmlType}
       variant={buttonVariant}
       size={shape === "circle" ? (effectiveSize === "sm" ? "icon-sm" : "icon") : effectiveSize}
-      className={cn(block && "w-full", shape === "circle" && "rounded-full", shape === "circle" && effectiveSize === "lg" && "h-11 w-11", className)}
+      className={cn(
+        block && "w-full",
+        shape === "circle" && "rounded-full",
+        shape === "circle" && effectiveSize === "lg" && "h-11 w-11",
+        icon && children && "ui-button-has-icon",
+        className
+      )}
       disabled={loading || props.disabled}
+      title={title ?? textLabel}
+      aria-label={ariaLabel ?? textLabel}
       {...props}
     >
       {loading ? <PiCircleNotch className="ui-spinner" size={16} /> : icon ? <span className="ant-btn-icon">{icon}</span> : null}
-      {children}
+      {children != null ? <span className="ui-button-label">{children}</span> : null}
     </UIButton>
   );
 }

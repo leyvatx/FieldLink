@@ -11,12 +11,12 @@ const ProfileContent = () => {
 
   return (
     <PageLayout
-      title="Perfil de Usuario"
+      title="Perfil"
       topbarOptions={
-        <div style={{ display: "flex", alignItems: "center", minWidth: 120, gap: 8 }}>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {isEditing ? (
             <>
-              <Space size="small" style={{ flexGrow: 1 }}>
+              <Space size="small" className="flex-wrap">
                 <Tooltip title="Cancelar edición">
                   <Button
                     danger
@@ -34,7 +34,7 @@ const ProfileContent = () => {
                 </Tooltip>
               </Space>
 
-              <div>
+              <div className="ml-auto">
                 <Tooltip title="Editar perfil">
                   <Button
                     icon={<PiPencilSimple size={iconSize} />}
@@ -45,7 +45,7 @@ const ProfileContent = () => {
               </div>
             </>
           ) : (
-            <div style={{ marginLeft: "auto" }}>
+            <div>
               <Tooltip title="Editar perfil">
                 <Button
                   icon={<PiPencilSimple size={iconSize} />}

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { Image, Modal, Table, Tag } from "@/lib/antd-compat";
+import { Card, Image, Modal, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   getUsedMaterials,
@@ -131,6 +132,22 @@ const MaterialApprovals = () => {
     },
   ];
 
+  const approvalMetrics = useMemo(
+    () => ({
+      total: filteredUsedMaterials.length,
+      pending: filteredUsedMaterials.filter(
+        (record) => record.approval_status === "PENDING" || !record.approval_status
+      ).length,
+      approved: filteredUsedMaterials.filter(
+        (record) => record.approval_status === "APPROVED"
+      ).length,
+      adjusted: filteredUsedMaterials.filter(
+        (record) => record.approval_status === "ADJUSTED"
+      ).length,
+    }),
+    [filteredUsedMaterials]
+  );
+
   const searchConfig = useMemo(
     () => ({
       title: "Solicitudes de material",
@@ -175,44 +192,75 @@ const MaterialApprovals = () => {
       title="Validación de evidencias"
       searchConfig={searchConfig}
     >
-      <div className="grid gap-3">
-        <span className="text-xs ui-text-muted">
-          Clic derecho en una fila para aprobar, rechazar o ajustar una solicitud de material.
-        </span>
-        <Table
-          rowKey="id"
-          dataSource={filteredUsedMaterials}
-          columns={columns}
-          loading={isLoading}
-          onRow={(record) => ({
-            onContextMenu: (event) => openApprovalContextMenu(event, record),
-          })}
-          expandable={{
-            expandedRowRender: (record) => (
-              <div className="flex flex-wrap gap-3">
-                {record.photos?.filter((photo) => photo.file).length ? (
-                  <Image.PreviewGroup>
-                    {record.photos
-                      .filter((photo) => photo.file)
-                      .map((photo) => (
-                        <Image
-                          key={photo.id}
-                          width={120}
-                          src={photo.file}
-                          alt="evidencia"
-                        />
-                      ))}
-                  </Image.PreviewGroup>
-                ) : (
-                  <span className="text-sm ui-text-muted">
-                    Sin fotos adjuntas
-                  </span>
-                )}
-              </div>
-            ),
-          }}
-          pagination={{ pageSize: 8 }}
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge="Material"
+          title="Validacion de evidencias"
+          subtitle="Revision de fotos, cantidades y aprobacion."
+          tags={["Evidencias", "Cantidades", "Revision"]}
+          stats={[
+            {
+              label: "Solicitudes",
+              value: approvalMetrics.total,
+              help: "visibles",
+            },
+            {
+              label: "Pendientes",
+              value: approvalMetrics.pending,
+              help: "por revisar",
+            },
+            {
+              label: "Aprobadas",
+              value: approvalMetrics.approved,
+              help: "confirmadas",
+            },
+            {
+              label: "Ajustadas",
+              value: approvalMetrics.adjusted,
+              help: "con cambio de cantidad",
+            },
+          ]}
         />
+
+        <Card className="rounded-2xl">
+          <div className="mb-3 text-xs ui-text-muted">
+            Menu contextual por fila para aprobar, rechazar o ajustar.
+          </div>
+          <Table
+            rowKey="id"
+            dataSource={filteredUsedMaterials}
+            columns={columns}
+            loading={isLoading}
+            onRow={(record) => ({
+              onContextMenu: (event) => openApprovalContextMenu(event, record),
+            })}
+            expandable={{
+              expandedRowRender: (record) => (
+                <div className="flex flex-wrap gap-3">
+                  {record.photos?.filter((photo) => photo.file).length ? (
+                    <Image.PreviewGroup>
+                      {record.photos
+                        .filter((photo) => photo.file)
+                        .map((photo) => (
+                          <Image
+                            key={photo.id}
+                            width={120}
+                            src={photo.file}
+                            alt="evidencia"
+                          />
+                        ))}
+                    </Image.PreviewGroup>
+                  ) : (
+                    <span className="text-sm ui-text-muted">
+                      Sin fotos adjuntas
+                    </span>
+                  )}
+                </div>
+              ),
+            }}
+            pagination={{ pageSize: 8 }}
+          />
+        </Card>
       </div>
 
       <Modal

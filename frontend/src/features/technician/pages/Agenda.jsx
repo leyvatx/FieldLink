@@ -14,6 +14,7 @@ import {
   Tag,
 } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import {
   PiCameraBold,
   PiCheckCircleBold,
@@ -852,6 +853,35 @@ const Agenda = () => {
       searchConfig={searchConfig}
     >
       <div className="grid gap-6">
+        <ModuleOverview
+          badge="Agenda"
+          title="Mi agenda"
+          subtitle="Ruta, evidencias y material."
+          tags={["Ruta", "Evidencias", "Material"]}
+          stats={[
+            {
+              label: "Por iniciar",
+              value: metrics.assigned,
+              help: "asignadas",
+            },
+            {
+              label: "En ruta",
+              value: metrics.inTransit,
+              help: "desplazamiento",
+            },
+            {
+              label: "En servicio",
+              value: metrics.inService,
+              help: "trabajo activo",
+            },
+            {
+              label: "Completadas",
+              value: metrics.completed,
+              help: "cerradas",
+            },
+          ]}
+        />
+
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="rounded-[28px]">
             <div className="text-sm ui-text-muted">Por iniciar</div>

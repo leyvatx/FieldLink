@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button, Card, Empty, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import {
   PiCheckCircleBold,
   PiClockCountdownBold,
@@ -228,6 +229,35 @@ const Assignments = () => {
       searchConfig={searchConfig}
     >
       <div className="grid gap-6">
+        <ModuleOverview
+          badge="Asignacion"
+          title="Asignacion de trabajo"
+          subtitle="Ordenes, tecnicos y carga."
+          tags={["Pendientes", "Tecnicos", "Carga"]}
+          stats={[
+            {
+              label: "Pendientes",
+              value: metrics.pending,
+              help: "por asignar",
+            },
+            {
+              label: "Asignadas",
+              value: metrics.assigned,
+              help: "activas",
+            },
+            {
+              label: "Libres",
+              value: metrics.availableTechnicians,
+              help: "tecnicos disponibles",
+            },
+            {
+              label: "Ocupados",
+              value: metrics.busyTechnicians,
+              help: "con carga",
+            },
+          ]}
+        />
+
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="rounded-2xl">
             <div className="flex items-center gap-3">

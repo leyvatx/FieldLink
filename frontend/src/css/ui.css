@@ -131,6 +131,27 @@
   text-transform: uppercase;
 }
 
+.ant-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.ant-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ui-highlight) 10%, transparent), transparent 34%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.ant-card > * {
+  position: relative;
+  z-index: 1;
+}
+
 .fd-table {
   width: 100%;
   border-collapse: separate;
@@ -141,7 +162,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  background: color-mix(in srgb, var(--ui-card) 90%, transparent);
+  background: color-mix(in srgb, var(--ui-card) 92%, var(--ui-highlight) 3%);
   backdrop-filter: blur(16px);
 }
 
@@ -151,6 +172,26 @@
 
 .fd-table tbody tr:hover {
   background: var(--row-hover-bg-color);
+}
+
+.page-topbar::before {
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ui-highlight) 14%, transparent), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 34%);
+}
+
+@media (max-width: 580px) {
+  .page-topbar-actions {
+    gap: 0.5rem;
+  }
+
+  .page-topbar-actions .ui-button-has-icon .ui-button-label {
+    display: none;
+  }
+
+  .page-topbar-actions .ui-button-has-icon {
+    padding-inline: 0.75rem;
+  }
 }
 
 .fd-table th,
@@ -230,4 +271,50 @@
 .location-picker-map .leaflet-bar a:hover {
   background: var(--ui-accent);
   color: var(--ui-foreground);
+}
+
+@media (max-width: 640px) {
+  [data-slot="dialog-content"][data-mobile-adaptive="true"] {
+    top: auto;
+    bottom: 0.5rem;
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    border-radius: 1.25rem !important;
+  }
+
+  [data-slot="dialog-content"][data-mobile-adaptive="true"][data-state="open"] {
+    transform: translateX(-50%) translateY(0) scale(1) !important;
+  }
+
+  [data-slot="dialog-content"][data-mobile-adaptive="true"][data-state="closed"] {
+    transform: translateX(-50%) translateY(1rem) scale(0.98) !important;
+  }
+
+  [data-slot="sheet-content"] {
+    max-width: calc(100vw - 1rem) !important;
+    border-radius: 1.25rem !important;
+  }
+
+  [data-slot="sheet-content"][data-side="left"],
+  [data-slot="sheet-content"][data-side="right"] {
+    inset: auto 0.5rem 0.5rem 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+    height: min(86dvh, 52rem) !important;
+  }
+
+  [data-slot="sheet-content"][data-side="left"][data-state="open"],
+  [data-slot="sheet-content"][data-side="right"][data-state="open"] {
+    transform: translateX(0) translateY(0) !important;
+  }
+
+  [data-slot="sheet-content"][data-side="left"][data-state="closed"],
+  [data-slot="sheet-content"][data-side="right"][data-state="closed"] {
+    transform: translateY(1rem) !important;
+  }
+
+  [data-slot="sheet-content"][data-side="top"],
+  [data-slot="sheet-content"][data-side="bottom"] {
+    inset-inline: 0.5rem !important;
+    width: calc(100vw - 1rem) !important;
+  }
 }

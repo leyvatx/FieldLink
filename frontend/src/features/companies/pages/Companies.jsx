@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Card, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { getCompanies, updateCompany } from "@api/companyService";
 import { useDialog } from "@context/DialogProvider";
@@ -238,6 +239,34 @@ const Companies = () => {
       searchConfig={searchConfig}
     >
       <div className="grid gap-6">
+        <ModuleOverview
+          badge="Empresas"
+          title="Empresas"
+          subtitle="Estado, plan y operacion."
+          tags={["Empresas", "Planes", "Operacion"]}
+          stats={[
+            {
+              label: "Empresas",
+              value: metrics.total,
+              help: "registradas",
+            },
+            {
+              label: "Activas",
+              value: metrics.active,
+              help: "en operacion",
+            },
+            {
+              label: "Tecnicos",
+              value: metrics.technicians,
+              help: "acumulados",
+            },
+            {
+              label: "Ordenes",
+              value: metrics.activeOrders,
+              help: "activas",
+            },
+          ]}
+        />
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="rounded-2xl">
             <div className="text-sm ui-text-muted">Empresas</div>

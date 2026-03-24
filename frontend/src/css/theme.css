@@ -9,9 +9,11 @@ body {
   font-family: var(--ui-font-sans);
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 38%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ui-highlight) 10%, transparent), transparent 26%),
     var(--bg-color);
   color: var(--color);
   letter-spacing: -0.01em;
+  overflow-x: hidden;
 }
 
 /* Scrollbar */
@@ -239,12 +241,40 @@ body {
 }
 
 .layout {
+  --layout-gap: clamp(10px, 1vw, 14px);
+  --sidebar-collapsed-width: 88px;
+  --sidebar-expanded-width: 292px;
+  --main-left-offset: calc(var(--layout-gap) * 2 + var(--sidebar-collapsed-width));
   @apply h-screen text-(--color) bg-(--bg-color);
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 34%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ui-highlight) 10%, transparent), transparent 26%),
     radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.03), transparent 28%),
     var(--bg-color);
   overflow: hidden;
+}
+
+.layout.sidebar-expanded {
+  --main-left-offset: calc(var(--layout-gap) * 2 + var(--sidebar-expanded-width));
+}
+
+.layout.sidebar-mobile {
+  --main-left-offset: var(--layout-gap);
+}
+
+@media (max-width: 1400px) {
+  .layout {
+    --layout-gap: 10px;
+    --sidebar-collapsed-width: 84px;
+    --sidebar-expanded-width: 272px;
+  }
+}
+
+@media (max-height: 820px) {
+  .layout {
+    --layout-gap: 10px;
+    --sidebar-expanded-width: 272px;
+  }
 }
 
 .color-green {

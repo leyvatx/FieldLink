@@ -3,7 +3,16 @@ import { Button, Card, Empty, Tag } from "@/lib/antd-compat";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
+import {
+  PiArrowDownBold,
+  PiCheckCircleBold,
+  PiClockCountdownBold,
+  PiMapPinBold,
+  PiPackageBold,
+  PiUsersThreeBold,
+} from "react-icons/pi";
 import PageLayout from "@layouts/page-layout/PageLayout";
+import AppLogo from "@components/AppLogo";
 import { useAuth } from "@context/AuthProvider";
 import { getWorkOrders } from "@api/workOrderService";
 import { getTechnicians } from "@api/userService";
@@ -210,7 +219,7 @@ const Dashboard = () => {
             latitude: Number(fallbackOrder.customer_latitude),
             longitude: Number(fallbackOrder.customer_longitude),
             title: technician.name,
-            subtitle: fallbackOrder.service_location_address || "Ubicacion estimada",
+            subtitle: fallbackOrder.service_location_address || "Ubicación estimada",
             meta: [
               {
                 label: "Estado",
@@ -253,6 +262,54 @@ const Dashboard = () => {
       tracked: trackedTechnicians.length,
     }),
     [openOrders, trackedTechnicians]
+  );
+
+  const coverageRate = technicians.length
+    ? Math.round((trackedTechnicians.length / technicians.length) * 100)
+    : 0;
+
+  const priorityHotspots = attentionOrders.slice(0, 3);
+  const lastSnapshot = dayjs().format("HH:mm");
+
+  const dashboardMetrics = useMemo(
+    () => [
+      {
+        key: "open",
+        label: "Ordenes abiertas",
+        value: metrics.openOrders,
+        icon: PiPackageBold,
+        tone: "from-[#E879F9]/16 via-[#8B5CF6]/10 to-transparent",
+      },
+      {
+        key: "pending",
+        label: "Pendientes de asignar",
+        value: metrics.pendingDispatch,
+        icon: PiClockCountdownBold,
+        tone: "from-[#F59E0B]/16 via-[#8B5CF6]/8 to-transparent",
+      },
+      {
+        key: "transit",
+        label: "En ruta",
+        value: metrics.inTransit,
+        icon: PiMapPinBold,
+        tone: "from-[#60A5FA]/16 via-[#8B5CF6]/8 to-transparent",
+      },
+      {
+        key: "service",
+        label: "En servicio",
+        value: metrics.inService,
+        icon: PiCheckCircleBold,
+        tone: "from-[#34D399]/16 via-[#8B5CF6]/8 to-transparent",
+      },
+      {
+        key: "tracked",
+        label: "Tecnicos ubicados",
+        value: metrics.tracked,
+        icon: PiUsersThreeBold,
+        tone: "from-[#A78BFA]/18 via-[#7C3AED]/10 to-transparent",
+      },
+    ],
+    [metrics]
   );
 
   const searchConfig = useMemo(
@@ -308,96 +365,261 @@ const Dashboard = () => {
       topbarOptions={
         supervisorView ? (
           <Link to="/work-orders">
-            <Button type="primary">Gestionar ordenes</Button>
+            <Button type="primary" icon={<PiPackageBold size={16} />}>
+              Gestionar ordenes
+            </Button>
           </Link>
         ) : (
           <Link to="/users">
-            <Button type="primary">Ver equipo</Button>
+            <Button type="primary" icon={<PiUsersThreeBold size={16} />}>
+              Ver equipo
+            </Button>
           </Link>
         )
       }
     >
       <div className="grid gap-6">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">Ordenes abiertas</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.openOrders}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">Pendientes de asignar</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.pendingDispatch}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">En ruta</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.inTransit}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">En servicio</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.inService}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">Tecnicos ubicados</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.tracked}</div>
-          </Card>
+        <Card className="relative overflow-hidden rounded-[36px] border-[color:color-mix(in_srgb,var(--ui-highlight)_26%,var(--ui-border))] bg-[linear-gradient(140deg,color-mix(in_srgb,var(--ui-card)_72%,transparent),color-mix(in_srgb,var(--ui-highlight)_12%,var(--ui-card)))]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,color-mix(in_srgb,var(--ui-highlight)_20%,transparent),transparent_36%)]" />
+          <div className="pointer-events-none absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-[color:color-mix(in_srgb,var(--ui-highlight)_14%,transparent)] blur-3xl" />
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-full bg-[linear-gradient(120deg,transparent_0%,transparent_52%,rgba(255,255,255,0.05)_100%)]" />
+
+          <div className="relative grid gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+            <div className="grid gap-6">
+              <div className="inline-flex w-fit items-center gap-3 rounded-full border border-[color:color-mix(in_srgb,var(--ui-highlight)_24%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_82%,transparent)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--ui-muted-foreground)] shadow-[var(--ui-shadow-soft)]">
+                <AppLogo compact showWordmark={false} iconSize={28} />
+                Operacion
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                  {supervisorView ? "Vista de supervision" : "Vista operativa"}
+                </div>
+                <h2 className="mt-3 max-w-4xl text-[clamp(2.25rem,5vw,4.5rem)] font-semibold leading-[0.92] tracking-[-0.06em] text-[var(--ui-foreground)]">
+                  Operacion en tiempo real
+                </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--ui-muted-foreground)] md:text-base">
+                  Ordenes abiertas, cobertura GPS y carga del equipo.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Tag color="purple">Cobertura GPS {coverageRate}%</Tag>
+                <Tag color={metrics.pendingDispatch ? "gold" : "green"}>
+                  {metrics.pendingDispatch ? "Pendientes por asignar" : "Despacho al corriente"}
+                </Tag>
+                <Tag color={priorityHotspots.length ? "red" : "blue"}>
+                  {priorityHotspots.length ? `${priorityHotspots.length} focos inmediatos` : "Sin focos críticos"}
+                </Tag>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[26px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)] px-4 py-4">
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                    Radar activo
+                  </div>
+                  <div className="mt-2 text-3xl font-semibold text-[var(--ui-foreground)]">
+                    {metrics.openOrders}
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                    órdenes vivas en el tablero
+                  </div>
+                </div>
+
+                <div className="rounded-[26px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_90%,transparent)] px-4 py-4">
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                    Snapshot
+                  </div>
+                  <div className="mt-2 text-3xl font-semibold text-[var(--ui-foreground)]">
+                    {lastSnapshot}
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                    lectura local del panel
+                  </div>
+                </div>
+
+                <div className="rounded-[26px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_90%,transparent)] px-4 py-4">
+                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                    Cobertura
+                  </div>
+                  <div className="mt-2 text-3xl font-semibold text-[var(--ui-foreground)]">
+                    {coverageRate}%
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                    del equipo con visibilidad
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="rounded-[30px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--ui-highlight)_10%,var(--ui-card)),color-mix(in_srgb,var(--ui-card)_96%,transparent))] p-5 shadow-[var(--ui-shadow-soft)]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                  Salud de despacho
+                </div>
+                <div className="mt-3 text-2xl font-semibold text-[var(--ui-foreground)]">
+                  {coverageRate > 70 ? "Cobertura alta" : coverageRate > 40 ? "Cobertura media" : "Cobertura limitada"}
+                </div>
+                <div className="mt-2 text-sm text-[var(--ui-muted-foreground)]">
+                  {metrics.pendingDispatch} pendientes sin técnico y {metrics.inTransit} servicios viajando ahora mismo.
+                </div>
+                <div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--ui-secondary)]">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#E879F9_0%,#8B5CF6_55%,#5B21B6_100%)]"
+                    style={{ width: `${coverageRate}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[30px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)] p-5 shadow-[var(--ui-shadow-soft)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                      Hotspots
+                    </div>
+                    <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
+                      Lo más urgente del momento
+                    </div>
+                  </div>
+                  <span className="rounded-full border border-[var(--ui-border)] px-3 py-1 text-xs text-[var(--ui-muted-foreground)]">
+                    {priorityHotspots.length || 0} activos
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {!priorityHotspots.length && !loadingOrders ? (
+                    <Empty description="Sin focos de atención inmediatos." />
+                  ) : null}
+                  {priorityHotspots.map((order) => (
+                    <div
+                      key={order.id}
+                      className="rounded-[24px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_90%,transparent)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[var(--ui-foreground)]">
+                            {order.customer_name}
+                          </div>
+                          <div className="mt-1 text-xs text-[var(--ui-muted-foreground)]">
+                            {order.service_location_address || "Sin dirección"}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Tag color={STATUS_COLORS[order.status] || "default"}>
+                            {STATUS_LABELS[order.status] || order.status}
+                          </Tag>
+                          <Tag color={order.priority === "URGENT" ? "red" : "purple"}>
+                            {order.priority}
+                          </Tag>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {dashboardMetrics.map((metric) => {
+            const Icon = metric.icon;
+
+            return (
+              <Card
+                key={metric.key}
+                className={`overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_top_right,transparent_0%,transparent_34%),linear-gradient(160deg,color-mix(in_srgb,var(--ui-card)_94%,transparent),transparent)]`}
+              >
+                <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${metric.tone}`} />
+                <div className="relative flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm text-[var(--ui-muted-foreground)]">{metric.label}</div>
+                    <div className="mt-3 text-3xl font-semibold text-[var(--ui-foreground)]">
+                      {metric.value}
+                    </div>
+                  </div>
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_86%,transparent)] text-[var(--ui-highlight)]">
+                    <Icon size={22} />
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] xl:items-start">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
           <div className="grid gap-6">
-            <Card className="self-start rounded-[28px]">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <Card className="rounded-[32px]">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="font-semibold">Mapa operativo en vivo</div>
-                  <div className="text-xs ui-text-muted">
-                    Posicion real de tecnicos y ubicacion estimada cuando aun no han reportado GPS.
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                    Visibilidad territorial
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
+                    Mapa operativo en vivo
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                    Posición real de técnicos y ubicación estimada cuando todavía no reportan GPS.
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <Tag color="blue">GPS en vivo</Tag>
-                  <Tag color="gold">Ubicacion estimada</Tag>
+                  <Tag color="gold">Ubicación estimada</Tag>
                 </div>
               </div>
+
               {mapPoints.length ? (
-                <div className="overflow-hidden rounded-[24px] border border-[var(--ui-border)]">
-                  <OperationsLiveMap points={mapPoints} className="h-[240px] lg:h-[270px]" />
+                <div className="overflow-hidden rounded-[28px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_16%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)]">
+                  <OperationsLiveMap points={mapPoints} className="h-[300px] lg:h-[360px]" />
                 </div>
               ) : (
-                <Empty description="Todavia no hay posiciones o coordenadas disponibles para mostrar en el mapa." />
+                <Empty description="Todavía no hay posiciones o coordenadas disponibles para mostrar en el mapa." />
               )}
             </Card>
 
-            <Card className="rounded-[28px]">
-              <div className="mb-4">
-                <div className="font-semibold">Ordenes que requieren atencion</div>
-                <div className="text-xs ui-text-muted">
-                  Prioriza pendientes, urgencias y servicios abiertos del dia.
+            <Card className="rounded-[32px]">
+              <div className="mb-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                  Bandeja priorizada
+                </div>
+                <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
+                  Órdenes que requieren atención
+                </div>
+                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                  Pendientes, urgencias y servicios abiertos con mayor presión operativa.
                 </div>
               </div>
+
               <div className="grid gap-3">
                 {!attentionOrders.length && !loadingOrders ? (
-                  <Empty description="No hay ordenes abiertas con los filtros actuales." />
+                  <Empty description="No hay órdenes abiertas con los filtros actuales." />
                 ) : null}
                 {attentionOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                    className="rounded-[26px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)] p-4 shadow-[var(--ui-shadow-soft)]"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold">{order.customer_name}</div>
-                        <div className="text-xs ui-text-muted">
-                          {order.service_location_address || "Sin direccion"}
+                        <div className="font-semibold text-[var(--ui-foreground)]">
+                          {order.customer_name}
+                        </div>
+                        <div className="mt-1 text-xs text-[var(--ui-muted-foreground)]">
+                          {order.service_location_address || "Sin dirección"}
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Tag color={STATUS_COLORS[order.status] || "default"}>
                           {STATUS_LABELS[order.status] || order.status}
                         </Tag>
-                        <Tag>{order.priority}</Tag>
+                        <Tag color={order.priority === "URGENT" ? "red" : "purple"}>
+                          {order.priority}
+                        </Tag>
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs ui-text-muted">
-                      <span>Tecnico: {order.technician_name || "Sin asignar"}</span>
-                      <span>Telefono: {order.customer_phone || "Sin dato"}</span>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-muted-foreground)]">
+                      <span>Técnico: {order.technician_name || "Sin asignar"}</span>
+                      <span>Teléfono: {order.customer_phone || "Sin dato"}</span>
                     </div>
                   </div>
                 ))}
@@ -406,26 +628,34 @@ const Dashboard = () => {
           </div>
 
           <div className="grid gap-6">
-            <Card className="self-start rounded-[28px]">
-              <div className="mb-4">
-                <div className="font-semibold">Rastreo del equipo</div>
-                <div className="text-xs ui-text-muted">
-                  Tecnicos visibles en mapa con su ultimo reporte y carga actual.
+            <Card className="rounded-[32px]">
+              <div className="mb-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                  Rastreo visible
+                </div>
+                <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
+                  Técnicos con señal o referencia
+                </div>
+                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                  Un resumen legible de quién está visible, ocupado y con qué contexto.
                 </div>
               </div>
+
               <div className="grid gap-3">
                 {!trackedTechnicians.length && !loadingTechnicians ? (
-                  <Empty description="Sin tecnicos con posicion disponible." />
+                  <Empty description="Sin técnicos con posición disponible." />
                 ) : null}
                 {trackedTechnicians.map((technician) => (
                   <div
                     key={technician.id}
-                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                    className="rounded-[24px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold">{technician.name}</div>
-                        <div className="text-xs ui-text-muted">
+                        <div className="font-semibold text-[var(--ui-foreground)]">
+                          {technician.name}
+                        </div>
+                        <div className="mt-1 text-xs text-[var(--ui-muted-foreground)]">
                           {technician.activeOrders[0]?.service_location_address || "Sin orden activa"}
                         </div>
                       </div>
@@ -433,37 +663,45 @@ const Dashboard = () => {
                         {technician.activeOrders.length ? "Ocupado" : "Disponible"}
                       </Tag>
                     </div>
-                    <div className="mt-3 grid gap-1 text-sm ui-text-muted">
+                    <div className="mt-3 grid gap-1 text-sm text-[var(--ui-muted-foreground)]">
                       <span>Ordenes activas: {technician.activeOrders.length}</span>
-                      <span>
-                        Ultimo reporte: {formatReportTime(technician.latestLocation?.timestamp)}
-                      </span>
+                      <span>Último reporte: {formatReportTime(technician.latestLocation?.timestamp)}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </Card>
 
-            <Card className="rounded-[28px]">
-              <div className="mb-4">
-                <div className="font-semibold">Carga por tecnico</div>
-                <div className="text-xs ui-text-muted">
-                  Quien esta libre, quien esta saturado y quien necesita seguimiento.
+            <Card className="rounded-[32px]">
+              <div className="mb-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
+                  Balance de equipo
+                </div>
+                <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
+                  Carga por técnico
+                </div>
+                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
+                  Quién está libre, quién está saturado y dónde conviene enfocar seguimiento.
                 </div>
               </div>
+
               <div className="grid gap-3">
                 {!technicianBoard.length && !loadingTechnicians ? (
-                  <Empty description="Sin tecnicos registrados." />
+                  <Empty description="Sin técnicos registrados." />
                 ) : null}
                 {technicianBoard.map((technician) => (
                   <div
                     key={technician.id}
-                    className="rounded-2xl border ui-border-subtle ui-bg-surface p-4"
+                    className="rounded-[24px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_92%,transparent)] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold">{technician.name}</div>
-                        <div className="text-xs ui-text-muted">{technician.email}</div>
+                        <div className="font-semibold text-[var(--ui-foreground)]">
+                          {technician.name}
+                        </div>
+                        <div className="mt-1 text-xs text-[var(--ui-muted-foreground)]">
+                          {technician.email}
+                        </div>
                       </div>
                       <Tag color={technician.activeOrders.length > 1 ? "red" : technician.activeOrders.length ? "gold" : "green"}>
                         {technician.activeOrders.length > 1
@@ -473,11 +711,9 @@ const Dashboard = () => {
                             : "Libre"}
                       </Tag>
                     </div>
-                    <div className="mt-3 grid gap-1 text-sm ui-text-muted">
+                    <div className="mt-3 grid gap-1 text-sm text-[var(--ui-muted-foreground)]">
                       <span>Ordenes activas: {technician.activeOrders.length}</span>
-                      <span>
-                        Visibilidad: {technician.latestLocation ? "GPS en vivo" : "Sin GPS en vivo"}
-                      </span>
+                      <span>Visibilidad: {technician.latestLocation ? "GPS en vivo" : "Sin GPS en vivo"}</span>
                     </div>
                   </div>
                 ))}

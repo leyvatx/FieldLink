@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { Button, Card, DatePicker, Form, Input, Modal, Select, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { PiPlusBold } from "react-icons/pi";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   assignWorkOrder,
@@ -365,6 +366,18 @@ const WorkOrders = () => {
     },
   ];
 
+  const orderMetrics = useMemo(
+    () => ({
+      total: filteredOrders.length,
+      pending: filteredOrders.filter((order) => order.status === "PENDING").length,
+      assigned: filteredOrders.filter(
+        (order) => order.status === "ASSIGNED" || order.status === "IN_TRANSIT"
+      ).length,
+      unassigned: filteredOrders.filter((order) => !order.technician).length,
+    }),
+    [filteredOrders]
+  );
+
   return (
     <PageLayout
       title="Órdenes de trabajo"
@@ -380,6 +393,35 @@ const WorkOrders = () => {
       }
     >
       <div className="grid gap-6">
+        <ModuleOverview
+          badge="Ordenes"
+          title="Ordenes de trabajo"
+          subtitle="Alta, prioridad, estado y asignacion."
+          tags={["Prioridad", "Estado", "Asignacion"]}
+          stats={[
+            {
+              label: "Ordenes",
+              value: orderMetrics.total,
+              help: "visibles",
+            },
+            {
+              label: "Pendientes",
+              value: orderMetrics.pending,
+              help: "sin iniciar",
+            },
+            {
+              label: "Asignadas",
+              value: orderMetrics.assigned,
+              help: "en curso",
+            },
+            {
+              label: "Sin tecnico",
+              value: orderMetrics.unassigned,
+              help: "por asignar",
+            },
+          ]}
+        />
+
         <Card className="rounded-2xl">
           <div className="mb-3 text-xs ui-text-muted">
             Clic derecho en una orden para asignarla, reasignarla o cancelarla.

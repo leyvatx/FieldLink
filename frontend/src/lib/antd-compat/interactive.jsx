@@ -37,6 +37,28 @@ function getPlacementAlign(placement) {
   return placement?.toLowerCase().includes("right") ? "end" : "start";
 }
 
+function normalizeDimension(value) {
+  if (value == null) {
+    return undefined;
+  }
+
+  return typeof value === "number" ? `${value}px` : value;
+}
+
+function getResponsiveWidth(width) {
+  const normalizedWidth = normalizeDimension(width);
+
+  if (!normalizedWidth) {
+    return undefined;
+  }
+
+  if (normalizedWidth.includes("%") || normalizedWidth.includes("vw")) {
+    return normalizedWidth;
+  }
+
+  return `min(calc(100vw - 1rem), ${normalizedWidth})`;
+}
+
 function renderDropdownItems(items = [], onAnyClick, level = 0) {
   return items.map((item, index) => {
     const key = item?.key ?? `${level}-${index}`;
@@ -129,9 +151,9 @@ function DialogFrame({
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
-      <div className="max-h-[70vh] overflow-auto px-6 py-5">{children}</div>
+      <div className="max-h-[70vh] overflow-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
       {footer === null ? null : footer !== undefined ? (
-        <div className="border-t border-[var(--ui-border)] px-6 py-4">{footer}</div>
+        <div className="border-t border-[var(--ui-border)] px-4 py-4 sm:px-6">{footer}</div>
       ) : (
         <UIDialogFooter>
           <Button onClick={onCancel}>{cancelText}</Button>
@@ -163,7 +185,10 @@ function BaseModal({
 
   return (
     <Dialog open={!!open} onOpenChange={(nextOpen) => !nextOpen && onCancel?.()}>
-      <DialogContent className="p-0" style={width ? { width } : undefined}>
+      <DialogContent
+        className="p-0"
+        style={width ? { width: getResponsiveWidth(width), maxWidth: "calc(100vw - 1rem)" } : undefined}
+      >
         <DialogFrame
           title={title}
           footer={footer}
@@ -198,11 +223,15 @@ export function Drawer({
 
   return (
     <Sheet open={!!open} onOpenChange={(nextOpen) => !nextOpen && onClose?.()}>
-      <SheetContent side={side} className="p-0" style={width ? { width } : undefined}>
+      <SheetContent
+        side={side}
+        className="p-0"
+        style={width ? { width: getResponsiveWidth(width), maxWidth: "calc(100vw - 1rem)" } : undefined}
+      >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-auto px-6 py-5">{children}</div>
+        <div className="flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
         {footer == null ? null : (
           <SheetFooter>{footer}</SheetFooter>
         )}

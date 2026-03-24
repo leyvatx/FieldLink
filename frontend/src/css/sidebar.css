@@ -1,20 +1,21 @@
 .sidebar {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  bottom: 12px;
-  z-index: 20;
+  top: var(--layout-gap);
+  left: var(--layout-gap);
+  bottom: var(--layout-gap);
+  z-index: 30;
   display: flex;
-  width: 88px;
+  width: var(--sidebar-collapsed-width);
+  max-width: calc(100vw - (var(--layout-gap) * 2));
   flex-direction: column;
   border-radius: 30px;
-  transition: width 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
+  transition: width 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease, opacity 0.2s ease;
   overflow: visible;
 }
 
 .sidebar-expanded .sidebar,
 .sidebar-collapsed .sidebar:hover {
-  width: 292px;
+  width: var(--sidebar-expanded-width);
 }
 
 .sidebar-surface {
@@ -36,12 +37,17 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent 24%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 24%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--ui-highlight) 16%, transparent), transparent 34%);
   pointer-events: none;
 }
 
 .sidebar-header {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 14px 12px 10px;
 }
 
@@ -49,6 +55,8 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  min-width: 0;
+  flex: 1;
   gap: 14px;
   overflow: hidden;
   border-radius: 22px;
@@ -66,7 +74,7 @@
   border-radius: 18px;
   border: 1px solid var(--ui-border);
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 60%),
+    radial-gradient(circle at top, color-mix(in srgb, var(--ui-highlight) 20%, rgba(255, 255, 255, 0.14)), transparent 60%),
     var(--ui-card);
   box-shadow: var(--ui-shadow-soft);
 }
@@ -184,10 +192,15 @@
   min-height: 42px;
   align-items: center;
   gap: 8px;
+  border: 1px solid transparent;
   border-radius: 18px;
   padding: 3px 4px;
   color: var(--sidebar-item-link-color);
-  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .sidebar-item-link {
@@ -202,12 +215,14 @@
 .sidebar-item-group-btn:hover {
   background: var(--sidebar-item-link-hover-bg-color);
   color: var(--color);
+  transform: translateX(2px);
 }
 
 .sidebar-item-link.active {
   background: var(--sidebar-item-link-active-bg-color);
   color: var(--sidebar-item-link-active-color);
-  box-shadow: inset 0 0 0 1px var(--ui-border);
+  border-color: color-mix(in srgb, var(--ui-highlight) 16%, var(--ui-border));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-highlight) 10%, transparent);
 }
 
 .sidebar-item-link-icon-content,
@@ -218,6 +233,14 @@
   min-width: 34px;
   place-items: center;
   border-radius: 12px;
+}
+
+.sidebar-item-link:hover .sidebar-item-link-icon-content,
+.sidebar-item-group-btn:hover .sidebar-item-group-btn-icon,
+.sidebar-item-link.active .sidebar-item-link-icon-content,
+.sidebar-item-group.open .sidebar-item-group-btn-icon {
+  background: color-mix(in srgb, var(--ui-highlight) 12%, transparent);
+  color: var(--ui-highlight);
 }
 
 .sidebar-item-link-label,
@@ -400,4 +423,159 @@
 
 .sidebar-expanded .sidebar-toggle-btn svg {
   transform: scaleX(-1);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 24;
+  border: 0;
+  background: var(--ui-overlay);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+.sidebar-mobile-close {
+  display: none;
+  flex-shrink: 0;
+  place-items: center;
+  height: 38px;
+  width: 38px;
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ui-card) 86%, transparent);
+  color: var(--color);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+@media (max-width: 1023px) {
+  .layout.sidebar-mobile .sidebar-backdrop {
+    backdrop-filter: blur(2px);
+  }
+
+  .layout.sidebar-mobile-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .layout.sidebar-mobile .sidebar {
+    width: min(88vw, 320px);
+    transform: translateX(calc(-100% - 22px));
+  }
+
+  .layout.sidebar-mobile-open .sidebar {
+    transform: translateX(0);
+    box-shadow: var(--ui-shadow-dialog);
+  }
+
+  .layout.sidebar-mobile .sidebar-header {
+    padding: 12px;
+  }
+
+  .layout.sidebar-mobile .sidebar-mobile-close {
+    display: grid;
+  }
+
+  .layout.sidebar-mobile .sidebar-brand-copy,
+  .layout.sidebar-mobile .sidebar-search-shell,
+  .layout.sidebar-mobile .sidebar-item-link-label,
+  .layout.sidebar-mobile .sidebar-item-group-btn-label,
+  .layout.sidebar-mobile .sidebar-item-group-btn-arrow {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex: initial;
+    opacity: 1;
+    overflow: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .layout.sidebar-mobile .sidebar-item-group-btn-label {
+    flex: 1 1 auto;
+  }
+
+  .layout.sidebar-mobile .sidebar-body {
+    gap: 10px;
+    padding: 10px 12px 14px;
+  }
+
+  .layout.sidebar-mobile .sidebar-items {
+    align-items: stretch;
+    gap: 6px;
+    padding-right: 2px;
+  }
+
+  .layout.sidebar-mobile .sidebar-item-link,
+  .layout.sidebar-mobile .sidebar-item-group-btn {
+    width: 100%;
+    min-height: 44px;
+    gap: 8px;
+    justify-content: flex-start;
+    padding-inline: 4px;
+  }
+
+  .layout.sidebar-mobile .sidebar-item-group {
+    width: 100%;
+    gap: 4px;
+  }
+
+  .layout.sidebar-mobile .sidebar-item-group-btn {
+    justify-content: space-between;
+  }
+
+  .layout.sidebar-mobile .sidebar-item-group-btn > .flex {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .layout.sidebar-mobile .sidebar-item-group.open .sidebar-item-group-children {
+    display: flex;
+    margin-left: 18px;
+    padding-left: 12px;
+    border-left: 1px solid var(--sidebar-item-group-children-border-color);
+  }
+
+  .layout.sidebar-mobile .sidebar-toggle-btn {
+    display: none;
+  }
+}
+
+@media (max-height: 860px) {
+  .sidebar {
+    border-radius: 26px;
+  }
+
+  .sidebar-header {
+    padding: 12px 10px 8px;
+  }
+
+  .sidebar-brand-link {
+    min-height: 54px;
+    gap: 12px;
+  }
+
+  .sidebar-brand-mark {
+    height: 48px;
+    width: 48px;
+    border-radius: 16px;
+  }
+
+  .sidebar-body {
+    gap: 8px;
+    padding: 10px 10px 12px;
+  }
+
+  .sidebar-item-link,
+  .sidebar-item-group-btn {
+    min-height: 40px;
+  }
+
+  .sidebar-item-link-icon-content,
+  .sidebar-item-group-btn-icon,
+  .sidebar-item-group-btn-arrow {
+    min-height: 32px;
+    min-width: 32px;
+  }
 }

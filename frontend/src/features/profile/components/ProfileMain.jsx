@@ -35,7 +35,7 @@ const ProfileMain = forwardRef(({ isEditing }, ref) => {
   return (
     <div className="grid gap-6">
       <ProfileHeaderSection profile={profile} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
         <BasicInfoSection
           formData={formData}
           fieldErrors={fieldErrors}

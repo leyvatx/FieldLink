@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
-import { Table, Tag } from "@/lib/antd-compat";
+import { Card, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   getServiceRequests,
@@ -235,6 +236,16 @@ const ServiceRequests = () => {
     },
   ];
 
+  const requestMetrics = useMemo(
+    () => ({
+      total: filteredRequests.length,
+      pending: filteredRequests.filter((record) => record.status === "PENDING").length,
+      validated: filteredRequests.filter((record) => record.status === "VALIDATED").length,
+      suspicious: filteredRequests.filter((record) => record.is_suspicious).length,
+    }),
+    [filteredRequests]
+  );
+
   const searchConfig = useMemo(
     () => ({
       title: "Buscar y filtrar solicitudes",
@@ -290,16 +301,49 @@ const ServiceRequests = () => {
       title="Validación de solicitudes"
       searchConfig={searchConfig}
     >
-      <Table
-        rowKey="id"
-        dataSource={filteredRequests}
-        columns={columns}
-        loading={isLoading}
-        onRow={(record) => ({
-          onContextMenu: (event) => openRequestContextMenu(event, record),
-        })}
-        pagination={{ pageSize: 8 }}
-      />
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge="Solicitudes"
+          title="Validacion de solicitudes"
+          subtitle="Entrada, validacion y conversion a orden."
+          tags={["Entrada", "Validacion", "Ordenes"]}
+          stats={[
+            {
+              label: "Solicitudes",
+              value: requestMetrics.total,
+              help: "visibles",
+            },
+            {
+              label: "Pendientes",
+              value: requestMetrics.pending,
+              help: "por revisar",
+            },
+            {
+              label: "Validadas",
+              value: requestMetrics.validated,
+              help: "con salida a orden",
+            },
+            {
+              label: "Sospechosas",
+              value: requestMetrics.suspicious,
+              help: "marcadas por control",
+            },
+          ]}
+        />
+
+        <Card className="rounded-2xl">
+          <Table
+            rowKey="id"
+            dataSource={filteredRequests}
+            columns={columns}
+            loading={isLoading}
+            onRow={(record) => ({
+              onContextMenu: (event) => openRequestContextMenu(event, record),
+            })}
+            pagination={{ pageSize: 8 }}
+          />
+        </Card>
+      </div>
     </PageLayout>
   );
 };

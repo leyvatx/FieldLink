@@ -10,7 +10,7 @@ const NameColumnHeader = memo(({
   onNewRole,
 }) => {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div className="flex min-w-[16rem] items-center gap-2">
       <Input
         placeholder="Buscar permiso, módulo o submódulo"
         prefix={<PiMagnifyingGlassBold />}
@@ -19,7 +19,7 @@ const NameColumnHeader = memo(({
         onPressEnter={onPressEnter}
         allowClear
         size="default"
-        style={{ minWidth: 180 }}
+        className="min-w-0 flex-1"
       />
       <Dropdown
         menu={{

@@ -5,18 +5,18 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--ui-ring)] disabled:pointer-events-none disabled:opacity-55 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium outline-none transition-[transform,box-shadow,background-color,border-color,color,filter] focus-visible:ring-[3px] focus-visible:ring-[var(--ui-ring)] disabled:pointer-events-none disabled:opacity-55 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--ui-primary)] text-[var(--ui-primary-foreground)] shadow-[var(--ui-shadow-button)] hover:brightness-[1.06]",
+          "bg-[var(--ui-primary)] text-[var(--ui-primary-foreground)] shadow-[var(--ui-shadow-button)] hover:-translate-y-px hover:brightness-[1.06]",
         destructive:
-          "bg-[var(--ui-destructive)] text-[var(--ui-destructive-foreground)] shadow-[var(--ui-shadow-button)] hover:brightness-[1.06]",
+          "bg-[var(--ui-destructive)] text-[var(--ui-destructive-foreground)] shadow-[var(--ui-shadow-button)] hover:-translate-y-px hover:brightness-[1.06]",
         outline:
-          "border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-foreground)] shadow-[var(--ui-shadow-soft)] hover:bg-[var(--ui-accent)] hover:text-[var(--ui-accent-foreground)]",
+          "border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-foreground)] shadow-[var(--ui-shadow-soft)] hover:-translate-y-px hover:border-[var(--ui-highlight-outline)] hover:bg-[var(--ui-accent)] hover:text-[var(--ui-accent-foreground)]",
         secondary:
-          "bg-[var(--ui-secondary)] text-[var(--ui-secondary-foreground)] hover:bg-[var(--ui-accent)]",
+          "bg-[var(--ui-secondary)] text-[var(--ui-secondary-foreground)] hover:-translate-y-px hover:bg-[var(--ui-accent)]",
         ghost:
           "text-[var(--ui-foreground)] hover:bg-[var(--ui-accent)] hover:text-[var(--ui-accent-foreground)]",
         link: "text-[var(--ui-primary)] underline-offset-4 hover:underline",

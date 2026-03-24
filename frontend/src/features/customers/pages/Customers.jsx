@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Button, Card, Table, Tag } from "@/lib/antd-compat";
 import { useQuery } from "@tanstack/react-query";
 import { PiPlusBold } from "react-icons/pi";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useDialog } from "@context/DialogProvider";
 import { getCustomers } from "@api/customerService";
@@ -66,6 +67,20 @@ const Customers = () => {
       return matchesText(record.address, filters.address);
     });
   }, [customers, filters]);
+
+  const customerMetrics = useMemo(
+    () => ({
+      total: filteredCustomers.length,
+      validated: filteredCustomers.filter(
+        (record) => record.validation_status === "VALIDATED"
+      ).length,
+      pending: filteredCustomers.filter(
+        (record) => record.validation_status === "PENDING"
+      ).length,
+      selectedHistory: selected ? history.length : 0,
+    }),
+    [filteredCustomers, history.length, selected]
+  );
 
   const customerColumns = [
     {
@@ -187,6 +202,37 @@ const Customers = () => {
       }
     >
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 lg:col-span-2">
+          <ModuleOverview
+            badge="Clientes"
+            title="Clientes e historial"
+            subtitle="Base, validacion e historial."
+            tags={["Clientes", "Validacion", "Historial"]}
+            stats={[
+              {
+                label: "Clientes",
+                value: customerMetrics.total,
+                help: "visibles",
+              },
+              {
+                label: "Validados",
+                value: customerMetrics.validated,
+                help: "con alta confirmada",
+              },
+              {
+                label: "Pendientes",
+                value: customerMetrics.pending,
+                help: "por revisar",
+              },
+              {
+                label: "Historial",
+                value: customerMetrics.selectedHistory,
+                help: selected ? "del cliente seleccionado" : "selecciona un cliente",
+              },
+            ]}
+          />
+        </div>
+
         <Card className="rounded-2xl">
           <Table
             rowKey="id"

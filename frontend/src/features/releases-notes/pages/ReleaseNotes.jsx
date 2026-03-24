@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import ReleaseNotesTopbarOptions from "@features/releases-notes/components/ReleaseNotesTopbarOptions";
 import ReleaseNotesTable from "@features/releases-notes/components/ReleaseNotesTable";
@@ -13,7 +14,15 @@ const ReleaseNotes = () => {
         <ReleaseNotesTopbarOptions filters={filters} setFilters={setFilters} />
       }
     >
-      <ReleaseNotesTable filters={filters} />
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge="Versiones"
+          title="Notas de version"
+          subtitle="Cambios, version y publicacion."
+          tags={["Versiones", "Cambios", "Publicacion"]}
+        />
+        <ReleaseNotesTable filters={filters} />
+      </div>
     </PageLayout>
   );
 };

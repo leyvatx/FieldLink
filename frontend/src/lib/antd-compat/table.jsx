@@ -51,7 +51,7 @@ function renderCellContent(column, record, rowIndex) {
   return rawValue ?? null;
 }
 
-function TableRows({ rows, columns, rowKey, onRow, expandable, level = 0 }) {
+function TableRows({ rows, columns, rowKey, onRow, expandable, cellPaddingClass, level = 0 }) {
   return rows.map((record, rowIndex) => {
     const key =
       typeof rowKey === "function"
@@ -76,7 +76,8 @@ function TableRows({ rows, columns, rowKey, onRow, expandable, level = 0 }) {
             <td
               key={column.key ?? column.dataIndex ?? columnIndex}
               className={cn(
-                "px-4 py-3 align-top text-sm text-[color:var(--sk-color-text)]",
+                cellPaddingClass,
+                "align-top text-sm text-[color:var(--sk-color-text)]",
                 column.align === "center" && "text-center",
                 column.align === "right" && "text-right"
               )}
@@ -118,6 +119,7 @@ function TableRows({ rows, columns, rowKey, onRow, expandable, level = 0 }) {
             rowKey={rowKey}
             onRow={onRow}
             expandable={expandable}
+            cellPaddingClass={cellPaddingClass}
             level={level + 1}
           />
         ) : null}
@@ -132,6 +134,7 @@ export function Table({
   rowKey = "key",
   loading = false,
   pagination = { pageSize: 10 },
+  size = "default",
   onChange,
   onRow,
   bordered = false,
@@ -150,6 +153,31 @@ export function Table({
   const endIndex = enabled ? startIndex + pageSize : dataSource.length;
   const currentRows = enabled ? dataSource.slice(startIndex, endIndex) : dataSource;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const cellPaddingClass =
+    size === "small"
+      ? "px-3 py-2.5"
+      : size === "large"
+        ? "px-5 py-4"
+        : "px-4 py-3";
+  const resolvedMinWidth =
+    typeof scroll?.x === "number"
+      ? `${scroll.x}px`
+      : typeof scroll?.x === "string"
+        ? scroll.x
+        : `${Math.max(
+            columns.reduce((sum, column) => {
+              if (typeof column.width === "number") {
+                return sum + column.width;
+              }
+
+              if (typeof column.width === "string" && column.width.endsWith("px")) {
+                return sum + Number.parseFloat(column.width);
+              }
+
+              return sum + (size === "small" ? 132 : 152);
+            }, 0),
+            420
+          )}px`;
 
   const updatePagination = (nextCurrent, nextPageSize = pageSize) => {
     const next = {
@@ -170,9 +198,9 @@ export function Table({
           "overflow-auto rounded-2xl border border-[color:var(--sk-color-border-secondary)] bg-[color:var(--sk-color-bg-container)]",
           bordered && "fd-table-bordered"
         )}
-        style={{ maxHeight: scroll?.y, overflowX: scroll?.x ? "auto" : undefined }}
+        style={{ maxHeight: scroll?.y }}
       >
-        <table className="fd-table min-w-full" style={{ tableLayout }}>
+        <table className="fd-table min-w-full" style={{ tableLayout, minWidth: resolvedMinWidth }}>
           {showHeader ? (
             <thead>
               <tr>
@@ -180,7 +208,8 @@ export function Table({
                   <th
                     key={column.key ?? column.dataIndex ?? index}
                     className={cn(
-                      "px-4 py-3 text-left text-sm font-semibold text-[color:var(--sk-color-text)]",
+                      cellPaddingClass,
+                      "text-left text-sm font-semibold text-[color:var(--sk-color-text)]",
                       column.align === "center" && "text-center",
                       column.align === "right" && "text-right"
                     )}
@@ -195,7 +224,7 @@ export function Table({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length || 1} className="px-4 py-10 text-center">
+                <td colSpan={columns.length || 1} className={cn(cellPaddingClass, "py-10 text-center")}>
                   <Spin size="large" />
                 </td>
               </tr>
@@ -206,10 +235,11 @@ export function Table({
                 rowKey={rowKey}
                 onRow={onRow}
                 expandable={expandable}
+                cellPaddingClass={cellPaddingClass}
               />
             ) : (
               <tr>
-                <td colSpan={columns.length || 1} className="px-4 py-8">
+                <td colSpan={columns.length || 1} className={cn(cellPaddingClass, "py-8")}>
                   <Empty />
                 </td>
               </tr>

@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useRolesPermissionsTable } from "../hooks/useRolesPermissionsTable";
 import { Button, Popover, Tooltip } from "@/lib/antd-compat";
@@ -44,11 +45,11 @@ const RolesAndPermissions = () => {
    * Opciones de la barra superior con indicadores visuales del estado
    */
   const topbarOptions = (
-    <div style={{ display: "flex", gap: 8 }}>
+    <div className="flex flex-wrap items-center justify-end gap-2">
       <Tooltip title="Exportar permisos">
         <Popover
           content={suspense(<PermissionsImportText />)}
-          classNames={{ body: "w-[500px] !p-4" }}
+          classNames={{ body: "w-[min(calc(100vw-1.5rem),500px)] !p-4" }}
           trigger="click"
           placement="bottomRight"
           destroyOnHidden>
@@ -62,7 +63,7 @@ const RolesAndPermissions = () => {
       <Tooltip title="Importar permisos">
         <Popover
           content={suspense(<ImportPermissions />)}
-          classNames={{ body: "w-[500px] !p-4" }}
+          classNames={{ body: "w-[min(calc(100vw-1.5rem),500px)] !p-4" }}
           trigger="click"
           placement="bottomRight"
           destroyOnHidden>
@@ -103,16 +104,46 @@ const RolesAndPermissions = () => {
     <PageLayout
       title="Roles y permisos"
       topbarOptions={topbarOptions}>
-      {suspense(
-        <RolesPermissionsTable
-          columns={columns}
-          dataSource={dataSource}
-          isToggling={isToggling}
-          isLoading={isLoading}
-          handleRowExpand={handleRowExpand}
-          expandedRowKeys={expandedRowKeys}
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge="Permisos"
+          title="Roles y permisos"
+          subtitle="Roles, permisos y cambios pendientes."
+          tags={["Roles", "Permisos", "Importacion"]}
+          stats={[
+            {
+              label: "Roles",
+              value: columns.length,
+              help: "columnas visibles",
+            },
+            {
+              label: "Permisos",
+              value: dataSource.length,
+              help: "filas cargadas",
+            },
+            {
+              label: "Ocultos",
+              value: hiddenRoles.length,
+              help: "roles ocultos",
+            },
+            {
+              label: "Cambios",
+              value: hasChanges ? "Si" : "No",
+              help: "pendientes",
+            },
+          ]}
         />
-      )}
+        {suspense(
+          <RolesPermissionsTable
+            columns={columns}
+            dataSource={dataSource}
+            isToggling={isToggling}
+            isLoading={isLoading}
+            handleRowExpand={handleRowExpand}
+            expandedRowKeys={expandedRowKeys}
+          />
+        )}
+      </div>
     </PageLayout>
   );
 };

@@ -414,21 +414,28 @@
   --ui-secondary-foreground: #18181b;
   --ui-muted: #f5f5f5;
   --ui-muted-foreground: #6f6f78;
-  --ui-accent: #f1f5f9;
+  --ui-highlight: #7250ff;
+  --ui-highlight-soft: rgba(114, 80, 255, 0.12);
+  --ui-highlight-outline: rgba(114, 80, 255, 0.24);
+  --ui-accent: color-mix(in srgb, var(--ui-highlight) 7%, #f1f5f9);
   --ui-accent-foreground: #111113;
   --ui-border: rgba(15, 23, 42, 0.08);
   --ui-border-strong: rgba(15, 23, 42, 0.15);
   --ui-input: color-mix(in srgb, #ffffff 88%, #f4f4f5);
-  --ui-ring: rgba(24, 24, 27, 0.12);
-  --ui-ring-strong: #18181b;
+  --ui-ring: color-mix(in srgb, var(--ui-highlight) 18%, transparent);
+  --ui-ring-strong: var(--ui-highlight);
   --ui-overlay: rgba(9, 9, 11, 0.42);
   --ui-destructive: #dc2626;
   --ui-destructive-foreground: #ffffff;
   --ui-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 30px rgba(15, 23, 42, 0.04);
   --ui-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 50px rgba(15, 23, 42, 0.08);
   --ui-shadow-dialog: 0 24px 80px rgba(15, 23, 42, 0.22);
-  --ui-shadow-button: 0 10px 24px rgba(24, 24, 27, 0.14);
-  --ui-layout-glow: radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 58%);
+  --ui-shadow-button:
+    0 10px 24px rgba(24, 24, 27, 0.14),
+    0 0 0 1px rgba(114, 80, 255, 0.12);
+  --ui-layout-glow:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.92), transparent 58%),
+    radial-gradient(circle at top right, rgba(114, 80, 255, 0.12), transparent 36%);
 
   --sk-font-family-code: var(--ui-font-mono);
   --sk-color-primary: var(--ui-primary);
@@ -505,21 +512,28 @@
   --ui-secondary-foreground: #fafafa;
   --ui-muted: rgba(255, 255, 255, 0.06);
   --ui-muted-foreground: rgba(250, 250, 250, 0.6);
-  --ui-accent: rgba(255, 255, 255, 0.08);
+  --ui-highlight: #a78bfa;
+  --ui-highlight-soft: rgba(167, 139, 250, 0.14);
+  --ui-highlight-outline: rgba(167, 139, 250, 0.26);
+  --ui-accent: color-mix(in srgb, var(--ui-highlight) 10%, rgba(255, 255, 255, 0.08));
   --ui-accent-foreground: #fafafa;
   --ui-border: rgba(255, 255, 255, 0.08);
   --ui-border-strong: rgba(255, 255, 255, 0.14);
   --ui-input: rgba(255, 255, 255, 0.04);
-  --ui-ring: rgba(255, 255, 255, 0.12);
-  --ui-ring-strong: #fafafa;
+  --ui-ring: color-mix(in srgb, var(--ui-highlight) 22%, transparent);
+  --ui-ring-strong: var(--ui-highlight);
   --ui-overlay: rgba(0, 0, 0, 0.58);
   --ui-destructive: #ef4444;
   --ui-destructive-foreground: #ffffff;
   --ui-shadow-soft: 0 1px 1px rgba(255, 255, 255, 0.03), 0 12px 30px rgba(0, 0, 0, 0.22);
   --ui-shadow-card: 0 1px 1px rgba(255, 255, 255, 0.04), 0 20px 50px rgba(0, 0, 0, 0.38);
   --ui-shadow-dialog: 0 28px 96px rgba(0, 0, 0, 0.58);
-  --ui-shadow-button: 0 16px 34px rgba(250, 250, 250, 0.08);
-  --ui-layout-glow: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 56%);
+  --ui-shadow-button:
+    0 16px 34px rgba(250, 250, 250, 0.08),
+    0 0 0 1px rgba(167, 139, 250, 0.16);
+  --ui-layout-glow:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 56%),
+    radial-gradient(circle at top right, rgba(167, 139, 250, 0.14), transparent 34%);
 
   --sk-font-family-code: var(--ui-font-mono);
   --sk-color-primary: var(--ui-primary);

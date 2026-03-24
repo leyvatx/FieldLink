@@ -35,7 +35,13 @@ const UserAvatar = ({
         size={size}
         src={hasAvatar ? user.avatar : undefined}
         alt={hasAvatar ? `${name || ""} ${lastname || ""}`.trim() : initials}
-        style={{ backgroundColor: !hasAvatar ? "#bfbfbf" : undefined }}
+        style={{
+          background: !hasAvatar
+            ? "linear-gradient(135deg, #E879F9 0%, #8B5CF6 55%, #5B21B6 100%)"
+            : undefined,
+          color: !hasAvatar ? "#FFFFFF" : undefined,
+          boxShadow: "0 12px 26px rgba(124, 58, 237, 0.18)",
+        }}
       >
         {!hasAvatar && initials}
       </Avatar>

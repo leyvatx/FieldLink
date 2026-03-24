@@ -1,15 +1,12 @@
 .main {
   position: fixed;
-  top: 12px;
-  right: 12px;
-  bottom: 12px;
-  left: 112px;
+  top: var(--layout-gap);
+  right: var(--layout-gap);
+  bottom: var(--layout-gap);
+  left: var(--main-left-offset);
+  min-width: 0;
   overflow: hidden;
-  transition: left 0.28s ease;
-}
-
-.sidebar-expanded .main {
-  left: 328px;
+  transition: left 0.28s ease, top 0.28s ease, right 0.28s ease, bottom 0.28s ease;
 }
 
 .ui-text-muted {

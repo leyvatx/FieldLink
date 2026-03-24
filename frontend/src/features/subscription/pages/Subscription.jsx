@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Button, Card, Result, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   getSubscriptionPlans,
@@ -90,6 +91,8 @@ const Subscription = () => {
   );
 
   const currentPlanId = currentPlan?.plan;
+  const currentPlanDetails =
+    plans.find((plan) => plan.id === currentPlanId) || null;
 
   if (blockedView) {
     return blockedView;
@@ -100,6 +103,34 @@ const Subscription = () => {
       title="Suscripción y planes"
       searchConfig={searchConfig}
     >
+      <ModuleOverview
+        badge="Planes"
+        title="Suscripcion y planes"
+        subtitle="Plan activo, limites y cambio de nivel."
+        tags={["Planes", "Limites", "Facturacion"]}
+        stats={[
+          {
+            label: "Planes",
+            value: filteredPlans.length,
+            help: "disponibles",
+          },
+          {
+            label: "Actual",
+            value: currentPlanDetails?.name || "Sin plan",
+            help: "en uso",
+          },
+          {
+            label: "Tecnicos",
+            value: currentPlanDetails?.max_technicians ?? "-",
+            help: "limite",
+          },
+          {
+            label: "Ordenes",
+            value: currentPlanDetails?.max_work_orders_per_month ?? "-",
+            help: "por mes",
+          },
+        ]}
+      />
       <div className="grid gap-6 md:grid-cols-3">
         {filteredPlans.map((plan) => {
           const isCurrent = currentPlanId === plan.id;

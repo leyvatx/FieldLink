@@ -5,11 +5,13 @@ import Sidebar from "@layouts/auth-layout/sidebar/Sidebar";
 import Main from "@layouts/auth-layout/Main";
 
 const AuthLayout = () => {
-  const { isExpanded } = useSidebar();
+  const { isExpanded, isMobile, isMobileOpen } = useSidebar();
 
   const layoutClass = classNames("layout", {
-    "sidebar-expanded": isExpanded,
-    "sidebar-collapsed": !isExpanded,
+    "sidebar-expanded": !isMobile && isExpanded,
+    "sidebar-collapsed": !isMobile && !isExpanded,
+    "sidebar-mobile": isMobile,
+    "sidebar-mobile-open": isMobile && isMobileOpen,
   });
 
   return (

@@ -22,7 +22,7 @@ const UserMenu = () => {
     {
       key: "profile",
       label: (
-        <Link to="/profile" className="flex min-w-[220px] items-center justify-start gap-3">
+        <Link to="/profile" className="flex w-[min(220px,calc(100vw-7rem))] items-center justify-start gap-3">
           <UserAvatar user={normalizedUser} size="large" />
           <div className="flex flex-col">
             <span className="font-medium">{user?.name}</span>

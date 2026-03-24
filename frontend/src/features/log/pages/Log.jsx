@@ -1,21 +1,26 @@
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import Filters from "@features/log/components/filters";
 import TimeLine from "@features/log/components/timeline";
-// import { useState } from "react";
-import { PiFunnelFill } from "react-icons/pi";
-import { Drawer, Card } from "@/lib/antd-compat";
 import { LogProvider } from "@features/log/contexts/log-context";
-// import { useWindowSize } from "@hooks/useWindowSize";
 
 const Log = () => {
   return (
     <PageLayout title="Log general">
-      <LogProvider>
-        <div className="log__container">
-          <Filters />
-          <TimeLine />
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge="Log"
+          title="Log general"
+          subtitle="Actividad, auditoria y tiempo."
+          tags={["Actividad", "Auditoria", "Tiempo"]}
+        />
+        <LogProvider>
+          <div className="log__container">
+            <Filters />
+            <TimeLine />
+          </div>
+        </LogProvider>
         </div>
-      </LogProvider>
     </PageLayout>
   );
 };

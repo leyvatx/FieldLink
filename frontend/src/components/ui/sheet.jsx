@@ -52,6 +52,7 @@ const SheetContent = React.forwardRef(function SheetContent(
         forceMount
         ref={ref}
         data-slot="sheet-content"
+        data-side={side}
         className={cn(sheetVariants({ side }), className)}
         {...props}
       >
@@ -68,11 +69,11 @@ const SheetContent = React.forwardRef(function SheetContent(
 });
 
 const SheetHeader = ({ className, ...props }) => (
-  <div className={cn("border-b border-[var(--ui-border)] px-6 py-5", className)} {...props} />
+  <div className={cn("border-b border-[var(--ui-border)] px-4 py-4 sm:px-6 sm:py-5", className)} {...props} />
 );
 
 const SheetFooter = ({ className, ...props }) => (
-  <div className={cn("mt-auto border-t border-[var(--ui-border)] px-6 py-4", className)} {...props} />
+  <div className={cn("mt-auto border-t border-[var(--ui-border)] px-4 py-4 sm:px-6", className)} {...props} />
 );
 
 const SheetTitle = React.forwardRef(function SheetTitle({ className, ...props }, ref) {

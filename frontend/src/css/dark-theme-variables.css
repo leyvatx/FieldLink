@@ -8,25 +8,26 @@
 
   --card-box-shadow: var(--ui-shadow-card);
 
-  --sidebar-bg-color: rgba(12, 12, 14, 0.84);
+  --sidebar-bg-color: color-mix(in srgb, rgba(12, 12, 14, 0.9) 88%, var(--ui-highlight-soft));
   --sidebar-border-color: var(--ui-border);
 
-  --sidebar-toggle-btn-bg-color: rgba(17, 17, 19, 0.92);
-  --sidebar-toggle-btn-border-color: var(--ui-border-strong);
+  --sidebar-toggle-btn-bg-color: color-mix(in srgb, rgba(17, 17, 19, 0.94) 86%, var(--ui-highlight-soft));
+  --sidebar-toggle-btn-border-color: color-mix(in srgb, var(--ui-highlight) 18%, var(--ui-border-strong));
   --sidebar-toggle-btn-box-shadow: var(--ui-shadow-soft);
 
   --sidebar-item-link-color: rgba(250, 250, 250, 0.64);
   --sidebar-item-link-active-color: #fafafa;
-  --sidebar-item-link-hover-bg-color: rgba(255, 255, 255, 0.06);
-  --row-hover-bg-color: rgba(255, 255, 255, 0.035);
-  --table-module-hover: rgba(255, 255, 255, 0.02);
-  --sidebar-item-link-active-bg-color: rgba(255, 255, 255, 0.08);
+  --sidebar-item-link-hover-bg-color: color-mix(in srgb, var(--ui-highlight) 10%, rgba(255, 255, 255, 0.05));
+  --row-hover-bg-color: color-mix(in srgb, var(--ui-highlight) 6%, rgba(255, 255, 255, 0.024));
+  --table-module-hover: color-mix(in srgb, var(--ui-highlight) 4%, rgba(255, 255, 255, 0.016));
+  --sidebar-item-link-active-bg-color: color-mix(in srgb, var(--ui-highlight) 14%, rgba(255, 255, 255, 0.06));
 
   --sidebar-item-group-btn-color: #fafafa;
   --sidebar-item-group-children-border-color: var(--ui-border);
 
   --login-bg:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 38%),
+    radial-gradient(circle at 82% 10%, rgba(167, 139, 250, 0.16), transparent 24%),
     radial-gradient(circle at 80% 0%, rgba(96, 165, 250, 0.08), transparent 28%),
     linear-gradient(180deg, #09090b 0%, #050507 100%);
 

@@ -1,12 +1,15 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/lib/antd-compat";
+import ModuleOverview from "@components/ModuleOverview";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useDialog } from "@context/DialogProvider";
 import { useAuth } from "@context/AuthProvider";
 import { PiPlus } from "react-icons/pi";
 import CreateUserForm from "@features/users/components/CreateUserForm";
 import UsersTable from "@features/users/components/UsersTable";
+import useUsers from "@features/users/hooks/useUsers";
 import { getAllowedUserRoleOptions } from "@features/users/constants/userValidations";
+import { TECHNICIAN_ROLE } from "@utils/constants/roles";
 import { isSupervisor } from "@utils/constants/roles";
 
 const Users = () => {
@@ -21,6 +24,16 @@ const Users = () => {
   });
   const roleOptions = getAllowedUserRoleOptions(user?.role);
   const supervisorView = isSupervisor(user);
+  const { data: allUsers = [] } = useUsers();
+  const userMetrics = useMemo(
+    () => ({
+      total: allUsers.length,
+      active: allUsers.filter((record) => record.is_active).length,
+      technicians: allUsers.filter((record) => record.role === TECHNICIAN_ROLE).length,
+      inactive: allUsers.filter((record) => !record.is_active).length,
+    }),
+    [allUsers]
+  );
 
   const searchConfig = useMemo(
     () => ({
@@ -95,7 +108,37 @@ const Users = () => {
         />
       }
     >
-      <UsersTable filters={filters} />
+      <div className="grid gap-6">
+        <ModuleOverview
+          badge={supervisorView ? "Tecnicos" : "Personal"}
+          title={supervisorView ? "Tecnicos de campo" : "Personal de la empresa"}
+          subtitle={supervisorView ? "Tecnicos, estado y disponibilidad." : "Equipo, roles y estado."}
+          tags={supervisorView ? ["Tecnicos", "Estado", "Cobertura"] : ["Equipo", "Roles", "Estado"]}
+          stats={[
+            {
+              label: "Usuarios",
+              value: userMetrics.total,
+              help: "registrados",
+            },
+            {
+              label: "Activos",
+              value: userMetrics.active,
+              help: "con acceso",
+            },
+            {
+              label: "Tecnicos",
+              value: userMetrics.technicians,
+              help: "en plantilla",
+            },
+            {
+              label: "Inactivos",
+              value: userMetrics.inactive,
+              help: "sin acceso",
+            },
+          ]}
+        />
+        <UsersTable filters={filters} />
+      </div>
     </PageLayout>
   );
 };
