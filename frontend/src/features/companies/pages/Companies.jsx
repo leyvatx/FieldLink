@@ -267,24 +267,24 @@ const Companies = () => {
             },
           ]}
         />
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="rounded-2xl">
-            <div className="text-sm ui-text-muted">Empresas</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.total}</div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="text-sm ui-text-muted">Activas</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.active}</div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="text-sm ui-text-muted">Técnicos</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.technicians}</div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="text-sm ui-text-muted">Órdenes activas</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.activeOrders}</div>
-          </Card>
-        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <Card className="rounded-2xl">
           <div className="mb-3 text-xs ui-text-muted">

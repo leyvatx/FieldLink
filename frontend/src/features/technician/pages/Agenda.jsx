@@ -882,24 +882,24 @@ const Agenda = () => {
           ]}
         />
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">Por iniciar</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.assigned}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">En ruta</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.inTransit}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">En servicio</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.inService}</div>
-          </Card>
-          <Card className="rounded-[28px]">
-            <div className="text-sm ui-text-muted">Completadas</div>
-            <div className="mt-2 text-3xl font-semibold">{metrics.completed}</div>
-          </Card>
-        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <div className="grid gap-6 xl:grid-cols-[23rem_minmax(0,1fr)] xl:items-start">
           <Card className="self-start rounded-[28px]">

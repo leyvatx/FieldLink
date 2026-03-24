@@ -16,6 +16,7 @@ const ModuleOverview = ({
   tags = [],
   aside = null,
   className,
+  showTitle = false,
 }) => {
   return (
     <div className="grid gap-4">
@@ -35,11 +36,13 @@ const ModuleOverview = ({
                 {badge}
               </div>
             ) : null}
-            <h2 className="mt-4 text-[clamp(1.65rem,3vw,2.6rem)] font-semibold leading-[0.96] tracking-[-0.05em] text-[var(--ui-foreground)]">
-              {title}
-            </h2>
+            {showTitle && title ? (
+              <h2 className="mt-4 text-[clamp(1.65rem,3vw,2.6rem)] font-semibold leading-[0.96] tracking-[-0.05em] text-[var(--ui-foreground)]">
+                {title}
+              </h2>
+            ) : null}
             {subtitle ? (
-              <p className="mt-3 max-w-2xl text-sm text-[var(--ui-muted-foreground)] md:text-base">
+              <p className={cn("max-w-2xl text-sm text-[var(--ui-muted-foreground)] md:text-base", showTitle ? "mt-3" : "mt-4")}>
                 {subtitle}
               </p>
             ) : null}

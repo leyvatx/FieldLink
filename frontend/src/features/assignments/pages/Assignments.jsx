@@ -258,46 +258,46 @@ const Assignments = () => {
           ]}
         />
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="rounded-2xl">
-            <div className="flex items-center gap-3">
-              <PiClockCountdownBold size={20} />
-              <div>
-                <div className="text-sm ui-text-muted">Pendientes</div>
-                <div className="text-3xl font-semibold">{metrics.pending}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="flex items-center gap-3">
-              <PiMapPinBold size={20} />
-              <div>
-                <div className="text-sm ui-text-muted">Ya asignadas</div>
-                <div className="text-3xl font-semibold">{metrics.assigned}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="flex items-center gap-3">
-              <PiCheckCircleBold size={20} />
-              <div>
-                <div className="text-sm ui-text-muted">Técnicos libres</div>
-                <div className="text-3xl font-semibold">
-                  {metrics.availableTechnicians}
-                </div>
-              </div>
-            </div>
-          </Card>
-          <Card className="rounded-2xl">
-            <div className="flex items-center gap-3">
-              <PiUserListBold size={20} />
-              <div>
-                <div className="text-sm ui-text-muted">Técnicos ocupados</div>
-                <div className="text-3xl font-semibold">{metrics.busyTechnicians}</div>
-              </div>
-            </div>
-          </Card>
-        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <div className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
           <Card className="rounded-2xl">
