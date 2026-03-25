@@ -4,7 +4,7 @@ import { useAuth } from "@context/AuthProvider";
 import useUpdateSettings from "@features/settings/hooks/useUpdateSettings";
 
 const SidebarContext = createContext();
-const MOBILE_BREAKPOINT = "(max-width: 1023px)";
+const MOBILE_BREAKPOINT = "(max-width: 1400px)";
 
 const getInitialMobileState = () => {
   if (typeof window === "undefined") {
@@ -52,6 +52,10 @@ export const SidebarProvider = ({ children }) => {
       return undefined;
     }
 
+    const previousOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         setIsMobileOpen(false);
@@ -60,7 +64,10 @@ export const SidebarProvider = ({ children }) => {
 
     window.addEventListener("keydown", handleKeyDown);
 
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isMobileOpen]);
 
   const closeMobileSidebar = useCallback(() => {

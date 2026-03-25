@@ -1,32 +1,15 @@
-import { Button, Form, Space, Tooltip } from "@/lib/antd-compat";
-import { PiInfo } from "react-icons/pi";
+import { Button } from "@/lib/antd-compat";
 
 const FormActions = ({ onCancel, isLoading }) => {
   return (
-    <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-      <Space>
-        <Tooltip title="Los campos marcados con * son obligatorios">
-          <Button 
-            icon={<PiInfo size={16} />} 
-            type="text" 
-            size="small"
-          />
-        </Tooltip>
-        <Button
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={isLoading}
-        >
-          {isLoading ? "Guardando..." : "Guardar cambios"}
-        </Button>
-      </Space>
-    </Form.Item>
+    <div className="sticky bottom-0 z-10 -mx-1 mt-2 flex flex-col-reverse gap-2 border-t border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-1 pt-4 backdrop-blur sm:flex-row sm:justify-end">
+      <Button onClick={onCancel} disabled={isLoading}>
+        Cancelar
+      </Button>
+      <Button type="primary" htmlType="submit" loading={isLoading}>
+        {isLoading ? "Guardando..." : "Guardar cambios"}
+      </Button>
+    </div>
   );
 };
 

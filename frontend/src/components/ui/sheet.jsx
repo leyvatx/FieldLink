@@ -4,7 +4,11 @@ import { cva } from "class-variance-authority";
 import { PiXBold } from "react-icons/pi";
 import { cn } from "@/lib/utils";
 
-const Sheet = DialogPrimitive.Root;
+const Sheet = ({ children, ...props }) => (
+  <DialogPrimitive.Root modal={false} {...props}>
+    {children}
+  </DialogPrimitive.Root>
+);
 const SheetTrigger = DialogPrimitive.Trigger;
 const SheetClose = DialogPrimitive.Close;
 const SheetPortal = DialogPrimitive.Portal;
@@ -25,14 +29,14 @@ const SheetOverlay = React.forwardRef(function SheetOverlay({ className, ...prop
 });
 
 const sheetVariants = cva(
-  "fixed z-[1101] flex flex-col border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-dialog)] will-change-[opacity,transform] transition-[opacity,transform] duration-240 ease-out data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
+  "fixed z-[1101] flex min-h-0 flex-col overflow-hidden overscroll-contain border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-dialog)] pointer-events-auto will-change-[opacity,transform] transition-[opacity,transform] duration-240 ease-out data-[state=closed]:opacity-0 data-[state=open]:opacity-100",
   {
     variants: {
       side: {
-        top: "inset-x-3 top-3 rounded-[1.75rem] border-b data-[state=closed]:-translate-y-6 data-[state=open]:translate-y-0",
-        bottom: "inset-x-3 bottom-3 rounded-[1.75rem] border-t data-[state=closed]:translate-y-6 data-[state=open]:translate-y-0",
-        left: "inset-y-3 left-3 h-auto w-[min(94vw,26rem)] rounded-[1.75rem] data-[state=closed]:-translate-x-8 data-[state=open]:translate-x-0",
-        right: "inset-y-3 right-3 h-auto w-[min(94vw,26rem)] rounded-[1.75rem] data-[state=closed]:translate-x-8 data-[state=open]:translate-x-0",
+        top: "inset-x-0 top-0 max-h-[100dvh] rounded-b-[1.5rem] border-b data-[state=closed]:-translate-y-6 data-[state=open]:translate-y-0",
+        bottom: "inset-x-0 bottom-0 max-h-[100dvh] rounded-t-[1.5rem] border-t data-[state=closed]:translate-y-6 data-[state=open]:translate-y-0",
+        left: "left-3 top-3 max-h-[calc(100dvh-1.5rem)] w-[min(94vw,30rem)] rounded-[1.75rem] border data-[state=closed]:-translate-x-8 data-[state=open]:translate-x-0",
+        right: "right-3 top-3 max-h-[calc(100dvh-1.5rem)] w-[min(94vw,30rem)] rounded-[1.75rem] border data-[state=closed]:translate-x-8 data-[state=open]:translate-x-0",
       },
     },
     defaultVariants: {
@@ -69,11 +73,11 @@ const SheetContent = React.forwardRef(function SheetContent(
 });
 
 const SheetHeader = ({ className, ...props }) => (
-  <div className={cn("border-b border-[var(--ui-border)] px-4 py-4 sm:px-6 sm:py-5", className)} {...props} />
+  <div className={cn("shrink-0 border-b border-[var(--ui-border)] px-4 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-16", className)} {...props} />
 );
 
 const SheetFooter = ({ className, ...props }) => (
-  <div className={cn("mt-auto border-t border-[var(--ui-border)] px-4 py-4 sm:px-6", className)} {...props} />
+  <div className={cn("mt-auto shrink-0 border-t border-[var(--ui-border)] px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex sm:flex-wrap sm:justify-end sm:gap-2 sm:px-6", className)} {...props} />
 );
 
 const SheetTitle = React.forwardRef(function SheetTitle({ className, ...props }, ref) {

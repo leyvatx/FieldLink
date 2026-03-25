@@ -41,7 +41,7 @@ const Sidebar = () => {
           className="sidebar-backdrop"
           onClick={closeMobileSidebar}
           type="button"
-          aria-label="Cerrar menu lateral"
+          aria-label="Cerrar menú lateral"
           tabIndex={isMobileOpen ? 0 : -1}
         />
       ) : null}
@@ -58,7 +58,7 @@ const Sidebar = () => {
               </span>
               <span className="sidebar-brand-copy">
                 <span className="sidebar-brand-eyebrow">FieldLink</span>
-                <strong className="sidebar-brand-title">Field Ops</strong>
+                <strong className="sidebar-brand-title">Control Hub</strong>
               </span>
             </Link>
             {isMobile ? (

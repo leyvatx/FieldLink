@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { Table, Tag } from "@/lib/antd-compat";
+import { Button, Dropdown, Table, Tag } from "@/lib/antd-compat";
+import { PiDotsThreeVertical } from "react-icons/pi";
 import useUsers from "@features/users/hooks/useUsers";
 import useUsersContextMenu from "@features/users/hooks/useUsersContextMenu";
 import { ROLE_COLORS, ROLE_LABELS } from "@utils/constants/roles";
@@ -10,7 +11,7 @@ const UsersTable = ({ filters }) => {
     role: filters?.role || undefined,
     isActive: filters?.isActive,
   });
-  const handleContextMenu = useUsersContextMenu();
+  const { handleContextMenu, getMenuItems } = useUsersContextMenu();
 
   const filteredUsers = useMemo(() => {
     return (users || []).filter((record) => {
@@ -26,25 +27,29 @@ const UsersTable = ({ filters }) => {
 
   const columns = [
     {
-      title: "Nombre",
-      dataIndex: "name",
-      key: "name",
+      title: "Usuario",
+      key: "identity",
+      width: 320,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">{record.name}</div>
+          <div className="text-sm ui-text-muted">{record.email}</div>
+        </div>
+      ),
     },
     {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-    },
-    {
-      title: "Teléfono",
-      dataIndex: "phone",
-      key: "phone",
-      render: (phone) => phone || "-",
+      title: "Contacto",
+      key: "contact",
+      width: 200,
+      render: (_, record) => (
+        <span className="text-sm text-[var(--ui-foreground)]">{record.phone || "-"}</span>
+      ),
     },
     {
       title: "Rol",
       dataIndex: "role",
       key: "role",
+      width: 160,
       render: (role) => (
         <Tag color={ROLE_COLORS[role] || "default"}>
           {ROLE_LABELS[role] || role || "N/A"}
@@ -55,8 +60,25 @@ const UsersTable = ({ filters }) => {
       title: "Estado",
       dataIndex: "is_active",
       key: "is_active",
+      width: 140,
       render: (isActive) =>
         isActive ? <Tag color="success">Activo</Tag> : <Tag color="error">Inactivo</Tag>,
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 72,
+      align: "right",
+      render: (_, record) => (
+        <Dropdown menu={{ items: getMenuItems(record) }} placement="bottomRight">
+          <Button
+            type="text"
+            size="small"
+            icon={<PiDotsThreeVertical size={16} />}
+            aria-label={`Acciones de ${record.name}`}
+          />
+        </Dropdown>
+      ),
     },
   ];
 
@@ -75,6 +97,7 @@ const UsersTable = ({ filters }) => {
         showQuickJumper: true,
         showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} registros`,
       }}
+      scroll={{ x: 820 }}
     />
   );
 };

@@ -75,7 +75,7 @@ export const sidebarItems = [
         icon: "PiUsersThreeFill",
         roles: [COMPANY_ROLE],
         permission: "view.users.option",
-        wordkeys: ["usuarios", "equipo", "tecnicos", "staff"],
+        wordkeys: ["usuarios", "equipo", "tecnicos", "técnicos", "staff"],
         path: "/users",
       },
       {
@@ -84,7 +84,7 @@ export const sidebarItems = [
         icon: "PiUsersThreeFill",
         roles: [SUPERVISOR_ROLE],
         permission: "view.users.option",
-        wordkeys: ["usuarios", "equipo", "tecnicos", "staff"],
+        wordkeys: ["usuarios", "equipo", "tecnicos", "técnicos", "staff"],
         path: "/users",
       },
       {
@@ -141,7 +141,7 @@ export const sidebarItems = [
         key: "service-requests",
         label: "Solicitudes",
         icon: "PiClipboardTextFill",
-        wordkeys: ["solicitudes", "servicios", "validacion"],
+        wordkeys: ["solicitudes", "servicios", "validacion", "validación"],
         path: "/service-requests",
       },
       {
@@ -157,7 +157,7 @@ export const sidebarItems = [
     key: "field",
     label: "Trabajo en campo",
     icon: "PiCalendarCheckFill",
-    wordkeys: ["agenda", "tecnico", "campo", "ordenes"],
+    wordkeys: ["agenda", "tecnico", "técnico", "campo", "ordenes"],
     children: [
       {
         key: "agenda",

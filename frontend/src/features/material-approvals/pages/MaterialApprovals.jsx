@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
-import { Card, Image, Modal, Table, Tag } from "@/lib/antd-compat";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Card, Image, Input, InputNumber, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import ModuleOverview from "@components/ModuleOverview";
+import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   getUsedMaterials,
@@ -12,23 +12,31 @@ import {
 } from "@api/materialApprovalService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
-import { useDialog } from "@context/DialogProvider";
 import { matchesText } from "@/lib/filtering";
 
 const STATUS_COLORS = {
   PENDING: "default",
   APPROVED: "green",
   REJECTED: "red",
-  ADJUSTED: "orange",
+  ADJUSTED: "gold",
 };
+
+const STATUS_LABELS = {
+  PENDING: "Pendiente",
+  APPROVED: "Aprobada",
+  REJECTED: "Rechazada",
+  ADJUSTED: "Ajustada",
+};
+
+function resolveStatus(record) {
+  return record.approval_status || "PENDING";
+}
 
 const MaterialApprovals = () => {
   const { success, error } = useMessage();
-  const { openContextMenu } = useDialog();
-  const [rejecting, setRejecting] = useState(null);
-  const [adjusting, setAdjusting] = useState(null);
-  const [reason, setReason] = useState("");
-  const [adjustQty, setAdjustQty] = useState(0);
+  const [reviewReason, setReviewReason] = useState("");
+  const [reviewQuantity, setReviewQuantity] = useState(undefined);
+  const [selectedRecordId, setSelectedRecordId] = useState(null);
   const [filters, setFilters] = useState({
     order: "",
     material: "",
@@ -62,41 +70,12 @@ const MaterialApprovals = () => {
       success("Revisión actualizada");
       queryClient.invalidateQueries({ queryKey: ["used-materials"] });
     },
-    onError: () => error("No se pudo actualizar la solicitud"),
+    onError: () => error("No se pudo actualizar la revisión"),
   });
-
-  const openApprovalContextMenu = useCallback(
-    (event, record) => {
-      openContextMenu({
-        event,
-        items: [
-          {
-            key: "approve",
-            label: "Aprobar material",
-            disabled: record.approval_status === "APPROVED",
-            onClick: () => approvalMutation.mutate({ action: "approve", record }),
-          },
-          {
-            key: "reject",
-            label: "Rechazar material",
-            danger: true,
-            disabled: record.approval_status === "REJECTED",
-            onClick: () => setRejecting(record),
-          },
-          {
-            key: "adjust",
-            label: "Ajustar cantidad",
-            onClick: () => setAdjusting(record),
-          },
-        ],
-      });
-    },
-    [approvalMutation, openContextMenu]
-  );
 
   const filteredUsedMaterials = useMemo(() => {
     return usedMaterials.filter((record) => {
-      if (filters.status && record.approval_status !== filters.status) {
+      if (filters.status && resolveStatus(record) !== filters.status) {
         return false;
       }
 
@@ -107,42 +86,45 @@ const MaterialApprovals = () => {
     });
   }, [filters, usedMaterials]);
 
-  const columns = [
-    {
-      title: "Orden",
-      dataIndex: "work_order_id",
-      key: "work_order_id",
-    },
-    {
-      title: "Material",
-      dataIndex: "material_name",
-      key: "material_name",
-    },
-    {
-      title: "Cantidad usada",
-      dataIndex: "quantity_used",
-      key: "quantity_used",
-    },
-    {
-      title: "Estado",
-      dataIndex: "approval_status",
-      key: "approval_status",
-      render: (value) =>
-        value ? <Tag color={STATUS_COLORS[value]}>{value}</Tag> : <Tag>Sin revisión</Tag>,
-    },
-  ];
+  useEffect(() => {
+    if (!filteredUsedMaterials.length) {
+      if (selectedRecordId !== null) {
+        setSelectedRecordId(null);
+      }
+      return;
+    }
+
+    const stillVisible = filteredUsedMaterials.some(
+      (record) => String(record.id) === String(selectedRecordId)
+    );
+
+    if (!stillVisible) {
+      setSelectedRecordId(filteredUsedMaterials[0].id);
+    }
+  }, [filteredUsedMaterials, selectedRecordId]);
+
+  const selectedRecord = useMemo(
+    () =>
+      filteredUsedMaterials.find((record) => String(record.id) === String(selectedRecordId)) || null,
+    [filteredUsedMaterials, selectedRecordId]
+  );
+
+  useEffect(() => {
+    setReviewReason("");
+    setReviewQuantity(selectedRecord?.quantity_used ?? undefined);
+  }, [selectedRecord]);
 
   const approvalMetrics = useMemo(
     () => ({
       total: filteredUsedMaterials.length,
       pending: filteredUsedMaterials.filter(
-        (record) => record.approval_status === "PENDING" || !record.approval_status
+        (record) => resolveStatus(record) === "PENDING"
       ).length,
       approved: filteredUsedMaterials.filter(
-        (record) => record.approval_status === "APPROVED"
+        (record) => resolveStatus(record) === "APPROVED"
       ).length,
       adjusted: filteredUsedMaterials.filter(
-        (record) => record.approval_status === "ADJUSTED"
+        (record) => resolveStatus(record) === "ADJUSTED"
       ).length,
     }),
     [filteredUsedMaterials]
@@ -150,7 +132,7 @@ const MaterialApprovals = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Solicitudes de material",
+      title: "Filtros de evidencias",
       values: filters,
       fields: [
         {
@@ -187,59 +169,171 @@ const MaterialApprovals = () => {
     [filters]
   );
 
+  const columns = [
+    {
+      title: "Orden",
+      dataIndex: "work_order_id",
+      key: "work_order_id",
+      width: 180,
+      render: (value) => String(value).slice(0, 8),
+    },
+    {
+      title: "Material",
+      key: "material",
+      width: 300,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">{record.material_name}</div>
+          <div className="text-sm ui-text-muted">{record.material_unit || "Sin unidad"}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Uso",
+      key: "quantity_used",
+      width: 180,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div>{record.quantity_used}</div>
+          <div className="text-sm ui-text-muted">
+            {record.material_unit || "unidad"}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Fotos",
+      key: "photos",
+      width: 140,
+      render: (_, record) => `${record.photos?.filter((photo) => photo.file).length || 0} adjuntas`,
+    },
+    {
+      title: "Estado",
+      key: "approval_status",
+      width: 180,
+      render: (_, record) => {
+        const status = resolveStatus(record);
+        return (
+          <Tag color={STATUS_COLORS[status] || "default"}>
+            {STATUS_LABELS[status] || status}
+          </Tag>
+        );
+      },
+    },
+  ];
+
   return (
     <PageLayout
-      title="Validación de evidencias"
+      title="Evidencias y material"
       searchConfig={searchConfig}
     >
-      <div className="grid gap-6">
-        <ModuleOverview
-          badge="Material"
-          title="Validacion de evidencias"
-          subtitle="Revision de fotos, cantidades y aprobacion."
-          tags={["Evidencias", "Cantidades", "Revision"]}
-          stats={[
-            {
-              label: "Solicitudes",
-              value: approvalMetrics.total,
-              help: "visibles",
-            },
-            {
-              label: "Pendientes",
-              value: approvalMetrics.pending,
-              help: "por revisar",
-            },
-            {
-              label: "Aprobadas",
-              value: approvalMetrics.approved,
-              help: "confirmadas",
-            },
-            {
-              label: "Ajustadas",
-              value: approvalMetrics.adjusted,
-              help: "con cambio de cantidad",
-            },
-          ]}
-        />
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.48fr)_minmax(22rem,0.92fr)]">
+        <div className="2xl:col-span-2">
+          <ModuleStatStrip
+            badge="Evidencias"
+            description="Selecciona una solicitud de material y revisa fotos, cantidad y decision desde el mismo panel."
+            stats={[
+              {
+                label: "Visibles",
+                value: approvalMetrics.total,
+                help: "registros filtrados",
+              },
+              {
+                label: "Pendientes",
+                value: approvalMetrics.pending,
+                help: "por revisar",
+              },
+              {
+                label: "Aprobadas",
+                value: approvalMetrics.approved,
+                help: "confirmadas",
+              },
+              {
+                label: "Ajustadas",
+                value: approvalMetrics.adjusted,
+                help: "con cambio",
+              },
+            ]}
+          />
+        </div>
 
-        <Card className="rounded-2xl">
-          <div className="mb-3 text-xs ui-text-muted">
-            Menu contextual por fila para aprobar, rechazar o ajustar.
+        <Card className="rounded-[28px]">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                Revisión de material usado
+              </div>
+              <div className="mt-1 text-sm ui-text-muted">
+                La tabla lista solicitudes y el panel lateral resuelve la revisión completa.
+              </div>
+            </div>
+            <Tag color="purple">{filteredUsedMaterials.length} visibles</Tag>
           </div>
           <Table
             rowKey="id"
             dataSource={filteredUsedMaterials}
             columns={columns}
-            loading={isLoading}
+            loading={isLoading || approvalMutation.isPending}
+            pagination={{ pageSize: 8 }}
+            scroll={{ x: 920 }}
             onRow={(record) => ({
-              onContextMenu: (event) => openApprovalContextMenu(event, record),
+              onClick: () => setSelectedRecordId(record.id),
+              className:
+                String(selectedRecordId) === String(record.id)
+                  ? "bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))]"
+                  : undefined,
             })}
-            expandable={{
-              expandedRowRender: (record) => (
-                <div className="flex flex-wrap gap-3">
-                  {record.photos?.filter((photo) => photo.file).length ? (
+          />
+        </Card>
+
+        <Card className="rounded-[28px]">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                Evidencia activa
+              </div>
+              <div className="mt-1 text-sm ui-text-muted">
+                Revisa fotos, cantidad y registra tu decision sin abrir ventanas aparte.
+              </div>
+            </div>
+            {selectedRecord ? (
+              <Tag color={STATUS_COLORS[resolveStatus(selectedRecord)] || "default"}>
+                {STATUS_LABELS[resolveStatus(selectedRecord)] || resolveStatus(selectedRecord)}
+              </Tag>
+            ) : null}
+          </div>
+
+          {selectedRecord ? (
+            <div className="grid gap-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Orden</div>
+                  <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                    {String(selectedRecord.work_order_id).slice(0, 8)}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">
+                    {selectedRecord.material_name}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Cantidad usada</div>
+                  <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                    {selectedRecord.quantity_used}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">
+                    {selectedRecord.material_unit || "unidad"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_97%,transparent)] p-4">
+                <div className="text-sm font-medium text-[var(--ui-foreground)]">
+                  Evidencias adjuntas
+                </div>
+                <div className="mt-3">
+                  {selectedRecord.photos?.filter((photo) => photo.file).length ? (
                     <Image.PreviewGroup>
-                      {record.photos
+                      {selectedRecord.photos
                         .filter((photo) => photo.file)
                         .map((photo) => (
                           <Image
@@ -247,70 +341,92 @@ const MaterialApprovals = () => {
                             width={120}
                             src={photo.file}
                             alt="evidencia"
+                            className="h-[7.5rem] rounded-2xl border border-[var(--ui-border)] object-cover"
                           />
                         ))}
                     </Image.PreviewGroup>
                   ) : (
-                    <span className="text-sm ui-text-muted">
-                      Sin fotos adjuntas
-                    </span>
+                    <div className="text-sm ui-text-muted">Sin fotos adjuntas.</div>
                   )}
                 </div>
-              ),
-            }}
-            pagination={{ pageSize: 8 }}
-          />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Cantidad aprobada
+                  </label>
+                  <InputNumber
+                    className="w-full"
+                    min={0}
+                    value={reviewQuantity}
+                    onChange={setReviewQuantity}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Motivo de rechazo
+                  </label>
+                  <Input.TextArea
+                    rows={4}
+                    value={reviewReason}
+                    onChange={(event) => setReviewReason(event.target.value)}
+                    placeholder="Explica por que se rechaza la evidencia"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button
+                  type="primary"
+                  onClick={() =>
+                    approvalMutation.mutate({
+                      action: "approve",
+                      record: selectedRecord,
+                      payload: {},
+                    })
+                  }
+                  disabled={resolveStatus(selectedRecord) === "APPROVED"}
+                  loading={approvalMutation.isPending}
+                >
+                  Aprobar
+                </Button>
+                <Button
+                  onClick={() =>
+                    approvalMutation.mutate({
+                      action: "adjust",
+                      record: selectedRecord,
+                      payload: { quantity: Number(reviewQuantity) },
+                    })
+                  }
+                  disabled={reviewQuantity == null || Number(reviewQuantity) < 0}
+                  loading={approvalMutation.isPending}
+                >
+                  Ajustar cantidad
+                </Button>
+                <Button
+                  danger
+                  onClick={() =>
+                    approvalMutation.mutate({
+                      action: "reject",
+                      record: selectedRecord,
+                      payload: { reason: reviewReason.trim() },
+                    })
+                  }
+                  disabled={!reviewReason.trim() || resolveStatus(selectedRecord) === "REJECTED"}
+                  loading={approvalMutation.isPending}
+                >
+                  Rechazar
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm ui-text-muted">
+              No hay evidencias disponibles con los filtros actuales.
+            </div>
+          )}
         </Card>
       </div>
-
-      <Modal
-        open={!!rejecting}
-        title="Rechazar evidencia"
-        onCancel={() => setRejecting(null)}
-        onOk={() => {
-          approvalMutation.mutate({
-            action: "reject",
-            record: rejecting,
-            payload: { reason },
-          });
-          setRejecting(null);
-          setReason("");
-        }}>
-        <p className="text-sm ui-text-muted mb-3">
-          Indica el motivo del rechazo.
-        </p>
-        <input
-          className="w-full border ui-border-subtle rounded-lg px-3 py-2 ui-bg-surface"
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          placeholder="Motivo"
-        />
-      </Modal>
-
-      <Modal
-        open={!!adjusting}
-        title="Ajustar cantidad"
-        onCancel={() => setAdjusting(null)}
-        onOk={() => {
-          approvalMutation.mutate({
-            action: "adjust",
-            record: adjusting,
-            payload: { quantity: Number(adjustQty) },
-          });
-          setAdjusting(null);
-          setAdjustQty(0);
-        }}>
-        <p className="text-sm ui-text-muted mb-3">
-          Ingresa la cantidad aprobada.
-        </p>
-        <input
-          type="number"
-          className="w-full border ui-border-subtle rounded-lg px-3 py-2 ui-bg-surface"
-          value={adjustQty}
-          min={0}
-          onChange={(event) => setAdjustQty(event.target.value)}
-        />
-      </Modal>
     </PageLayout>
   );
 };

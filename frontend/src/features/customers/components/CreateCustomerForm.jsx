@@ -1,4 +1,4 @@
-import { Button, Form, Input, Space } from "@/lib/antd-compat";
+import { Button, Form, Input } from "@/lib/antd-compat";
 import { useMutation } from "@tanstack/react-query";
 import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
@@ -47,36 +47,31 @@ const CreateCustomerForm = ({ onCreated }) => {
       form={form}
       layout="vertical"
       onFinish={(values) => createMutation.mutate(values)}
+      className="grid gap-5"
     >
-      <Form.Item
-        label="Nombre"
-        name="name"
-        rules={[
-          { required: true, message: "El nombre es obligatorio" },
-          { max: 150, message: "El nombre no puede exceder 150 caracteres" },
-        ]}
-      >
-        <Input
-          maxLength={150}
-          placeholder="Nombre del cliente"
-          showCount
-        />
-      </Form.Item>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Form.Item
+          label="Nombre"
+          name="name"
+          rules={[
+            { required: true, message: "El nombre es obligatorio" },
+            { max: 150, message: "El nombre no puede exceder 150 caracteres" },
+          ]}
+        >
+          <Input maxLength={150} placeholder="Nombre del cliente" showCount />
+        </Form.Item>
 
-      <Form.Item
-        label="Teléfono"
-        name="phone"
-        rules={[
-          { required: true, message: "El teléfono es obligatorio" },
-          { max: 20, message: "El teléfono no puede exceder 20 caracteres" },
-        ]}
-      >
-        <Input
-          maxLength={20}
-          placeholder="Teléfono de contacto"
-          showCount
-        />
-      </Form.Item>
+        <Form.Item
+          label="Teléfono"
+          name="phone"
+          rules={[
+            { required: true, message: "El teléfono es obligatorio" },
+            { max: 20, message: "El teléfono no puede exceder 20 caracteres" },
+          ]}
+        >
+          <Input maxLength={20} placeholder="Teléfono de contacto" showCount />
+        </Form.Item>
+      </div>
 
       <Form.Item
         label="Correo"
@@ -86,11 +81,7 @@ const CreateCustomerForm = ({ onCreated }) => {
           { max: 254, message: "El correo no puede exceder 254 caracteres" },
         ]}
       >
-        <Input
-          maxLength={254}
-          placeholder="Correo del cliente"
-          showCount
-        />
+        <Input maxLength={254} placeholder="Correo del cliente" showCount />
       </Form.Item>
 
       <Form.Item
@@ -120,23 +111,18 @@ const CreateCustomerForm = ({ onCreated }) => {
         <input type="hidden" />
       </Form.Item>
 
-      <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>
-        <Space>
-          <Button
-            onClick={handleClose}
-            disabled={createMutation.isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={createMutation.isPending}
-          >
-            {createMutation.isPending ? "Guardando..." : "Crear cliente"}
-          </Button>
-        </Space>
-      </Form.Item>
+      <div className="sticky bottom-0 z-10 -mx-1 mt-2 flex flex-col-reverse gap-2 border-t border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-1 pt-4 backdrop-blur sm:flex-row sm:justify-end">
+        <Button onClick={handleClose} disabled={createMutation.isPending}>
+          Cancelar
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          loading={createMutation.isPending}
+        >
+          {createMutation.isPending ? "Guardando..." : "Crear cliente"}
+        </Button>
+      </div>
     </Form>
   );
 };

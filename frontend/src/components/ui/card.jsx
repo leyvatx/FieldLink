@@ -4,7 +4,7 @@ export const Card = ({ className, ...props }) => (
   <div
     data-slot="card"
     className={cn(
-      "rounded-[1.5rem] border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-card)] backdrop-blur-xl",
+      "min-w-0 rounded-[1.5rem] border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-card)] backdrop-blur-xl",
       className
     )}
     {...props}

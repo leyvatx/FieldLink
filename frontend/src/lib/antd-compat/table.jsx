@@ -266,7 +266,7 @@ export function Table({
                 value={pageSize}
                 options={[8, 10, 20, 50, 100].map((option) => ({
                   value: option,
-                  label: `${option} / pagina`,
+                  label: `${option} / página`,
                 }))}
                 onChange={(value) => updatePagination(1, Number(value))}
               />

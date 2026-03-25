@@ -21,11 +21,11 @@ const BasicInfoSection = ({ formData, fieldErrors, handleChange, isEditing }) =>
           Datos principales
         </Title>
         <Paragraph type="secondary" className="mt-2 max-w-2xl text-sm">
-          Nombre, telefono y correo de uso interno.
+          Nombre, teléfono y correo de uso interno.
         </Paragraph>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_300px]">
         <Form layout="vertical" className="grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className={fieldShellClass}>
@@ -107,7 +107,7 @@ const BasicInfoSection = ({ formData, fieldErrors, handleChange, isEditing }) =>
             onClick={() => setPasswordModalVisible(true)}
             className="mt-5 w-full"
           >
-            Cambiar contrasena
+            Cambiar contraseña
           </Button>
         </div>
       </div>

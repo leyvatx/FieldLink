@@ -64,7 +64,7 @@ const ModuleOverview = ({
       </Card>
 
       {stats.length ? (
-        <div className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", stats.length === 3 && "xl:grid-cols-3")}>
+        <div className={cn("grid gap-4 sm:grid-cols-2 2xl:grid-cols-4", stats.length === 3 && "2xl:grid-cols-3")}>
           {stats.map((stat, index) => (
             <Card
               key={stat.label}

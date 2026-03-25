@@ -39,8 +39,9 @@ const DropdownMenuSubContent = React.forwardRef(function DropdownMenuSubContent(
       <DropdownMenuPrimitive.SubContent
         ref={ref}
         sideOffset={8}
+        collisionPadding={12}
         className={cn(
-          "z-[1205] min-w-[12rem] overflow-hidden rounded-[1.1rem] border border-[var(--ui-border)] bg-[var(--ui-popover)] p-2 text-[var(--ui-popover-foreground)] shadow-[var(--ui-shadow-card)] will-change-[opacity,transform] transition-[opacity,transform] duration-180 ease-out data-[state=closed]:translate-x-1.5 data-[state=closed]:scale-[0.98] data-[state=closed]:opacity-0 data-[state=open]:translate-x-0 data-[state=open]:scale-100 data-[state=open]:opacity-100 origin-[var(--radix-dropdown-menu-content-transform-origin)]",
+          "z-[1205] min-w-[12rem] max-h-[min(70vh,24rem)] max-w-[min(calc(100vw-1rem),22rem)] overflow-auto overscroll-contain rounded-[1.1rem] border border-[var(--ui-border)] bg-[var(--ui-popover)] p-2 text-[var(--ui-popover-foreground)] shadow-[var(--ui-shadow-card)] will-change-[opacity,transform] transition-[opacity,transform] duration-180 ease-out data-[state=closed]:translate-x-1.5 data-[state=closed]:scale-[0.98] data-[state=closed]:opacity-0 data-[state=open]:translate-x-0 data-[state=open]:scale-100 data-[state=open]:opacity-100 origin-[var(--radix-dropdown-menu-content-transform-origin)]",
           className
         )}
         {...props}
@@ -58,8 +59,9 @@ const DropdownMenuContent = React.forwardRef(function DropdownMenuContent(
       <DropdownMenuPrimitive.Content
         ref={ref}
         sideOffset={sideOffset}
+        collisionPadding={12}
         className={cn(
-          "z-[1200] min-w-[12rem] overflow-hidden rounded-[1.1rem] border border-[var(--ui-border)] bg-[var(--ui-popover)] p-2 text-[var(--ui-popover-foreground)] shadow-[var(--ui-shadow-card)] will-change-[opacity,transform] transition-[opacity,transform] duration-180 ease-out data-[state=closed]:translate-y-1.5 data-[state=closed]:scale-[0.98] data-[state=closed]:opacity-0 data-[state=open]:translate-y-0 data-[state=open]:scale-100 data-[state=open]:opacity-100 origin-[var(--radix-dropdown-menu-content-transform-origin)]",
+          "z-[1200] min-w-[12rem] max-h-[min(70vh,24rem)] max-w-[min(calc(100vw-1rem),22rem)] overflow-auto overscroll-contain rounded-[1.1rem] border border-[var(--ui-border)] bg-[var(--ui-popover)] p-2 text-[var(--ui-popover-foreground)] shadow-[var(--ui-shadow-card)] will-change-[opacity,transform] transition-[opacity,transform] duration-180 ease-out data-[state=closed]:translate-y-1.5 data-[state=closed]:scale-[0.98] data-[state=closed]:opacity-0 data-[state=open]:translate-y-0 data-[state=open]:scale-100 data-[state=open]:opacity-100 origin-[var(--radix-dropdown-menu-content-transform-origin)]",
           className
         )}
         {...props}

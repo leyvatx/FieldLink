@@ -24,7 +24,7 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
         if self.action in ['start_transit', 'arrive', 'complete']:
             return [IsAuthenticated(), IsTechnician()]
 
-        if self.action in ['create', 'update', 'partial_update', 'destroy', 'assign', 'cancel']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy', 'assign', 'unassign', 'cancel']:
             return [IsAuthenticated(), IsDispatcherOrOwner()]
 
         return [IsAuthenticated()]
@@ -100,6 +100,26 @@ class WorkOrderViewSet(viewsets.ModelViewSet):
                 {'error': 'Technician not found or not in your company'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsDispatcherOrOwner])
+    def unassign(self, request, pk=None):
+        """Return order to pending queue without cancelling it."""
+        order = self.get_object()
+
+        if order.status in [WorkOrder.Status.COMPLETED, WorkOrder.Status.CANCELLED]:
+            return Response(
+                {'error': 'Cannot unassign a completed or cancelled order'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order.technician = None
+        order.status = WorkOrder.Status.PENDING
+        order.started_at = None
+        order.arrived_at = None
+        order.completed_at = None
+        order.save()
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsTechnician])
     def start_transit(self, request, pk=None):

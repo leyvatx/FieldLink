@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "@api/authService";
+import { AUTH_USER_QUERY_KEY, resetAppQueries } from "@lib/queryClient";
 
 const useLogin = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: login,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       localStorage.setItem("token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
-      queryClient.setQueryData(["auth", "user"], data.user);
-      queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+      await resetAppQueries(data.user);
+      queryClient.invalidateQueries({ queryKey: AUTH_USER_QUERY_KEY });
     },
   });
 };

@@ -180,7 +180,24 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 34%);
 }
 
-@media (max-width: 580px) {
+.page-topbar-actions > * {
+  min-width: 0;
+}
+
+.page-topbar-actions [data-slot="button"] .ant-btn-icon > svg,
+.page-topbar-actions [data-slot="button"] > svg,
+.page-topbar-actions button .ant-btn-icon > svg,
+.page-topbar-actions button > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.page-topbar-actions button[aria-label="Abrir menú de usuario"],
+.page-topbar-actions button[aria-label="Abrir menu de usuario"] {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1180px) {
   .page-topbar-actions {
     gap: 0.5rem;
   }
@@ -190,7 +207,13 @@
   }
 
   .page-topbar-actions .ui-button-has-icon {
-    padding-inline: 0.75rem;
+    padding-inline: 0.7rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .page-topbar-actions {
+    gap: 0.5rem;
   }
 }
 
@@ -274,6 +297,11 @@
 }
 
 @media (max-width: 640px) {
+  [data-slot="popover-content"] {
+    max-height: calc(100dvh - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
+
   [data-slot="dialog-content"][data-mobile-adaptive="true"] {
     top: auto;
     bottom: 0.5rem;
@@ -297,24 +325,27 @@
 
   [data-slot="sheet-content"][data-side="left"],
   [data-slot="sheet-content"][data-side="right"] {
-    inset: auto 0.5rem 0.5rem 0.5rem !important;
+    inset: 0.5rem 0.5rem auto 0.5rem !important;
     width: calc(100vw - 1rem) !important;
-    height: min(86dvh, 52rem) !important;
-  }
-
-  [data-slot="sheet-content"][data-side="left"][data-state="open"],
-  [data-slot="sheet-content"][data-side="right"][data-state="open"] {
-    transform: translateX(0) translateY(0) !important;
-  }
-
-  [data-slot="sheet-content"][data-side="left"][data-state="closed"],
-  [data-slot="sheet-content"][data-side="right"][data-state="closed"] {
-    transform: translateY(1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    height: auto !important;
   }
 
   [data-slot="sheet-content"][data-side="top"],
   [data-slot="sheet-content"][data-side="bottom"] {
-    inset-inline: 0.5rem !important;
-    width: calc(100vw - 1rem) !important;
+    inset-inline: 0 !important;
+    width: 100vw !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  [data-slot="dialog-content"][data-mobile-adaptive="true"] {
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+
+  [data-slot="sheet-content"][data-side="left"],
+  [data-slot="sheet-content"][data-side="right"] {
+    width: min(calc(100vw - 1.5rem), 30rem) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
   }
 }

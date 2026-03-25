@@ -21,55 +21,63 @@ const useUsersContextMenu = () => {
   const { openContextMenu, openModal } = useDialog();
   const suspense = useSuspense();
 
+  const getMenuItems = useCallback(
+    (record) => [
+      {
+        key: `view-${record.id}`,
+        label: "Ver detalles",
+        icon: <PiEyeFill size={16} />,
+        onClick: () => {
+          openModal({
+            title: "Detalles del usuario",
+            content: suspense(<UserDetailsForm id={record.id} />),
+            width: 640,
+          });
+        },
+      },
+      {
+        key: `edit-${record.id}`,
+        label: "Editar",
+        icon: <PiPencilSimpleFill size={16} />,
+        onClick: () =>
+          openModal({
+            title: "Editar usuario",
+            content: suspense(<EditUserForm id={record.id} />),
+            width: 720,
+          }),
+      },
+      {
+        key: `delete-${record.id}`,
+        label: "Eliminar",
+        icon: <PiTrashSimpleFill size={16} />,
+        onClick: () =>
+          openModal({
+            title: "Eliminar usuario",
+            content: suspense(<DeleteUserForm id={record.id} />),
+            closable: true,
+            maskClosable: false,
+          }),
+        danger: true,
+      },
+    ],
+    [openModal, suspense]
+  );
+
   const handleContextMenu = useCallback(
     (e, record) => {
       e.preventDefault();
-
-      const items = [
-        {
-          label: "Ver detalles",
-          icon: <PiEyeFill size={16} />,
-          onClick: () => {
-            openModal({
-              title: "Detalles del usuario",
-              content: suspense(<UserDetailsForm id={record.id} />),
-              width: 640,
-            });
-          },
-        },
-        {
-          label: "Editar",
-          icon: <PiPencilSimpleFill size={16} />,
-          onClick: () =>
-            openModal({
-              title: "Editar usuario",
-              content: suspense(<EditUserForm id={record.id} />),
-              width: 720,
-            }),
-        },
-        {
-          label: "Eliminar",
-          icon: <PiTrashSimpleFill size={16} />,
-          onClick: () =>
-            openModal({
-              title: "Eliminar usuario",
-              content: suspense(<DeleteUserForm id={record.id} />),
-              closable: true,
-              maskClosable: false,
-            }),
-          danger: true,
-        },
-      ];
-
       openContextMenu({
         event: e,
-        items,
+        items: getMenuItems(record),
       });
     },
-    [openContextMenu, openModal, suspense]
+    [getMenuItems, openContextMenu]
   );
 
-  return handleContextMenu;
+  return {
+    handleContextMenu,
+    getMenuItems,
+  };
 };
 
 export default useUsersContextMenu;

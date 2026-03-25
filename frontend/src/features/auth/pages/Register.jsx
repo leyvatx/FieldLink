@@ -8,19 +8,37 @@ const Register = () => {
 
   return (
     <AuthShell
-      eyebrow="Registro"
-      title="Activa tu espacio de trabajo y deja lista tu operación."
-      description="Crea la empresa, al usuario principal y la configuración inicial para entrar al panel con una base limpia."
+      eyebrow="Alta"
+      title="Crea la empresa y tu acceso principal."
+      description="La cuenta base queda lista para entrar y empezar a configurar sin pasos de sobra."
       highlights={[
-        "Alta de empresa",
-        "Usuario principal",
-        "Inicio de sesión automático",
+        "Empresa",
+        "Administrador",
+        "Acceso inmediato",
+      ]}
+      panelTitle="Alta inicial"
+      panelItems={[
+        {
+          label: "Empresa",
+          help: "Nombre y slug listos",
+          value: "Base",
+        },
+        {
+          label: "Administrador",
+          help: "Usuario principal del sistema",
+          value: "Principal",
+        },
+        {
+          label: "Arranque",
+          help: "Ingreso inmediato al terminar",
+          value: "Listo",
+        },
       ]}
       cardTitle="Crear cuenta"
-      cardDescription="Registra tu empresa y tu usuario administrador principal."
+      cardDescription="Registra la empresa y el usuario principal."
       footer={
         <>
-          ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
+          Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
         </>
       }
     >

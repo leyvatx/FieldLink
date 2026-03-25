@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showGlobalError } from "@lib/globalMessages";
-import queryClient from "@lib/queryClient";
+import { resetAppQueries } from "@lib/queryClient";
 
 const PUBLIC_AUTH_PATHS = new Set(["/login", "/register"]);
 
@@ -34,8 +34,7 @@ apiClient.interceptors.response.use(
         sessionStorage.setItem("previousUrl", window.location.pathname);
         localStorage.removeItem("token");
         localStorage.removeItem("refresh_token");
-        queryClient.setQueryData(["auth", "user"], null);
-        queryClient.invalidateQueries({ queryKey: ["auth", "user"] });
+        await resetAppQueries(null);
       } else if (message) {
         showGlobalError(message);
       }

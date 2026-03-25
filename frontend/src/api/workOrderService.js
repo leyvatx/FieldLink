@@ -22,6 +22,11 @@ export const assignWorkOrder = async (id, technicianId) => {
   return data;
 };
 
+export const unassignWorkOrder = async (id) => {
+  const { data } = await apiClient.post(`/work-orders/${id}/unassign/`);
+  return data;
+};
+
 export const cancelWorkOrder = async (id) => {
   const { data } = await apiClient.post(`/work-orders/${id}/cancel/`);
   return data;

@@ -29,8 +29,6 @@ class WorkOrderSerializer(serializers.ModelSerializer):
         if address is None:
             if self.instance is not None:
                 address = self.instance.service_location_address
-            elif customer is not None:
-                address = customer.address
 
         normalized_address = (address or '').strip()
         if not normalized_address:

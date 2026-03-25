@@ -1,4 +1,4 @@
-import { Button, Card } from "@/lib/antd-compat";
+import { Button } from "@/lib/antd-compat";
 import { PiListBold } from "react-icons/pi";
 import { useSidebar } from "@context/SidebarProvider";
 import UserMenu from "./UserMenu";
@@ -8,12 +8,9 @@ const Topbar = ({ title, searchConfig, children }) => {
   const { isMobile, openMobileSidebar } = useSidebar();
 
   return (
-    <Card
-      className="page-topbar overflow-visible border-[var(--ui-border)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--ui-card)_95%,transparent),color-mix(in_srgb,var(--ui-highlight)_5%,var(--ui-card)))]"
-      styles={{ body: { padding: 12 } }}
-    >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
+    <div className="page-topbar relative min-w-0 self-start overflow-visible rounded-[28px] border border-[var(--ui-border)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--ui-card)_96%,transparent),color-mix(in_srgb,var(--ui-highlight)_4%,var(--ui-card)))] px-3 py-3 shadow-[var(--ui-shadow-soft)] backdrop-blur-xl md:px-4">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="flex min-w-0 items-center gap-3">
           {isMobile ? (
             <Button
               className="shrink-0 lg:hidden"
@@ -21,22 +18,22 @@ const Topbar = ({ title, searchConfig, children }) => {
               variant="filled"
               icon={<PiListBold size={18} />}
               onClick={openMobileSidebar}
-              aria-label="Abrir menu lateral"
+              aria-label="Abrir menú lateral"
             />
           ) : null}
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[1.65rem] font-semibold tracking-[-0.04em] text-[var(--ui-foreground)]">
+            <h1 className="m-0 truncate text-[clamp(1.2rem,2.4vw,1.55rem)] font-semibold tracking-[-0.04em] text-[var(--ui-foreground)]">
               {title}
             </h1>
           </div>
         </div>
-        <div className="page-topbar-actions flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+        <div className="page-topbar-actions flex min-w-0 flex-wrap items-center justify-start gap-2 sm:justify-end">
           <TopbarSearchButton config={searchConfig} />
           {children}
           <UserMenu />
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 

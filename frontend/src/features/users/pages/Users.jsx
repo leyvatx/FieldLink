@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Button } from "@/lib/antd-compat";
-import ModuleOverview from "@components/ModuleOverview";
+import { Button, Card, Tag } from "@/lib/antd-compat";
+import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { useDialog } from "@context/DialogProvider";
 import { useAuth } from "@context/AuthProvider";
@@ -9,8 +9,8 @@ import CreateUserForm from "@features/users/components/CreateUserForm";
 import UsersTable from "@features/users/components/UsersTable";
 import useUsers from "@features/users/hooks/useUsers";
 import { getAllowedUserRoleOptions } from "@features/users/constants/userValidations";
-import { TECHNICIAN_ROLE } from "@utils/constants/roles";
-import { isSupervisor } from "@utils/constants/roles";
+import { TECHNICIAN_ROLE, isSupervisor } from "@utils/constants/roles";
+import { matchesText } from "@/lib/filtering";
 
 const Users = () => {
   const { openDrawer } = useDialog();
@@ -25,14 +25,33 @@ const Users = () => {
   const roleOptions = getAllowedUserRoleOptions(user?.role);
   const supervisorView = isSupervisor(user);
   const { data: allUsers = [] } = useUsers();
+
+  const visibleUsers = useMemo(() => {
+    return allUsers.filter((record) => {
+      if (filters.role && record.role !== filters.role) {
+        return false;
+      }
+      if (filters.isActive != null && record.is_active !== filters.isActive) {
+        return false;
+      }
+      if (!matchesText(record.name, filters.name)) {
+        return false;
+      }
+      if (!matchesText(record.email, filters.email)) {
+        return false;
+      }
+      return matchesText(record.phone, filters.phone);
+    });
+  }, [allUsers, filters]);
+
   const userMetrics = useMemo(
     () => ({
-      total: allUsers.length,
-      active: allUsers.filter((record) => record.is_active).length,
-      technicians: allUsers.filter((record) => record.role === TECHNICIAN_ROLE).length,
-      inactive: allUsers.filter((record) => !record.is_active).length,
+      total: visibleUsers.length,
+      active: visibleUsers.filter((record) => record.is_active).length,
+      technicians: visibleUsers.filter((record) => record.role === TECHNICIAN_ROLE).length,
+      inactive: visibleUsers.filter((record) => !record.is_active).length,
     }),
-    [allUsers]
+    [visibleUsers]
   );
 
   const searchConfig = useMemo(
@@ -54,8 +73,8 @@ const Users = () => {
         },
         {
           key: "phone",
-          label: "Telefono",
-          placeholder: "Telefono del usuario",
+          label: "Teléfono",
+          placeholder: "Teléfono del usuario",
         },
         ...(supervisorView
           ? []
@@ -96,29 +115,33 @@ const Users = () => {
       searchConfig={searchConfig}
       topbarOptions={
         <Button
-          icon={<PiPlus size={20} />}
-          color="default"
-          variant="filled"
+          type="primary"
+          icon={<PiPlus size={18} />}
           onClick={() =>
             openDrawer({
               title: supervisorView ? "Crear técnico" : "Crear integrante",
+              width: 760,
               content: <CreateUserForm />,
             })
           }
-        />
+        >
+          {supervisorView ? "Nuevo técnico" : "Nuevo integrante"}
+        </Button>
       }
     >
-      <div className="grid gap-6">
-        <ModuleOverview
-          badge={supervisorView ? "Tecnicos" : "Personal"}
-          title={supervisorView ? "Tecnicos de campo" : "Personal de la empresa"}
-          subtitle={supervisorView ? "Tecnicos, estado y disponibilidad." : "Equipo, roles y estado."}
-          tags={supervisorView ? ["Tecnicos", "Estado", "Cobertura"] : ["Equipo", "Roles", "Estado"]}
+      <div className="grid gap-4">
+        <ModuleStatStrip
+          badge={supervisorView ? "Técnicos" : "Personal"}
+          description={
+            supervisorView
+              ? "Técnicos visibles, con su estado y acceso rápido a acciones."
+              : "Equipo visible, con acciones directas y la tabla como foco principal."
+          }
           stats={[
             {
-              label: "Usuarios",
+              label: "Visibles",
               value: userMetrics.total,
-              help: "registrados",
+              help: "usuarios filtrados",
             },
             {
               label: "Activos",
@@ -126,9 +149,9 @@ const Users = () => {
               help: "con acceso",
             },
             {
-              label: "Tecnicos",
+              label: "Técnicos",
               value: userMetrics.technicians,
-              help: "en plantilla",
+              help: "en esta vista",
             },
             {
               label: "Inactivos",
@@ -137,7 +160,21 @@ const Users = () => {
             },
           ]}
         />
-        <UsersTable filters={filters} />
+
+        <Card className="rounded-[28px]">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                {supervisorView ? "Técnicos" : "Equipo"}
+              </div>
+              <div className="mt-1 text-sm ui-text-muted">
+                Cada fila ya trae acciones visibles para editar, ver o cambiar estado.
+              </div>
+            </div>
+            <Tag color="purple">{visibleUsers.length} visibles</Tag>
+          </div>
+          <UsersTable filters={filters} />
+        </Card>
       </div>
     </PageLayout>
   );

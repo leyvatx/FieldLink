@@ -1,3 +1,4 @@
+import { PiAtBold, PiLockKeyBold } from "react-icons/pi";
 import { Alert, Button, Form, Input } from "@/lib/antd-compat";
 import useLogin from "@features/auth/hooks/useLogin";
 import formatErrors from "@lib/formatErrors";
@@ -31,6 +32,7 @@ const LoginForm = () => {
   return (
     <Form
       form={form}
+      className="auth-form"
       layout="vertical"
       requiredMark={false}
       onFinish={onFinish}
@@ -54,20 +56,24 @@ const LoginForm = () => {
       </Form.Item>
 
       <Form.Item
-        label="Correo electrónico"
+        label="Correo electronico"
         name="email"
         rules={[
           {
             required: true,
-            message: "Por favor, ingresa tu correo electrónico.",
+            message: "Por favor, ingresa tu correo electronico.",
           },
           {
             type: "email",
-            message: "Ingresa un correo válido.",
+            message: "Ingresa un correo valido.",
           },
         ]}
       >
-        <Input autoComplete="email" />
+        <Input
+          autoComplete="email"
+          placeholder="nombre@empresa.com"
+          prefix={<PiAtBold size={16} />}
+        />
       </Form.Item>
 
       <Form.Item
@@ -80,7 +86,11 @@ const LoginForm = () => {
           },
         ]}
       >
-        <Input.Password autoComplete="current-password" />
+        <Input.Password
+          autoComplete="current-password"
+          placeholder="Tu contraseña"
+          prefix={<PiLockKeyBold size={16} />}
+        />
       </Form.Item>
 
       <Button
@@ -92,6 +102,10 @@ const LoginForm = () => {
       >
         Iniciar sesión
       </Button>
+
+      <div className="auth-form-note">
+        Entra con tu cuenta activa para continuar.
+      </div>
     </Form>
   );
 };

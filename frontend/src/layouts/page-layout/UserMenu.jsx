@@ -22,11 +22,11 @@ const UserMenu = () => {
     {
       key: "profile",
       label: (
-        <Link to="/profile" className="flex w-[min(220px,calc(100vw-7rem))] items-center justify-start gap-3">
+        <Link to="/profile" className="flex w-[min(240px,calc(100vw-7rem))] items-center justify-start gap-3">
           <UserAvatar user={normalizedUser} size="large" />
-          <div className="flex flex-col">
+          <div className="min-w-0 flex flex-col">
             <span className="font-medium">{user?.name}</span>
-            <span className="text-xs text-[var(--ui-muted-foreground)]">{user?.email}</span>
+            <span className="truncate text-xs text-[var(--ui-muted-foreground)]">{user?.email}</span>
           </div>
         </Link>
       ),
@@ -50,7 +50,7 @@ const UserMenu = () => {
     },
     {
       key: "logout",
-      label: "Cerrar sesion",
+      label: "Cerrar sesión",
       icon: <PiSignOutBold size={16} />,
       danger: true,
       onClick: () => logout.mutate(),
@@ -68,13 +68,10 @@ const UserMenu = () => {
     <Dropdown menu={{ items }} trigger={["click"]}>
       <button
         type="button"
-        className="group flex items-center gap-3 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-card)] px-2.5 py-2 text-left shadow-[var(--ui-shadow-soft)] transition hover:bg-[var(--ui-accent)]"
+        aria-label="Abrir men? de usuario"
+        className="group inline-flex h-10 w-10 items-center justify-center rounded-2xl text-left transition hover:scale-[1.02]"
       >
-        <div className="hidden min-w-0 text-right sm:block">
-          <div className="truncate text-sm font-medium text-[var(--ui-foreground)]">{user?.name}</div>
-          <div className="truncate text-xs text-[var(--ui-muted-foreground)]">{user?.email}</div>
-        </div>
-        <UserAvatar user={normalizedUser} />
+        <UserAvatar user={normalizedUser} size={40} />
       </button>
     </Dropdown>
   );

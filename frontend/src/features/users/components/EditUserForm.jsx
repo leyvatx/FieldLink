@@ -70,6 +70,7 @@ const EditUserForm = ({ id, onClose }) => {
       layout="vertical"
       onFinish={(values) => handleFormSubmit(values, form)}
       initialValues={initialValues}
+      className="grid gap-5"
     >
       <UserBasicFields
         roleOptions={roleOptions}

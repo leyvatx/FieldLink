@@ -6,6 +6,7 @@ import { cn, isObject, toArray } from "@/lib/utils";
 import { Button, Input } from "@/lib/antd-compat/base";
 import UIButton from "@/components/ui/button";
 import Calendar from "@/components/ui/calendar";
+import useWindowSize from "@hooks/use-window-size";
 import {
   Popover as UIPopover,
   PopoverContent,
@@ -144,6 +145,12 @@ export function Select({
   const isMulti = mode === "multiple";
   const mappedOptions = useMemo(() => mapSelectOptions(options), [options]);
   const selectedValue = useMemo(() => resolveSelectValue(value, mappedOptions, isMulti), [isMulti, mappedOptions, value]);
+  const resolvedMenuPortalTarget =
+    menuPortalTarget === undefined
+      ? typeof document !== "undefined"
+        ? document.body
+        : undefined
+      : menuPortalTarget;
 
   return (
     <SelectBase
@@ -165,8 +172,9 @@ export function Select({
         container: (base) => ({ ...base, width: "100%", ...style }),
         menuPortal: (base) => ({ ...base, zIndex: 1200 }),
       }}
-      menuPortalTarget={menuPortalTarget}
-      menuPosition={menuPosition ?? (menuPortalTarget ? "fixed" : "absolute")}
+      menuPortalTarget={resolvedMenuPortalTarget}
+      menuPosition={menuPosition ?? (resolvedMenuPortalTarget ? "fixed" : "absolute")}
+      menuPlacement={props.menuPlacement ?? "auto"}
       menuShouldScrollIntoView={false}
       filterOption={
         filterOption === false
@@ -293,6 +301,8 @@ function DatePickerBase({
   showTime = false,
 }) {
   const [open, setOpen] = useState(false);
+  const { width: viewportWidth = 0 } = useWindowSize();
+  const isCompactViewport = viewportWidth > 0 && viewportWidth <= 767;
   const selectedDate = toDate(value);
   const [draftValue, setDraftValue] = useState(null);
   const [draftTime, setDraftTime] = useState({ hour: "09", minute: "00" });
@@ -350,7 +360,7 @@ function DatePickerBase({
             <PiCalendarBlank size={16} className="shrink-0 text-[var(--ui-muted-foreground)]" />
           </UIButton>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className={cn("p-0", isCompactViewport ? "w-[min(calc(100vw-1rem),22rem)]" : "w-auto")} align="start">
           <div className="space-y-3 p-3">
             <Calendar
               mode="single"
@@ -475,6 +485,8 @@ function RangePicker({
   placeholder = "Seleccionar rango",
 }) {
   const [open, setOpen] = useState(false);
+  const { width: viewportWidth = 0 } = useWindowSize();
+  const isCompactViewport = viewportWidth > 0 && viewportWidth <= 900;
   const startValue = value?.[0];
   const endValue = value?.[1];
   const selectedRange = {
@@ -511,10 +523,10 @@ function RangePicker({
             <PiCalendarBlank size={16} className="shrink-0 text-[var(--ui-muted-foreground)]" />
           </UIButton>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className={cn("p-0", isCompactViewport ? "w-[min(calc(100vw-1rem),22rem)]" : "w-auto")} align="start">
           <Calendar
             mode="range"
-            numberOfMonths={2}
+            numberOfMonths={isCompactViewport ? 1 : 2}
             selected={selectedRange}
             onSelect={(range) => {
               const nextStart = range?.from ? dayjs(range.from) : null;

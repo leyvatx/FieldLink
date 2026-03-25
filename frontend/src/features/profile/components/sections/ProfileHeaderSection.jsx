@@ -22,7 +22,7 @@ const ProfileHeaderSection = ({ profile }) => {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,color-mix(in_srgb,var(--ui-highlight)_18%,transparent),transparent_36%)]" />
       <div className="pointer-events-none absolute -left-10 top-1/2 h-48 w-48 -translate-y-1/2 rounded-full bg-[color:color-mix(in_srgb,var(--ui-highlight)_14%,transparent)] blur-3xl" />
 
-      <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+      <div className="relative grid gap-8 2xl:grid-cols-[minmax(0,1fr)_340px] 2xl:items-start">
         <div className="grid gap-7">
           <div className="inline-flex w-fit items-center gap-3 rounded-full border border-[color:color-mix(in_srgb,var(--ui-highlight)_24%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_82%,transparent)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--ui-muted-foreground)] shadow-[var(--ui-shadow-soft)]">
             <AppLogo compact showWordmark={false} iconSize={26} />

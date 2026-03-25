@@ -151,9 +151,13 @@ function DialogFrame({
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
-      <div className="max-h-[70vh] overflow-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6 sm:py-5">
+        {children}
+      </div>
       {footer === null ? null : footer !== undefined ? (
-        <div className="border-t border-[var(--ui-border)] px-4 py-4 sm:px-6">{footer}</div>
+        <div className="shrink-0 border-t border-[var(--ui-border)] px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:px-6">
+          {footer}
+        </div>
       ) : (
         <UIDialogFooter>
           <Button onClick={onCancel}>{cancelText}</Button>
@@ -231,7 +235,9 @@ export function Drawer({
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-5 sm:pb-8">
+          {children}
+        </div>
         {footer == null ? null : (
           <SheetFooter>{footer}</SheetFooter>
         )}

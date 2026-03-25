@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
-import { Card, Table, Tag } from "@/lib/antd-compat";
+import { Button, Card, Dropdown, Table, Tag } from "@/lib/antd-compat";
+import { PiDotsThreeVertical } from "react-icons/pi";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import ModuleOverview from "@components/ModuleOverview";
+import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import { getCompanies, updateCompany } from "@api/companyService";
 import { useDialog } from "@context/DialogProvider";
@@ -67,56 +68,62 @@ const Companies = () => {
 
   const metrics = useMemo(
     () => ({
-      total: companies.length,
-      active: companies.filter((company) => company.is_active).length,
-      technicians: companies.reduce(
+      total: filteredCompanies.length,
+      active: filteredCompanies.filter((company) => company.is_active).length,
+      technicians: filteredCompanies.reduce(
         (sum, company) => sum + (company.technician_count || 0),
         0
       ),
-      activeOrders: companies.reduce(
+      activeOrders: filteredCompanies.reduce(
         (sum, company) => sum + (company.active_orders || 0),
         0
       ),
     }),
-    [companies]
+    [filteredCompanies]
+  );
+
+  const getCompanyMenuItems = useCallback(
+    (company) => [
+      {
+        key: `active-${company.slug}`,
+        label: company.is_active ? "Desactivar empresa" : "Activar empresa",
+        onClick: () =>
+          updateMutation.mutate({
+            slug: company.slug,
+            payload: { is_active: !company.is_active },
+          }),
+      },
+      {
+        key: `trial-${company.slug}`,
+        label: company.is_trial ? "Cerrar periodo de prueba" : "Reactivar prueba",
+        onClick: () =>
+          updateMutation.mutate({
+            slug: company.slug,
+            payload: { is_trial: !company.is_trial },
+          }),
+      },
+    ],
+    [updateMutation]
   );
 
   const openCompanyContextMenu = useCallback(
     (event, company) => {
       openContextMenu({
         event,
-        items: [
-          {
-            key: "toggle-active",
-            label: company.is_active ? "Desactivar empresa" : "Activar empresa",
-            onClick: () =>
-              updateMutation.mutate({
-                slug: company.slug,
-                payload: { is_active: !company.is_active },
-              }),
-          },
-          {
-            key: "toggle-trial",
-            label: company.is_trial ? "Cerrar periodo de prueba" : "Reactivar prueba",
-            onClick: () =>
-              updateMutation.mutate({
-                slug: company.slug,
-                payload: { is_trial: !company.is_trial },
-              }),
-          },
-        ],
+        items: getCompanyMenuItems(company),
       });
     },
-    [openContextMenu, updateMutation]
+    [getCompanyMenuItems, openContextMenu]
   );
 
   const columns = [
     {
       title: "Empresa",
       key: "name",
+      width: 260,
       render: (_, company) => (
         <div className="grid gap-1">
-          <span className="font-semibold">{company.name}</span>
+          <span className="font-semibold text-[var(--ui-foreground)]">{company.name}</span>
           <span className="text-xs ui-text-muted">/{company.slug}</span>
         </div>
       ),
@@ -124,6 +131,7 @@ const Companies = () => {
     {
       title: "Contacto",
       key: "contact",
+      width: 260,
       render: (_, company) => (
         <div className="grid gap-1">
           <span>{company.email}</span>
@@ -132,47 +140,51 @@ const Companies = () => {
       ),
     },
     {
-      title: "Plan",
-      dataIndex: "plan_name",
-      key: "plan_name",
-      render: (value) => value || "Sin plan",
-    },
-    {
-      title: "Equipo",
-      key: "team",
+      title: "Plan y estado",
+      key: "plan",
+      width: 220,
       render: (_, company) => (
-        <div className="grid gap-1">
-          <span>{company.user_count || 0} usuarios</span>
-          <span className="text-xs ui-text-muted">
-            {company.technician_count || 0} técnicos
-          </span>
+        <div className="flex flex-wrap gap-2">
+          <Tag color="blue">{company.plan_name || "Sin plan"}</Tag>
+          <Tag color={company.is_active ? "green" : "red"}>
+            {company.is_active ? "Activa" : "Inactiva"}
+          </Tag>
+          <Tag color={company.is_trial ? "gold" : "purple"}>
+            {company.is_trial ? "Prueba" : "Pago"}
+          </Tag>
         </div>
       ),
     },
     {
       title: "Operación",
       key: "ops",
+      width: 240,
       render: (_, company) => (
         <div className="grid gap-1">
-          <span>{company.active_orders || 0} órdenes activas</span>
+          <span>{company.active_orders || 0} ordenes activas</span>
           <span className="text-xs ui-text-muted">
-            {company.city || "Sin ciudad"}, {company.country || "Sin país"}
+            {(company.user_count || 0) + " usuarios"} · {(company.technician_count || 0) + " técnicos"}
+          </span>
+          <span className="text-xs ui-text-muted">
+            {company.city || "Sin ciudad"}, {company.country || "Sin pais"}
           </span>
         </div>
       ),
     },
     {
-      title: "Estado",
-      key: "status",
+      title: "",
+      key: "actions",
+      width: 72,
+      align: "right",
       render: (_, company) => (
-        <div className="flex flex-wrap gap-2">
-          <Tag color={company.is_active ? "green" : "red"}>
-            {company.is_active ? "Activa" : "Inactiva"}
-          </Tag>
-          <Tag color={company.is_trial ? "gold" : "blue"}>
-            {company.is_trial ? "Prueba" : "Pago"}
-          </Tag>
-        </div>
+        <Dropdown menu={{ items: getCompanyMenuItems(company) }} placement="bottomRight">
+          <Button
+            type="text"
+            size="small"
+            icon={<PiDotsThreeVertical size={16} />}
+            aria-label={`Acciones de ${company.name}`}
+          />
+        </Dropdown>
       ),
     },
   ];
@@ -234,29 +246,24 @@ const Companies = () => {
   );
 
   return (
-    <PageLayout
-      title="Empresas"
-      searchConfig={searchConfig}
-    >
-      <div className="grid gap-6">
-        <ModuleOverview
+    <PageLayout title="Empresas" searchConfig={searchConfig}>
+      <div className="grid gap-4">
+        <ModuleStatStrip
           badge="Empresas"
-          title="Empresas"
-          subtitle="Estado, plan y operacion."
-          tags={["Empresas", "Planes", "Operacion"]}
+          description="Vista compacta para revisar estado, plan y carga operativa sin esconder la tabla."
           stats={[
             {
-              label: "Empresas",
+              label: "Visibles",
               value: metrics.total,
-              help: "registradas",
+              help: "empresas filtradas",
             },
             {
               label: "Activas",
               value: metrics.active,
-              help: "en operacion",
+              help: "operando",
             },
             {
-              label: "Tecnicos",
+              label: "Técnicos",
               value: metrics.technicians,
               help: "acumulados",
             },
@@ -268,27 +275,17 @@ const Companies = () => {
           ]}
         />
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        <Card className="rounded-2xl">
-          <div className="mb-3 text-xs ui-text-muted">
-            Clic derecho en una empresa para activarla, desactivarla o ajustar su estado.
+        <Card className="rounded-[28px]">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                Operación por empresa
+              </div>
+              <div className="mt-1 text-sm ui-text-muted">
+                Las acciones ya estan visibles en cada fila y el clic derecho sigue disponible.
+              </div>
+            </div>
+            <Tag color="purple">{filteredCompanies.length} visibles</Tag>
           </div>
           <Table
             rowKey="id"
@@ -299,6 +296,7 @@ const Companies = () => {
               onContextMenu: (event) => openCompanyContextMenu(event, company),
             })}
             pagination={{ pageSize: 8 }}
+            scroll={{ x: 1050 }}
           />
         </Card>
       </div>

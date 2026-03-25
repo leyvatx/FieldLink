@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import {
   Button,
   Card,
@@ -20,7 +21,7 @@ import {
   PiPlusBold,
   PiUsersThreeBold,
 } from "react-icons/pi";
-import AppLogo from "@components/AppLogo";
+import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
   assignTechnicianInventory,
@@ -36,6 +37,44 @@ import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
 import { useDialog } from "@context/DialogProvider";
 import { matchesText } from "@/lib/filtering";
+
+const MOVEMENT_LABELS = {
+  PURCHASE: "Entrada",
+  ADJUSTMENT: "Salida",
+  CONSUMPTION: "Consumo",
+  RETURN: "Devolucion",
+};
+
+const getShortage = (record) =>
+  Math.max(Number(record.minimum_threshold || 0) - Number(record.quantity_usable || 0), 0);
+
+const getWarehouseState = (record) => {
+  const usable = Number(record.quantity_usable || 0);
+
+  if (usable <= 0) {
+    return { label: "Sin stock", color: "red" };
+  }
+
+  if (record.needs_restock) {
+    return { label: "Bajo", color: "gold" };
+  }
+
+  return { label: "OK", color: "green" };
+};
+
+const getTechnicianState = (units) => {
+  if (units <= 0) {
+    return { label: "Sin stock", color: "red" };
+  }
+
+  if (units < 5) {
+    return { label: "Bajo", color: "gold" };
+  }
+
+  return { label: "Con stock", color: "green" };
+};
+
+const formatDateTime = (value) => (value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "-");
 
 const Inventory = () => {
   const { success, error } = useMessage();
@@ -58,6 +97,9 @@ const Inventory = () => {
   const [materialForm] = Form.useForm();
   const [warehouseForm] = Form.useForm();
   const [assignForm] = Form.useForm();
+  const watchedWarehouseMaterial = Form.useWatch("material", warehouseForm);
+  const watchedAssignMaterial = Form.useWatch("material", assignForm);
+  const watchedAssignTechnician = Form.useWatch("technician", assignForm);
 
   const refreshInventoryData = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["materials"] });
@@ -110,7 +152,7 @@ const Inventory = () => {
   const receiveStockMutation = useMutation({
     mutationFn: receiveWarehouseStock,
     onSuccess: () => {
-      success("Entrada de almacen registrada");
+      success("Entrada de almacén registrada");
       setWarehouseModalOpen(false);
       setWarehousePreset(null);
       warehouseForm.resetFields();
@@ -119,14 +161,14 @@ const Inventory = () => {
     onError: (requestError) =>
       error(
         requestError.response?.data?.error ||
-          "No se pudo registrar la entrada al almacen"
+          "No se pudo registrar la entrada al almacén"
       ),
   });
 
   const assignStockMutation = useMutation({
     mutationFn: assignTechnicianInventory,
     onSuccess: () => {
-      success("Material entregado al tecnico");
+      success("Material entregado al técnico");
       setAssignModalOpen(false);
       setAssignPreset(null);
       assignForm.resetFields();
@@ -135,7 +177,7 @@ const Inventory = () => {
     onError: (requestError) =>
       error(
         requestError.response?.data?.error ||
-          "No se pudo asignar material al tecnico"
+          "No se pudo asignar material al técnico"
       ),
   });
 
@@ -162,7 +204,12 @@ const Inventory = () => {
   const filteredMaterials = useMemo(
     () =>
       materials.filter((record) => {
-        if (!matchesText(`${record.name} ${record.description || ""}`, filters.material)) {
+        if (
+          !matchesText(
+            `${record.name} ${record.description || ""} ${record.sku || ""} ${record.unit || ""}`,
+            filters.material
+          )
+        ) {
           return false;
         }
         if (!matchesText(record.sku, filters.sku)) {
@@ -176,7 +223,7 @@ const Inventory = () => {
   const filteredWarehouse = useMemo(
     () =>
       warehouse.filter((record) => {
-        if (!matchesText(record.material_name, filters.material)) {
+        if (!matchesText(`${record.material_name} ${record.material_unit || ""}`, filters.material)) {
           return false;
         }
         if (!matchesText(record.material_unit, filters.unit)) {
@@ -199,7 +246,7 @@ const Inventory = () => {
         if (!matchesText(record.technician_name, filters.technician)) {
           return false;
         }
-        if (!matchesText(record.material_name, filters.material)) {
+        if (!matchesText(`${record.material_name} ${record.material_unit || ""}`, filters.material)) {
           return false;
         }
         return matchesText(record.material_unit, filters.unit);
@@ -210,7 +257,7 @@ const Inventory = () => {
   const filteredHistory = useMemo(
     () =>
       restockHistory.filter((record) => {
-        if (!matchesText(record.warehouse_material, filters.material)) {
+        if (!matchesText(`${record.warehouse_material} ${record.notes || ""}`, filters.material)) {
           return false;
         }
         if (!matchesText(record.restock_type, filters.movement)) {
@@ -242,6 +289,92 @@ const Inventory = () => {
     }),
     [materials, restockHistory, technicianInventory, warehouse]
   );
+
+  const lowStockItems = useMemo(
+    () =>
+      [...warehouse]
+        .filter((record) => record.needs_restock)
+        .sort((left, right) => getShortage(right) - getShortage(left))
+        .slice(0, 6),
+    [warehouse]
+  );
+
+  const technicianStockSummary = useMemo(() => {
+    const grouped = new Map(
+      technicians.map((technician) => [
+        String(technician.id),
+        {
+          technician: technician.id,
+          technician_name: technician.name,
+          totalUnits: 0,
+          materialLines: 0,
+        },
+      ])
+    );
+
+    technicianInventory.forEach((record) => {
+      const key = String(record.technician);
+      const current = grouped.get(key) || {
+        technician: record.technician,
+        technician_name: record.technician_name,
+        totalUnits: 0,
+        materialLines: 0,
+      };
+
+      const quantity = Number(record.current_quantity || 0);
+      current.totalUnits += quantity;
+      if (quantity > 0) {
+        current.materialLines += 1;
+      }
+      grouped.set(key, current);
+    });
+
+    return [...grouped.values()]
+      .sort((left, right) => {
+        if (left.totalUnits !== right.totalUnits) {
+          return left.totalUnits - right.totalUnits;
+        }
+
+        return String(left.technician_name || "").localeCompare(
+          String(right.technician_name || "")
+        );
+      })
+      .slice(0, 6);
+  }, [technicianInventory, technicians]);
+
+  const selectedWarehouseRecord = useMemo(() => {
+    const materialId = warehousePreset?.material ?? watchedWarehouseMaterial;
+    return (
+      warehouse.find((record) => String(record.material) === String(materialId ?? "")) || null
+    );
+  }, [warehouse, warehousePreset, watchedWarehouseMaterial]);
+
+  const selectedAssignWarehouseRecord = useMemo(() => {
+    const materialId = assignPreset?.material ?? watchedAssignMaterial;
+    return (
+      warehouse.find((record) => String(record.material) === String(materialId ?? "")) || null
+    );
+  }, [assignPreset, warehouse, watchedAssignMaterial]);
+
+  const selectedAssignInventoryRecord = useMemo(() => {
+    const materialId = assignPreset?.material ?? watchedAssignMaterial;
+    const technicianId = assignPreset?.technician ?? watchedAssignTechnician;
+
+    return (
+      technicianInventory.find(
+        (record) =>
+          String(record.material) === String(materialId ?? "") &&
+          String(record.technician) === String(technicianId ?? "")
+      ) || null
+    );
+  }, [assignPreset, technicianInventory, watchedAssignMaterial, watchedAssignTechnician]);
+
+  const selectedAssignTechnician = useMemo(() => {
+    const technicianId = assignPreset?.technician ?? watchedAssignTechnician;
+    return (
+      technicians.find((record) => String(record.id) === String(technicianId ?? "")) || null
+    );
+  }, [assignPreset, technicians, watchedAssignTechnician]);
 
   const openWarehouseEntry = useCallback(
     (record = null) => {
@@ -279,7 +412,7 @@ const Inventory = () => {
         items: [
           {
             key: "receive-stock",
-            label: "Registrar entrada a almacen",
+            label: "Registrar entrada a almacén",
             onClick: () => openWarehouseEntry(record),
           },
         ],
@@ -295,7 +428,7 @@ const Inventory = () => {
         items: [
           {
             key: "assign-stock",
-            label: "Entregar mas material",
+            label: "Entregar más material",
             onClick: () => openAssignStock(record),
           },
         ],
@@ -307,9 +440,16 @@ const Inventory = () => {
   const materialColumns = [
     {
       title: "Material",
-      dataIndex: "name",
       key: "name",
-      width: 240,
+      width: 300,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">{record.name}</div>
+          <div className="line-clamp-2 text-sm ui-text-muted">
+            {record.description || "Sin descripcion"}
+          </div>
+        </div>
+      ),
     },
     {
       title: "SKU",
@@ -337,21 +477,26 @@ const Inventory = () => {
   const warehouseColumns = [
     {
       title: "Material",
-      dataIndex: "material_name",
       key: "material_name",
-      width: 240,
+      width: 280,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">{record.material_name}</div>
+          <div className="text-sm ui-text-muted">{record.material_unit}</div>
+        </div>
+      ),
     },
     {
-      title: "Disponible",
-      dataIndex: "quantity_available",
-      key: "quantity_available",
-      width: 120,
-    },
-    {
-      title: "Reservado",
-      dataIndex: "quantity_reserved",
-      key: "quantity_reserved",
-      width: 120,
+      title: "Stock",
+      key: "stock",
+      width: 220,
+      render: (_, record) => (
+        <div className="grid gap-1 text-sm">
+          <div>Disponible: {record.quantity_available}</div>
+          <div className="ui-text-muted">Reservado: {record.quantity_reserved}</div>
+          <div className="ui-text-muted">Dañado: {record.quantity_damaged}</div>
+        </div>
+      ),
     },
     {
       title: "Usable",
@@ -360,36 +505,68 @@ const Inventory = () => {
       width: 120,
     },
     {
-      title: "Minimo",
-      dataIndex: "minimum_threshold",
-      key: "minimum_threshold",
-      width: 120,
+      title: "Min / recompra",
+      key: "thresholds",
+      width: 170,
+      render: (_, record) => (
+        <div className="grid gap-1 text-sm">
+          <div>Min: {record.minimum_threshold}</div>
+          <div className="ui-text-muted">Recompra: {record.reorder_quantity}</div>
+        </div>
+      ),
     },
     {
       title: "Estado",
       key: "needs_restock",
       width: 140,
-      render: (_, record) =>
-        record.needs_restock ? (
-          <Tag color="red">Reabastecer</Tag>
-        ) : (
-          <Tag color="green">OK</Tag>
-        ),
+      render: (_, record) => {
+        const state = getWarehouseState(record);
+        return <Tag color={state.color}>{state.label}</Tag>;
+      },
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 120,
+      align: "right",
+      render: (_, record) => (
+        <Button
+          size="small"
+          type={record.needs_restock ? "primary" : "default"}
+          onClick={() => openWarehouseEntry(record)}
+        >
+          Entrada
+        </Button>
+      ),
     },
   ];
 
   const technicianColumns = [
     {
-      title: "Tecnico",
-      dataIndex: "technician_name",
+      title: "Técnico",
       key: "technician_name",
-      width: 220,
+      width: 240,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">
+            {record.technician_name}
+          </div>
+          <div className="text-sm ui-text-muted">
+            Actualizado: {formatDateTime(record.updated_at)}
+          </div>
+        </div>
+      ),
     },
     {
       title: "Material",
-      dataIndex: "material_name",
       key: "material_name",
-      width: 220,
+      width: 240,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div>{record.material_name}</div>
+          <div className="text-sm ui-text-muted">{record.material_unit}</div>
+        </div>
+      ),
     },
     {
       title: "Cantidad",
@@ -397,9 +574,27 @@ const Inventory = () => {
       key: "current_quantity",
       width: 120,
     },
+    {
+      title: "",
+      key: "actions",
+      width: 120,
+      align: "right",
+      render: (_, record) => (
+        <Button size="small" onClick={() => openAssignStock(record)}>
+          Entregar
+        </Button>
+      ),
+    },
   ];
 
   const historyColumns = [
+    {
+      title: "Fecha",
+      dataIndex: "created_at",
+      key: "created_at",
+      width: 170,
+      render: (value) => formatDateTime(value),
+    },
     {
       title: "Material",
       dataIndex: "warehouse_material",
@@ -411,12 +606,22 @@ const Inventory = () => {
       dataIndex: "restock_type",
       key: "restock_type",
       width: 140,
+      render: (value) => MOVEMENT_LABELS[value] || value,
     },
     {
       title: "Cantidad",
       dataIndex: "quantity_change",
       key: "quantity_change",
       width: 120,
+      render: (value) => (
+        <span
+          className={
+            Number(value) >= 0 ? "text-[var(--sk-color-green)]" : "text-[var(--sk-color-yellow)]"
+          }
+        >
+          {Number(value) > 0 ? `+${value}` : value}
+        </span>
+      ),
     },
     {
       title: "Hecho por",
@@ -436,24 +641,18 @@ const Inventory = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Filtros de inventario",
-      description: "Usa un campo por dato en lugar de una busqueda general.",
+      title: "Filtros de almacén",
       values: filters,
       fields: [
         {
-          key: "sku",
-          label: "SKU",
-          placeholder: "Codigo del material",
-        },
-        {
-          key: "unit",
-          label: "Unidad",
-          placeholder: "Unidad de medida",
+          key: "material",
+          label: "Material o SKU",
+          placeholder: "Nombre, SKU o unidad",
         },
         {
           key: "technician",
-          label: "Tecnico",
-          placeholder: "Nombre del tecnico",
+          label: "Técnico",
+          placeholder: "Nombre del técnico",
         },
         {
           key: "movement",
@@ -466,24 +665,13 @@ const Inventory = () => {
           placeholder: "Quien hizo el movimiento",
         },
         {
-          key: "notes",
-          label: "Notas",
-          placeholder: "Comentario o detalle",
-          fullWidth: true,
-        },
-        {
           key: "warehouseState",
-          label: "Estado de almacen",
+          label: "Estado de stock",
           type: "select",
           options: [
-            { value: "LOW", label: "Reabastecer" },
-            { value: "OK", label: "Stock saludable" },
+            { value: "LOW", label: "Bajo o sin stock" },
+            { value: "OK", label: "Stock sano" },
           ],
-        },
-        {
-          key: "material",
-          label: "Material",
-          placeholder: "Material, tecnico, movimiento o nota",
         },
       ],
       onChange: (nextFilters) => setFilters((prev) => ({ ...prev, ...nextFilters })),
@@ -505,7 +693,7 @@ const Inventory = () => {
 
   return (
     <PageLayout
-      title="Inventario y abastecimiento"
+      title="Almacen"
       searchConfig={searchConfig}
       topbarOptions={
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -519,159 +707,145 @@ const Inventory = () => {
             Nuevo material
           </Button>
           <Button icon={<PiArrowDownBold size={16} />} onClick={() => openWarehouseEntry()}>
-            Entrada a almacen
+            Recibir stock
           </Button>
           <Button
             type="primary"
             icon={<PiUsersThreeBold size={16} />}
             onClick={() => openAssignStock()}
           >
-            Asignar a tecnico
+            Entregar stock
           </Button>
         </div>
       }
     >
-      <div className="grid gap-6">
-        <Card className="relative min-w-0 overflow-hidden rounded-[36px] border-[color:color-mix(in_srgb,var(--ui-highlight)_24%,var(--ui-border))] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--ui-card)_74%,transparent),color-mix(in_srgb,var(--ui-highlight)_12%,var(--ui-card)))]">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,color-mix(in_srgb,var(--ui-highlight)_20%,transparent),transparent_36%)]" />
-          <div className="pointer-events-none absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-[color:color-mix(in_srgb,var(--ui-highlight)_16%,transparent)] blur-3xl" />
+      <div className="grid gap-4">
+        <ModuleStatStrip
+          badge="Almacen"
+          description="Recibe material, detecta faltantes y entrega a técnicos desde una misma mesa de trabajo."
+          stats={[
+            {
+              label: "Alertas",
+              value: inventoryMetrics.warehouseAlerts,
+              help: inventoryMetrics.warehouseAlerts ? "requieren entrada" : "sin urgencias",
+            },
+            {
+              label: "Usables",
+              value: inventoryMetrics.usableUnits,
+              help: "unidades listas",
+            },
+            {
+              label: "Técnicos",
+              value: inventoryMetrics.techniciansCovered,
+              help: "con stock",
+            },
+            {
+              label: "Movimientos",
+              value: inventoryMetrics.movementsLogged,
+              help: "registrados",
+            },
+          ]}
+        />
 
-          <div className="relative grid gap-6 p-6 md:p-8 xl:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
-            <div className="min-w-0">
-              <div className="inline-flex w-fit items-center gap-3 rounded-full border border-[color:color-mix(in_srgb,var(--ui-highlight)_24%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-card)_84%,transparent)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--ui-muted-foreground)] shadow-[var(--ui-shadow-soft)]">
-                <AppLogo compact showWordmark={false} iconSize={28} />
-                Inventario
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <Card className="rounded-[28px]">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                  Prioridad de reabastecimiento
+                </div>
+                <div className="mt-1 text-sm ui-text-muted">
+                  Lo urgente queda arriba y puedes registrar la entrada desde la misma lista.
+                </div>
               </div>
-
-              <h2 className="mt-5 max-w-4xl text-[clamp(2rem,4.8vw,4rem)] font-semibold leading-[0.94] tracking-[-0.06em] text-[var(--ui-foreground)]">
-                Inventario y abastecimiento
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--ui-muted-foreground)] md:text-base">
-                Catalogo, stock central, entregas y movimientos.
-              </p>
-
-
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Tag color="purple">{inventoryMetrics.activeMaterials} materiales activos</Tag>
-                <Tag color={inventoryMetrics.warehouseAlerts ? "red" : "green"}>
-                  {inventoryMetrics.warehouseAlerts
-                    ? `${inventoryMetrics.warehouseAlerts} alertas de stock`
-                    : "Stock saludable"}
-                </Tag>
-                <Tag color="blue">{inventoryMetrics.movementsLogged} movimientos registrados</Tag>
-              </div>
+              <Tag color={lowStockItems.length ? "red" : "green"}>
+                {lowStockItems.length ? `${lowStockItems.length} urgentes` : "Sin urgencias"}
+              </Tag>
             </div>
 
             <div className="grid gap-3">
-              <div className="rounded-[28px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_22%,var(--ui-border))] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--ui-highlight)_10%,var(--ui-card)),color-mix(in_srgb,var(--ui-card)_96%,transparent))] p-5 shadow-[var(--ui-shadow-soft)]">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                  Pulso de almacen
+              {lowStockItems.length ? (
+                lowStockItems.map((record) => {
+                  const state = getWarehouseState(record);
+                  return (
+                    <div
+                      key={record.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-[var(--ui-foreground)]">
+                          {record.material_name}
+                        </div>
+                        <div className="mt-1 text-sm ui-text-muted">
+                          Usable: {record.quantity_usable} - Min: {record.minimum_threshold} -
+                          Recompra: {record.reorder_quantity}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Tag color={state.color}>{state.label}</Tag>
+                        <Button size="small" type="primary" onClick={() => openWarehouseEntry(record)}>
+                          Entrada
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-[var(--ui-border)] px-4 py-6 text-sm ui-text-muted">
+                  No hay materiales por debajo del minimo.
                 </div>
-                <div className="mt-3 text-2xl font-semibold text-[var(--ui-foreground)]">
-                  {inventoryMetrics.usableUnits} unidades utilizables
-                </div>
-                <div className="mt-2 text-sm text-[var(--ui-muted-foreground)]">
-                  {inventoryMetrics.techniciansCovered} tecnicos tienen material asignado y{" "}
-                  {inventoryMetrics.warehouseAlerts} referencias exigen revision.
-                </div>
-                <div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--ui-secondary)]">
-                  <div
-                    className="h-full rounded-full bg-[linear-gradient(90deg,#E879F9_0%,#8B5CF6_55%,#5B21B6_100%)]"
-                    style={{
-                      width: `${Math.max(
-                        14,
-                        Math.min(
-                          100,
-                          inventoryMetrics.activeMaterials
-                            ? ((inventoryMetrics.activeMaterials - inventoryMetrics.warehouseAlerts) /
-                                inventoryMetrics.activeMaterials) *
-                              100
-                            : 100
-                        )
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="min-w-0 rounded-[28px]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                  Catalogo
-                </div>
-                <div className="mt-3 text-3xl font-semibold text-[var(--ui-foreground)]">
-                  {filteredMaterials.length}
-                </div>
-                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                  materiales visibles
-                </div>
-              </div>
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_20%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] text-[var(--ui-highlight)]">
-                <PiPackageBold size={22} />
-              </div>
+              )}
             </div>
           </Card>
 
-          <Card className="min-w-0 rounded-[28px]">
-            <div className="flex items-start justify-between gap-4">
+          <Card className="rounded-[28px]">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                  Almacen
+                <div className="text-base font-semibold text-[var(--ui-foreground)]">
+                  Técnicos a surtir
                 </div>
-                <div className="mt-3 text-3xl font-semibold text-[var(--ui-foreground)]">
-                  {filteredWarehouse.length}
-                </div>
-                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                  referencias visibles
+                <div className="mt-1 text-sm ui-text-muted">
+                  Los técnicos con menos unidades quedan primero para reponer más rápido.
                 </div>
               </div>
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_20%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] text-[var(--ui-highlight)]">
-                <PiArrowDownBold size={22} />
-              </div>
+              <Tag color="purple">{technicianStockSummary.length} visibles</Tag>
             </div>
-          </Card>
 
-          <Card className="min-w-0 rounded-[28px]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                  Tecnicos
+            <div className="grid gap-3">
+              {technicianStockSummary.length ? (
+                technicianStockSummary.map((record) => {
+                  const state = getTechnicianState(record.totalUnits);
+                  return (
+                    <div
+                      key={record.technician}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-[var(--ui-foreground)]">
+                          {record.technician_name}
+                        </div>
+                        <div className="mt-1 text-sm ui-text-muted">
+                          {record.totalUnits} unidades - {record.materialLines} materiales
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Tag color={state.color}>{state.label}</Tag>
+                        <Button
+                          size="small"
+                          type={record.totalUnits <= 0 ? "primary" : "default"}
+                          onClick={() => openAssignStock(record)}
+                        >
+                          Entregar
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[22px] border border-dashed border-[var(--ui-border)] px-4 py-6 text-sm ui-text-muted">
+                  No hay técnicos para revisar en este momento.
                 </div>
-                <div className="mt-3 text-3xl font-semibold text-[var(--ui-foreground)]">
-                  {filteredTechnicianInventory.length}
-                </div>
-                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                  asignaciones visibles
-                </div>
-              </div>
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_20%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] text-[var(--ui-highlight)]">
-                <PiUsersThreeBold size={22} />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="min-w-0 rounded-[28px]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                  Movimientos
-                </div>
-                <div className="mt-3 text-3xl font-semibold text-[var(--ui-foreground)]">
-                  {filteredHistory.length}
-                </div>
-                <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                  eventos filtrados
-                </div>
-              </div>
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_20%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] text-[var(--ui-highlight)]">
-                <PiClockCountdownBold size={22} />
-              </div>
+              )}
             </div>
           </Card>
         </div>
@@ -680,17 +854,17 @@ const Inventory = () => {
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--ui-muted-foreground)]">
-                Vista modular
+                Mesa de almacén
               </div>
               <div className="mt-2 text-xl font-semibold text-[var(--ui-foreground)]">
-                Catalogo, almacen, entregas y trazabilidad
+                Stock central, entregas y trazabilidad
               </div>
               <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                Consulta rapida por catalogo, stock, entregas y movimientos.
+                Primero revisas stock, luego surtido y despues movimientos.
               </div>
 
             </div>
-            <Tag color="purple">Operacion</Tag>
+            <Tag color="purple">Operación</Tag>
           </div>
 
           <Tabs
@@ -748,11 +922,10 @@ const Inventory = () => {
                             Stock central
                           </div>
                           <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
-                            Entrada rapida y estado por referencia
+                            Entrada visible y estado por referencia
                           </div>
                           <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                            Clic derecho en una fila para registrar nuevas entradas sobre
-                            ese material.
+                            Cada fila deja clara la accion para recibir stock sin depender del clic derecho.
                           </div>
                         </div>
                         <Tag color={inventoryMetrics.warehouseAlerts ? "red" : "green"}>
@@ -769,9 +942,12 @@ const Inventory = () => {
                       columns={warehouseColumns}
                       loading={loadingWarehouse}
                       size="small"
-                      scroll={{ x: 960 }}
+                      scroll={{ x: 1080 }}
                       onRow={(record) => ({
                         onContextMenu: (event) => openWarehouseContextMenu(event, record),
+                        className: record.needs_restock
+                          ? "bg-[color:color-mix(in_srgb,var(--ui-highlight)_6%,var(--ui-card))]"
+                          : undefined,
                       })}
                       pagination={{ pageSize: 8 }}
                     />
@@ -783,7 +959,7 @@ const Inventory = () => {
                 label: (
                   <span className="inline-flex items-center gap-2">
                     <PiUsersThreeBold size={16} />
-                    <span>Tecnicos</span>
+                    <span>Técnicos</span>
                   </span>
                 ),
                 children: (
@@ -795,10 +971,10 @@ const Inventory = () => {
                             Inventario en campo
                           </div>
                           <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
-                            Material asignado por persona
+                            Material por técnico
                           </div>
                           <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                            Clic derecho en una fila para entregar mas material al tecnico.
+                            También puedes entregar más material desde el botón de cada fila.
                           </div>
                         </div>
                         <Tag color="purple">{inventoryMetrics.techniciansCovered} con stock</Tag>
@@ -811,7 +987,7 @@ const Inventory = () => {
                       columns={technicianColumns}
                       loading={loadingInventory}
                       size="small"
-                      scroll={{ x: 760 }}
+                      scroll={{ x: 900 }}
                       onRow={(record) => ({
                         onContextMenu: (event) => openTechnicianContextMenu(event, record),
                       })}
@@ -835,11 +1011,10 @@ const Inventory = () => {
                         Trazabilidad
                       </div>
                       <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
-                        Historial legible de entradas, entregas y ajustes
+                        Historial de entradas y salidas
                       </div>
                       <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                        La columna de notas rompe mejor el texto y la tabla conserva scroll
-                        horizontal cuando hace falta.
+                        Fecha, responsable y notas quedan en una sola vista para revisar rápido.
                       </div>
                     </div>
 
@@ -849,7 +1024,7 @@ const Inventory = () => {
                       columns={historyColumns}
                       loading={loadingHistory}
                       size="small"
-                      scroll={{ x: 930 }}
+                      scroll={{ x: 1100 }}
                       pagination={{ pageSize: 8 }}
                     />
                   </div>
@@ -868,13 +1043,15 @@ const Inventory = () => {
         okText="Guardar"
         cancelText="Cancelar"
         confirmLoading={createMaterialMutation.isPending}
+        width={680}
       >
-        <Card className="rounded-xl">
-          <Form
-            form={materialForm}
-            layout="vertical"
-            onFinish={(values) => createMaterialMutation.mutate(values)}
-          >
+        <Form
+          form={materialForm}
+          layout="vertical"
+          className="grid gap-5"
+          onFinish={(values) => createMaterialMutation.mutate(values)}
+        >
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
             <Form.Item
               label="Nombre"
               name="name"
@@ -882,28 +1059,34 @@ const Inventory = () => {
             >
               <Input placeholder="Ej. Conector SC/APC" />
             </Form.Item>
-            <Form.Item label="Descripcion" name="description">
-              <Input.TextArea rows={3} placeholder="Descripcion opcional" />
+            <Form.Item label="SKU" name="sku">
+              <Input placeholder="Ej. MAT-019" />
             </Form.Item>
-            <div className="grid gap-4 md:grid-cols-2">
-              <Form.Item
-                label="Unidad"
-                name="unit"
-                rules={[{ required: true, message: "Ingresa la unidad" }]}
-              >
-                <Input placeholder="Ej. pieza, metro, paquete" />
-              </Form.Item>
-              <Form.Item label="SKU" name="sku">
-                <Input placeholder="Ej. MAT-019" />
-              </Form.Item>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Form.Item
+              label="Unidad"
+              name="unit"
+              rules={[{ required: true, message: "Ingresa la unidad" }]}
+            >
+              <Input placeholder="Ej. pieza, metro, paquete" />
+            </Form.Item>
+            <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+              <div className="text-sm font-medium text-[var(--ui-foreground)]">Consejo</div>
+              <div className="mt-1 text-sm ui-text-muted">
+                Usa nombres cortos y un SKU consistente para buscar rápido en almacén.
+              </div>
             </div>
-          </Form>
-        </Card>
+          </div>
+          <Form.Item label="Descripcion" name="description">
+            <Input.TextArea rows={3} placeholder="Descripcion opcional" />
+          </Form.Item>
+        </Form>
       </Modal>
 
       <Modal
         open={warehouseModalOpen}
-        title="Registrar entrada a almacen"
+        title="Registrar entrada a almacén"
         onCancel={() => {
           setWarehouseModalOpen(false);
           setWarehousePreset(null);
@@ -912,11 +1095,36 @@ const Inventory = () => {
         okText="Registrar"
         cancelText="Cancelar"
         confirmLoading={receiveStockMutation.isPending}
+        width={720}
       >
-        <Card className="rounded-xl">
+        <div className="grid gap-4">
+          {selectedWarehouseRecord ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Material</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedWarehouseRecord.material_name}
+                </div>
+              </div>
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Usable</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedWarehouseRecord.quantity_usable}
+                </div>
+              </div>
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Min / recompra</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedWarehouseRecord.minimum_threshold} / {selectedWarehouseRecord.reorder_quantity}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <Form
             form={warehouseForm}
             layout="vertical"
+            className="grid gap-5"
             onFinish={(values) =>
               receiveStockMutation.mutate({
                 ...values,
@@ -926,18 +1134,18 @@ const Inventory = () => {
               })
             }
           >
-            <Form.Item
-              label="Material"
-              name="material"
-              rules={[{ required: true, message: "Selecciona un material" }]}
-            >
-              <Select
-                options={materialOptions}
-                placeholder="Selecciona un material"
-                disabled={!!warehousePreset}
-              />
-            </Form.Item>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_12rem]">
+              <Form.Item
+                label="Material"
+                name="material"
+                rules={[{ required: true, message: "Selecciona un material" }]}
+              >
+                <Select
+                  options={materialOptions}
+                  placeholder="Selecciona un material"
+                  disabled={!!warehousePreset}
+                />
+              </Form.Item>
               <Form.Item
                 label="Cantidad"
                 name="quantity"
@@ -945,6 +1153,8 @@ const Inventory = () => {
               >
                 <InputNumber className="w-full" min={1} />
               </Form.Item>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
               <Form.Item
                 label="Minimo"
                 name="minimum_threshold"
@@ -952,37 +1162,62 @@ const Inventory = () => {
               >
                 <InputNumber className="w-full" min={0} />
               </Form.Item>
+              <Form.Item
+                label="Punto de recompra"
+                name="reorder_quantity"
+                rules={[{ required: true, message: "Ingresa la recompra sugerida" }]}
+              >
+                <InputNumber className="w-full" min={1} />
+              </Form.Item>
             </div>
-            <Form.Item
-              label="Punto de recompra"
-              name="reorder_quantity"
-              rules={[{ required: true, message: "Ingresa la recompra sugerida" }]}
-            >
-              <InputNumber className="w-full" min={1} />
-            </Form.Item>
             <Form.Item label="Notas" name="notes">
-              <Input.TextArea rows={2} placeholder="Compra, entrada manual, ajuste, etc." />
+              <Input.TextArea rows={3} placeholder="Compra, entrada manual o ajuste" />
             </Form.Item>
           </Form>
-        </Card>
+        </div>
       </Modal>
 
       <Modal
         open={assignModalOpen}
-        title="Asignar material a tecnico"
+        title="Entregar material a técnico"
         onCancel={() => {
           setAssignModalOpen(false);
           setAssignPreset(null);
         }}
         onOk={() => assignForm.submit()}
-        okText="Asignar"
+        okText="Entregar"
         cancelText="Cancelar"
         confirmLoading={assignStockMutation.isPending}
+        width={760}
       >
-        <Card className="rounded-xl">
+        <div className="grid gap-4">
+          {(selectedAssignWarehouseRecord || selectedAssignTechnician || selectedAssignInventoryRecord) ? (
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Técnico</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedAssignTechnician?.name || "Selecciona técnico"}
+                </div>
+              </div>
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Disponible en almacén</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedAssignWarehouseRecord?.quantity_usable ?? 0}
+                </div>
+              </div>
+              <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Actual del técnico</div>
+                <div className="mt-2 font-medium text-[var(--ui-foreground)]">
+                  {selectedAssignInventoryRecord?.current_quantity ?? 0}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           <Form
             form={assignForm}
             layout="vertical"
+            className="grid gap-5"
             onFinish={(values) =>
               assignStockMutation.mutate({
                 ...values,
@@ -990,40 +1225,44 @@ const Inventory = () => {
               })
             }
           >
-            <Form.Item
-              label="Tecnico"
-              name="technician"
-              rules={[{ required: true, message: "Selecciona un tecnico" }]}
-            >
-              <Select
-                options={technicianOptions}
-                placeholder="Selecciona un tecnico"
-                disabled={!!assignPreset?.technician}
-              />
-            </Form.Item>
-            <Form.Item
-              label="Material"
-              name="material"
-              rules={[{ required: true, message: "Selecciona un material" }]}
-            >
-              <Select
-                options={materialOptions}
-                placeholder="Selecciona un material"
-                disabled={!!assignPreset?.material}
-              />
-            </Form.Item>
-            <Form.Item
-              label="Cantidad"
-              name="quantity"
-              rules={[{ required: true, message: "Ingresa la cantidad" }]}
-            >
-              <InputNumber className="w-full" min={1} />
-            </Form.Item>
-            <Form.Item label="Notas" name="notes">
-              <Input.TextArea rows={2} placeholder="Entrega para ordenes del dia, reposicion, etc." />
-            </Form.Item>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Form.Item
+                label="Técnico"
+                name="technician"
+                rules={[{ required: true, message: "Selecciona un técnico" }]}
+              >
+                <Select
+                  options={technicianOptions}
+                  placeholder="Selecciona un técnico"
+                  disabled={!!assignPreset?.technician}
+                />
+              </Form.Item>
+              <Form.Item
+                label="Material"
+                name="material"
+                rules={[{ required: true, message: "Selecciona un material" }]}
+              >
+                <Select
+                  options={materialOptions}
+                  placeholder="Selecciona un material"
+                  disabled={!!assignPreset?.material}
+                />
+              </Form.Item>
+            </div>
+            <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
+              <Form.Item
+                label="Cantidad"
+                name="quantity"
+                rules={[{ required: true, message: "Ingresa la cantidad" }]}
+              >
+                <InputNumber className="w-full" min={1} />
+              </Form.Item>
+              <Form.Item label="Notas" name="notes">
+                <Input.TextArea rows={3} placeholder="Entrega para ruta, reposicion o ajuste" />
+              </Form.Item>
+            </div>
           </Form>
-        </Card>
+        </div>
       </Modal>
     </PageLayout>
   );

@@ -8,19 +8,37 @@ const Login = () => {
 
   return (
     <AuthShell
-      eyebrow="Operación en campo"
-      title="Coordina solicitudes, inventario y cuadrillas desde un solo lugar."
-      description="Entra al centro de mando para asignar trabajo, seguir técnicos y mantener la operación bajo control."
+      eyebrow="Acceso"
+      title="Inicia sesión en tu espacio de trabajo."
+      description="Ordenes, agenda e inventario quedan en una sola entrada sin pantallas sobrando."
       highlights={[
-        "Despacho centralizado",
-        "Rastreo en tiempo real",
-        "Control de inventario",
+        "Ordenes",
+        "Agenda",
+        "Inventario",
+      ]}
+      panelTitle="Listo para entrar"
+      panelItems={[
+        {
+          label: "Despacho",
+          help: "Ordenes y seguimiento",
+          value: "Activo",
+        },
+        {
+          label: "Campo",
+          help: "Ruta, evidencias y cierres",
+          value: "Visible",
+        },
+        {
+          label: "Inventario",
+          help: "Stock por almacén y técnico",
+          value: "Listo",
+        },
       ]}
       cardTitle="Iniciar sesión"
-      cardDescription="Ingresa tus credenciales para continuar."
+      cardDescription="Usa tu cuenta para entrar al panel."
       footer={
         <>
-          ¿Aún no tienes cuenta? <Link to="/register">Crea tu registro</Link>
+          Aún no tienes cuenta? <Link to="/register">Crea tu registro</Link>
         </>
       }
     >

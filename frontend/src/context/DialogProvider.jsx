@@ -137,7 +137,7 @@ export const DialogProvider = ({ children }) => {
             setDrawerOptions(null);
           }
         }}
-        width={drawerOptions?.width || 378}
+        width={drawerOptions?.width || 560}
         destroyOnHidden>
         {drawerOptions?.content}
       </Drawer>

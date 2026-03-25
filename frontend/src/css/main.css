@@ -4,9 +4,18 @@
   right: var(--layout-gap);
   bottom: var(--layout-gap);
   left: var(--main-left-offset);
+  display: flex;
+  min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: auto;
+  overscroll-behavior: contain;
   transition: left 0.28s ease, top 0.28s ease, right 0.28s ease, bottom 0.28s ease;
+}
+
+.main > * {
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
 }
 
 .ui-text-muted {

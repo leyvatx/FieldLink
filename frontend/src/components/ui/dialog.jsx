@@ -36,7 +36,7 @@ const DialogContent = React.forwardRef(function DialogContent(
         data-slot="dialog-content"
         data-mobile-adaptive="true"
         className={cn(
-          "fixed left-1/2 top-1/2 z-[1101] grid w-[min(calc(100vw-1rem),36rem)] max-h-[min(88vh,calc(100dvh-1rem))] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-hidden rounded-[1.5rem] border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-dialog)] will-change-[opacity,transform] transition-[opacity,transform] duration-220 ease-out sm:rounded-[1.75rem] data-[state=closed]:translate-y-[calc(-50%+14px)] data-[state=closed]:scale-[0.965] data-[state=closed]:opacity-0 data-[state=open]:translate-y-[-50%] data-[state=open]:scale-100 data-[state=open]:opacity-100",
+          "fixed left-1/2 top-1/2 z-[1101] flex w-[min(calc(100vw-1rem),36rem)] max-h-[min(90vh,calc(100dvh-1rem))] max-w-[calc(100vw-1rem)] min-h-0 -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden overscroll-contain rounded-[1.5rem] border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-dialog)] will-change-[opacity,transform] transition-[opacity,transform] duration-220 ease-out sm:rounded-[1.75rem] data-[state=closed]:translate-y-[calc(-50%+14px)] data-[state=closed]:scale-[0.965] data-[state=closed]:opacity-0 data-[state=open]:translate-y-[-50%] data-[state=open]:scale-100 data-[state=open]:opacity-100",
           className
         )}
         {...props}
@@ -56,7 +56,7 @@ const DialogContent = React.forwardRef(function DialogContent(
 const DialogHeader = ({ className, ...props }) => (
   <div
     data-slot="dialog-header"
-    className={cn("flex flex-col gap-1.5 border-b border-[var(--ui-border)] px-4 py-4 sm:px-6 sm:py-5", className)}
+    className={cn("shrink-0 flex flex-col gap-1.5 border-b border-[var(--ui-border)] px-4 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-16", className)}
     {...props}
   />
 );
@@ -64,7 +64,7 @@ const DialogHeader = ({ className, ...props }) => (
 const DialogFooter = ({ className, ...props }) => (
   <div
     data-slot="dialog-footer"
-    className={cn("flex flex-col-reverse gap-2 border-t border-[var(--ui-border)] px-4 py-4 sm:flex-row sm:justify-end sm:px-6", className)}
+    className={cn("shrink-0 flex flex-col-reverse gap-2 border-t border-[var(--ui-border)] px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:flex-row sm:flex-wrap sm:justify-end sm:px-6", className)}
     {...props}
   />
 );
