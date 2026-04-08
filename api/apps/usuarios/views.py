@@ -265,11 +265,17 @@ class CompanyViewSet(viewsets.ModelViewSet):
     Company management.
     Platform admins can inspect every company.
     Company admins can only access their own company.
+    Supervisors can read their own company via my_company.
     """
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     permission_classes = [IsAuthenticated, IsPlatformAdminOrCompanyAdmin]
     lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action == 'my_company':
+            return [IsAuthenticated(), IsCompanyOrSupervisor()]
+        return super().get_permissions()
     
     def get_queryset(self):
         """Platform admins see all companies, company admins only their own."""
@@ -299,13 +305,14 @@ class CompanyViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def my_company(self, request):
-        """Get current user's company"""
+        """Get current user's company (with annotated counts)."""
         if not request.user.company:
             return Response(
                 {'error': 'This user is not linked to a company.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        serializer = self.get_serializer(request.user.company)
+        company = self.get_queryset().get(id=request.user.company_id)
+        serializer = self.get_serializer(company)
         return Response(serializer.data)
 
 
