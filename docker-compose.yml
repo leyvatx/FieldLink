@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15
+    container_name: fieldlink_db
+    restart: always
+    environment:
+      POSTGRES_DB: fieldlink
+      POSTGRES_USER: fieldlink
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fieldlink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./api
+    container_name: fieldlink_backend
+    restart: always
+    volumes:
+      - ./api:/app
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_NAME: fieldlink
+      DB_USER: fieldlink
+      DB_PASSWORD: secret
+      DB_HOST: db
+      DB_PORT: 5432
+      SECRET_KEY: django-insecure-fieldlink-prod-change-this
+      DEBUG: "False"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: fieldlink_frontend
+    restart: always
+    ports:
+      - "127.0.0.1:3000:80"
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data:
