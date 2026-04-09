@@ -36,6 +36,9 @@ services:
       DB_PORT: 5432
       SECRET_KEY: django-insecure-fieldlink-prod-change-this
       DEBUG: "False"
+      ALLOWED_HOSTS: "fieldlinkapp.com,www.fieldlinkapp.com,108.175.9.159,localhost"
+      CORS_ALLOWED_ORIGINS: "https://fieldlinkapp.com,https://www.fieldlinkapp.com"
+      DJANGO_SETTINGS_MODULE: config.settings.production
 
   frontend:
     build:
