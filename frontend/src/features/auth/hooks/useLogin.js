@@ -1,15 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
 import { login } from "@api/authService";
-import { resetAppQueries } from "@lib/queryClient";
+import { AUTH_USER_QUERY_KEY } from "@lib/queryClient";
+import queryClient from "@lib/queryClient";
 
-// setQueryData in resetAppQueries is sufficient to trigger AuthGuard redirect
 const useLogin = () => {
   return useMutation({
     mutationFn: login,
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       localStorage.setItem("token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
-      await resetAppQueries(data.user);
+      queryClient.setQueryData(AUTH_USER_QUERY_KEY, data.user);
     },
   });
 };
