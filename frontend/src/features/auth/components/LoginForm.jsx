@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { PiAtBold, PiLockKeyBold } from "react-icons/pi";
 import { Alert, Button, Form, Input } from "@/lib/antd-compat";
 import useLogin from "@features/auth/hooks/useLogin";
@@ -6,6 +7,7 @@ import formatErrors from "@lib/formatErrors";
 const LoginForm = () => {
   const [form] = Form.useForm();
   const loginMutation = useLogin();
+  const navigate = useNavigate();
 
   const onFinish = (values) => {
     const { email, password } = values;
@@ -14,6 +16,9 @@ const LoginForm = () => {
     loginMutation.mutate(
       { email, password },
       {
+        onSuccess: () => {
+          navigate("/");
+        },
         onError: (requestError) => {
           const formErrors = requestError?.response?.data
             ? formatErrors(requestError.response.data)
