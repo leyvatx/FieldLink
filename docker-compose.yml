@@ -41,9 +41,7 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.production
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: ghcr.io/leyvatx/fieldlink-frontend:latest
     container_name: fieldlink_frontend
     restart: always
     ports:
