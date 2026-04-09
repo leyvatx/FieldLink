@@ -1,6 +1,9 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+ARG VITE_API_BASE_URL=https://fieldlinkapp.com/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 WORKDIR /app/frontend
 
 # Shared directory is referenced via vite alias (@shared)
