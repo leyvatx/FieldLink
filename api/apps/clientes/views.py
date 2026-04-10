@@ -333,12 +333,12 @@ def _resolve_public_company(request, company_slug=''):
         slug_candidate = _extract_company_slug_from_host(request)
 
     if not slug_candidate:
-        return None, 'Company not identified'
+        return None, 'Empresa no identificada'
 
     try:
         company = Company.objects.get(slug=slug_candidate, is_active=True)
     except Company.DoesNotExist:
-        return None, 'Company not found'
+        return None, 'Empresa no encontrada'
 
     return company, None
 
@@ -386,7 +386,7 @@ def _resolve_public_landing(company, request, landing_slug=''):
                 is_active=True,
             )
         except PublicLanding.DoesNotExist:
-            return None, 'Landing not found'
+            return None, 'Landing no encontrada'
         return landing, None
 
     landing = company.public_landings.filter(is_active=True, is_default=True).first()

@@ -1,24 +1,97 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Result, Select, Spin, Steps } from "@/lib/antd-compat";
+import { Alert, Button, Card, Form, Input, Result, Select, Spin, Steps } from "@/lib/antd-compat";
 import {
   createPublicServiceRequest,
   createPublicServiceRequestByHost,
   createPublicServiceRequestByLanding,
   getPublicLanding,
 } from "@api/serviceRequestService";
+import formatErrors from "@lib/formatErrors";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
 
 const SERVICE_TYPES = [
-  { value: "instalacion", label: "Instalacion" },
+  { value: "instalacion", label: "Instalaci\u00f3n" },
   { value: "mantenimiento", label: "Mantenimiento" },
-  { value: "reparacion", label: "Reparacion" },
-  { value: "diagnostico", label: "Diagnostico" },
+  { value: "reparacion", label: "Reparaci\u00f3n" },
+  { value: "diagnostico", label: "Diagn\u00f3stico" },
 ];
 
 const RESERVED_SUBDOMAINS = new Set(["www", "api", "admin", "app", "auth"]);
+const PHONE_ALLOWED_PATTERN = /^[0-9+\s()\-]+$/;
+
+const trimValue = (value) => (typeof value === "string" ? value.trim() : value);
+const countDigits = (value) => String(value || "").replace(/\D/g, "").length;
+
+const PUBLIC_REQUEST_RULES = {
+  customer_name: [
+    {
+      required: true,
+      transform: trimValue,
+      message: "Ingresa tu nombre completo.",
+    },
+    {
+      max: 150,
+      message: "El nombre no puede exceder 150 caracteres.",
+    },
+  ],
+  phone: [
+    {
+      required: true,
+      transform: trimValue,
+      message: "Ingresa tu tel\u00e9fono.",
+    },
+    {
+      max: 20,
+      message: "El tel\u00e9fono no puede exceder 20 caracteres.",
+    },
+    {
+      validator(_, value) {
+        const normalized = trimValue(value);
+        if (!normalized) {
+          return Promise.resolve();
+        }
+
+        if (!PHONE_ALLOWED_PATTERN.test(normalized) || countDigits(normalized) < 7) {
+          return Promise.reject(new Error("Ingresa un tel\u00e9fono v\u00e1lido."));
+        }
+
+        return Promise.resolve();
+      },
+    },
+  ],
+  email: [
+    {
+      type: "email",
+      transform: trimValue,
+      message: "Ingresa un correo electr\u00f3nico v\u00e1lido.",
+    },
+    {
+      max: 254,
+      message: "El correo electr\u00f3nico no puede exceder 254 caracteres.",
+    },
+  ],
+  address: [
+    {
+      required: true,
+      transform: trimValue,
+      message: "Ingresa la direcci\u00f3n del servicio.",
+    },
+  ],
+  service_type: [
+    {
+      required: true,
+      transform: trimValue,
+      message: "Selecciona el tipo de servicio.",
+    },
+    {
+      max: 100,
+      message: "El tipo de servicio no puede exceder 100 caracteres.",
+    },
+  ],
+};
 
 const normalizeHost = (hostname = "") => {
   const normalized = String(hostname || "").trim().toLowerCase();
@@ -85,7 +158,6 @@ const PublicRequestWizard = () => {
   const [current, setCurrent] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const [submitError, setSubmitError] = useState(null);
 
   const {
     data: landing,
@@ -115,16 +187,34 @@ const PublicRequestWizard = () => {
         fields: ["address", "service_type", "description"],
       },
       {
-        title: "Confirmacion",
+        title: "Confirmaci\u00f3n",
         fields: [],
       },
     ],
     []
   );
 
+  const clearFormFeedback = (fieldNames = []) => {
+    const normalizedNames = Array.from(
+      new Set(
+        fieldNames
+          .map((fieldName) => String(fieldName || "").trim())
+          .filter(Boolean)
+      )
+    );
+
+    const fieldsToClear = [
+      { name: "non_field_errors", errors: [] },
+      ...normalizedNames.map((fieldName) => ({ name: fieldName, errors: [] })),
+    ];
+
+    form.setFields(fieldsToClear);
+  };
+
   const handleNext = async () => {
     const step = steps[current];
     if (step.fields.length > 0) {
+      clearFormFeedback(step.fields);
       await form.validateFields(step.fields);
     }
     setCurrent((prev) => prev + 1);
@@ -135,15 +225,15 @@ const PublicRequestWizard = () => {
   const handleSubmit = async () => {
     try {
       setSubmitting(true);
-      setSubmitError(null);
+      clearFormFeedback(["customer_name", "phone", "email", "address", "service_type", "description"]);
       const values = await form.validateFields();
       const payload = {
-        customer_name: values.customer_name,
-        phone: values.phone,
-        email: values.email,
-        address: values.address,
-        service_type: values.service_type,
-        description: values.description,
+        customer_name: trimValue(values.customer_name) || "",
+        phone: trimValue(values.phone) || "",
+        email: trimValue(values.email) || "",
+        address: trimValue(values.address) || "",
+        service_type: trimValue(values.service_type) || "",
+        description: trimValue(values.description) || "",
         ...(resolvedLandingSlug ? { landing_slug: resolvedLandingSlug } : {}),
       };
 
@@ -162,7 +252,36 @@ const PublicRequestWizard = () => {
 
       setResult(response);
     } catch (err) {
-      setSubmitError(err?.response?.data?.error || "No pudimos enviar la solicitud.");
+      if (err?.errorFields) {
+        return;
+      }
+
+      if (err?.response?.data) {
+        const formattedErrors = formatErrors(err.response.data);
+        const hasNonFieldErrors = formattedErrors.some(
+          (field) => field.name === "non_field_errors"
+        );
+
+        form.setFields(
+          hasNonFieldErrors
+            ? formattedErrors
+            : [
+                ...formattedErrors,
+                {
+                  name: "non_field_errors",
+                  errors: ["Revisa los campos marcados e intenta de nuevo."],
+                },
+              ]
+        );
+        return;
+      }
+
+      form.setFields([
+        {
+          name: "non_field_errors",
+          errors: ["No pudimos enviar la solicitud."],
+        },
+      ]);
     } finally {
       setSubmitting(false);
     }
@@ -171,17 +290,17 @@ const PublicRequestWizard = () => {
   const header = (
     <div className="portal-hero">
       <span className="portal-kicker">
-        {landing?.company_name ? `Solicitud para ${landing.company_name}` : "Solicitud express"}
+        {landing?.company_name ? `Solicitud para ${landing.company_name}` : "Solicitud expr\u00e9s"}
       </span>
       <h1 className="portal-title">
         {landing?.headline ||
           (landing?.company_name
             ? `Agenda tu visita con ${landing.company_name}`
-            : "Agenda tu visita tecnica en minutos")}
+            : "Agenda tu visita t\u00e9cnica en minutos")}
       </h1>
       <p className="portal-subtitle">
         {landing?.subtitle ||
-          "Completa este formulario rapido. No necesitas registrarte y recibiras confirmacion por WhatsApp."}
+          "Completa este formulario r\u00e1pido. No necesitas registrarte y recibir\u00e1s confirmaci\u00f3n por WhatsApp."}
       </p>
     </div>
   );
@@ -230,64 +349,83 @@ const PublicRequestWizard = () => {
             <Result status="success" title="Solicitud enviada" subTitle={`ID de referencia: ${result.id}`} />
           ) : (
             <>
-              {submitError ? <div className="mb-4 text-sm portal-error">{submitError}</div> : null}
               <Steps current={current} items={steps.map((step) => ({ title: step.title }))} />
               <div className="portal-divider" />
-              <Form form={form} layout="vertical" autoComplete="off">
+              <Form
+                form={form}
+                layout="vertical"
+                autoComplete="off"
+                onValuesChange={(changedValues) => clearFormFeedback(Object.keys(changedValues))}
+              >
+                <Form.Item noStyle shouldUpdate>
+                  {() => {
+                    const errors = form.getFieldError("non_field_errors");
+                    if (!errors.length) {
+                      return null;
+                    }
+
+                    return <Alert className="mb-4" message={errors[0]} type="error" showIcon />;
+                  }}
+                </Form.Item>
                 {current === 0 ? (
                   <>
                     <Form.Item
                       label="Nombre completo"
                       name="customer_name"
-                      rules={[{ required: true, message: "Ingresa tu nombre." }]}
+                      rules={PUBLIC_REQUEST_RULES.customer_name}
                     >
-                      <Input placeholder="Nombre y apellido" />
+                      <Input placeholder="Nombre y apellido" maxLength={150} />
                     </Form.Item>
                     <Form.Item
-                      label="Telefono"
+                      label="Tel\u00e9fono"
                       name="phone"
-                      rules={[{ required: true, message: "Ingresa tu telefono." }]}
+                      rules={PUBLIC_REQUEST_RULES.phone}
                     >
-                      <Input placeholder="Ej: +52 55 1234 5678" />
+                      <Input
+                        autoComplete="tel"
+                        inputMode="tel"
+                        placeholder="Ej: +52 55 1234 5678"
+                        maxLength={20}
+                      />
                     </Form.Item>
-                    <Form.Item label="Correo" name="email">
-                      <Input placeholder="correo@ejemplo.com" />
+                    <Form.Item label="Correo" name="email" rules={PUBLIC_REQUEST_RULES.email}>
+                      <Input autoComplete="email" placeholder="correo@ejemplo.com" maxLength={254} />
                     </Form.Item>
                   </>
                 ) : null}
                 {current === 1 ? (
                   <>
                     <Form.Item
-                      label="Direccion de servicio"
+                      label="Direcci\u00f3n del servicio"
                       name="address"
-                      rules={[{ required: true, message: "Ingresa la direccion." }]}
+                      rules={PUBLIC_REQUEST_RULES.address}
                     >
-                      <Input placeholder="Calle, numero, colonia, ciudad" />
+                      <Input placeholder="Calle, n\u00famero, colonia, ciudad" />
                     </Form.Item>
                     <Form.Item
                       label="Tipo de servicio"
                       name="service_type"
-                      rules={[{ required: true, message: "Selecciona un tipo." }]}
+                      rules={PUBLIC_REQUEST_RULES.service_type}
                     >
                       <Select options={SERVICE_TYPES} placeholder="Selecciona" />
                     </Form.Item>
-                    <Form.Item label="Descripcion" name="description">
-                      <Input.TextArea rows={3} placeholder="Describe el problema" />
+                    <Form.Item label="Descripci\u00f3n" name="description">
+                      <Input.TextArea rows={3} placeholder="Describe el problema" maxLength={1000} showCount />
                     </Form.Item>
                   </>
                 ) : null}
                 {current === 2 ? (
                   <div className="grid gap-3 text-sm portal-muted">
                     <p>
-                      Revisa la informacion antes de enviar. Nuestro equipo te confirmara la
-                      visita y compartira el enlace de rastreo.
+                      Revisa la informaci\u00f3n antes de enviar. Nuestro equipo te confirmar\u00e1 la
+                      visita y compartir\u00e1 el enlace de rastreo.
                     </p>
                   </div>
                 ) : null}
               </Form>
               <div className="mt-6 flex items-center justify-between">
                 <Button disabled={current === 0} onClick={handleBack} type="text">
-                  Atras
+                  Atr\u00e1s
                 </Button>
                 {current < steps.length - 1 ? (
                   <Button type="primary" onClick={handleNext}>
@@ -304,7 +442,7 @@ const PublicRequestWizard = () => {
         </Card>
         <Card className="portal-card" bordered={false}>
           <div className="portal-pill">Seguro y sin registro</div>
-          <h2 className="mt-4 text-xl font-semibold">Que ocurre despues de enviar</h2>
+          <h2 className="mt-4 text-xl font-semibold">Qu\u00e9 ocurre despu\u00e9s de enviar</h2>
           <div className="portal-divider" />
           <div className="grid gap-4 text-sm portal-muted">
             {landing?.company_name ? (
@@ -324,16 +462,16 @@ const PublicRequestWizard = () => {
               </div>
             ) : null}
             <div>
-              <strong className="text-base">Validacion rapida</strong>
+              <strong className="text-base">Validaci\u00f3n r\u00e1pida</strong>
               <p>Revisamos tu solicitud y confirmamos disponibilidad.</p>
             </div>
             <div>
-              <strong className="text-base">Tecnico asignado</strong>
-              <p>Recibiras por WhatsApp el enlace de seguimiento en tiempo real.</p>
+              <strong className="text-base">T\u00e9cnico asignado</strong>
+              <p>Recibir\u00e1s por WhatsApp el enlace de seguimiento en tiempo real.</p>
             </div>
             <div>
               <strong className="text-base">Seguimiento seguro</strong>
-              <p>El rastreo se desactiva automaticamente al llegar el tecnico.</p>
+              <p>El rastreo se desactiva autom\u00e1ticamente al llegar el t\u00e9cnico.</p>
             </div>
           </div>
         </Card>

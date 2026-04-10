@@ -83,7 +83,7 @@ class PublicLandingSerializer(serializers.ModelSerializer):
             return ''
         normalized = slugify(value or '')
         if not normalized:
-            raise serializers.ValidationError('Enter a valid landing slug.')
+            raise serializers.ValidationError('Ingresa un slug v\u00e1lido para la landing.')
         return normalized
 
     def _resolve_company(self):
@@ -118,13 +118,13 @@ class PublicLandingSerializer(serializers.ModelSerializer):
             if self.instance is not None:
                 queryset = queryset.exclude(pk=self.instance.pk)
             if queryset.exists():
-                raise serializers.ValidationError({'slug': 'This landing slug is already in use.'})
+                raise serializers.ValidationError({'slug': 'Este slug de landing ya est\u00e1 en uso.'})
 
         is_default = attrs.get('is_default', getattr(self.instance, 'is_default', False))
         is_active = attrs.get('is_active', getattr(self.instance, 'is_active', True))
         if is_default and not is_active:
             raise serializers.ValidationError(
-                {'is_active': 'A default landing must be active.'}
+                {'is_active': 'La landing principal debe estar activa.'}
             )
         return attrs
 
@@ -141,6 +141,56 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     technician_name = serializers.CharField(source='work_order.technician.name', read_only=True)
     landing_name = serializers.CharField(source='landing.name', read_only=True)
     landing_slug = serializers.CharField(source='landing.slug', read_only=True)
+    customer_name = serializers.CharField(
+        max_length=150,
+        trim_whitespace=True,
+        allow_blank=False,
+        error_messages={
+            'blank': 'El nombre es obligatorio.',
+            'required': 'El nombre es obligatorio.',
+            'max_length': 'El nombre no puede exceder 150 caracteres.',
+        },
+    )
+    phone = serializers.CharField(
+        max_length=20,
+        trim_whitespace=True,
+        allow_blank=False,
+        error_messages={
+            'blank': 'El tel\u00e9fono es obligatorio.',
+            'required': 'El tel\u00e9fono es obligatorio.',
+            'max_length': 'El tel\u00e9fono no puede exceder 20 caracteres.',
+        },
+    )
+    email = serializers.EmailField(
+        required=False,
+        allow_blank=True,
+        error_messages={
+            'invalid': 'Ingresa un correo electr\u00f3nico v\u00e1lido.',
+            'max_length': 'El correo electr\u00f3nico no puede exceder 254 caracteres.',
+        },
+    )
+    address = serializers.CharField(
+        trim_whitespace=True,
+        allow_blank=False,
+        error_messages={
+            'blank': 'La direcci\u00f3n es obligatoria.',
+            'required': 'La direcci\u00f3n es obligatoria.',
+        },
+    )
+    service_type = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+        error_messages={
+            'max_length': 'El tipo de servicio no puede exceder 100 caracteres.',
+        },
+    )
+    description = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
 
     class Meta:
         model = ServiceRequest
