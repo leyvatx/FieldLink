@@ -19,6 +19,7 @@ const NotAuthorized = lazy(() => import("@features/auth/pages/NotAuthorized"));
 const PublicRequestWizard = lazy(() =>
   import("@features/public/pages/PublicRequestWizard")
 );
+const LandingManager = lazy(() => import("@features/public/pages/LandingManager"));
 const PublicTracking = lazy(() => import("@features/public/pages/PublicTracking"));
 const Dashboard = lazy(() => import("@features/dashboard/pages/Dashboard"));
 const WorkOrders = lazy(() => import("@features/work-orders/pages/WorkOrders"));
@@ -76,7 +77,19 @@ const HomeRedirect = () => {
 
 const routes = [
   {
+    path: "/solicitud",
+    element: suspense(<PublicRequestWizard />),
+  },
+  {
     path: "/solicitud/:companySlug",
+    element: suspense(<PublicRequestWizard />),
+  },
+  {
+    path: "/solicitud/l/:landingSlug",
+    element: suspense(<PublicRequestWizard />),
+  },
+  {
+    path: "/solicitud/:companySlug/l/:landingSlug",
     element: suspense(<PublicRequestWizard />),
   },
   {
@@ -181,6 +194,10 @@ const routes = [
               {
                 path: "service-requests",
                 element: suspense(<ServiceRequests />),
+              },
+              {
+                path: "landings",
+                element: suspense(<LandingManager />),
               },
               {
                 path: "materials-approval",

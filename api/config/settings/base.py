@@ -127,3 +127,16 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Public landing / subdomain routing
+# Example: PUBLIC_ROOT_DOMAIN=fieldlink.mx -> company slug "acme" maps to acme.fieldlink.mx
+PUBLIC_WEB_BASE_URL = os.environ.get('PUBLIC_WEB_BASE_URL', '').strip().rstrip('/')
+PUBLIC_ROOT_DOMAIN = os.environ.get('PUBLIC_ROOT_DOMAIN', '').strip().lower()
+PUBLIC_RESERVED_SUBDOMAINS = [
+    item.strip().lower()
+    for item in os.environ.get(
+        'PUBLIC_RESERVED_SUBDOMAINS',
+        'www,api,admin,app,auth,static,media'
+    ).split(',')
+    if item.strip()
+]

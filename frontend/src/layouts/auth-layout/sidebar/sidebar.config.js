@@ -145,6 +145,13 @@ export const sidebarItems = [
         path: "/service-requests",
       },
       {
+        key: "landings",
+        label: "Landings",
+        icon: "PiClipboardTextFill",
+        wordkeys: ["landing", "links", "subdominio", "formulario publico", "publico"],
+        path: "/landings",
+      },
+      {
         key: "materials-approval",
         label: "Evidencias",
         icon: "PiCameraFill",

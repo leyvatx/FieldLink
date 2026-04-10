@@ -50,6 +50,59 @@ class Customer(models.Model):
         return f"{self.name} ({self.company.name})"
 
 
+class PublicLanding(models.Model):
+    """
+    Public landing page configuration per company.
+    Shared with customers to submit service requests.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(
+        'usuarios.Company',
+        on_delete=models.CASCADE,
+        related_name='public_landings',
+    )
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=140)
+
+    headline = models.CharField(max_length=180, blank=True)
+    subtitle = models.TextField(blank=True)
+    cta_text = models.CharField(max_length=80, default='Enviar solicitud')
+
+    is_active = models.BooleanField(default=True)
+    is_default = models.BooleanField(default=False)
+
+    created_by = models.ForeignKey(
+        'usuarios.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_public_landings'
+    )
+    updated_by = models.ForeignKey(
+        'usuarios.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_public_landings'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'public_landings'
+        unique_together = [['company', 'slug']]
+        indexes = [
+            models.Index(fields=['company', 'is_active']),
+            models.Index(fields=['company', 'is_default']),
+            models.Index(fields=['company', 'slug']),
+        ]
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.company.name} - {self.name}"
+
+
 class ServiceRequest(models.Model):
     """
     Service requests from customers, converted to work orders by admin.
@@ -63,6 +116,13 @@ class ServiceRequest(models.Model):
     company = models.ForeignKey(
         'usuarios.Company',
         on_delete=models.CASCADE,
+        related_name='service_requests',
+        null=True,
+        blank=True
+    )
+    landing = models.ForeignKey(
+        PublicLanding,
+        on_delete=models.SET_NULL,
         related_name='service_requests',
         null=True,
         blank=True

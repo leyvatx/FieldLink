@@ -242,6 +242,7 @@ const ServiceRequests = () => {
           </div>
           <div className="text-sm ui-text-muted">
             {record.service_type || "Sin servicio"} - {formatDateTime(record.created_at)}
+            {record.landing_name ? ` - Landing: ${record.landing_name}` : ""}
           </div>
         </div>
       ),
