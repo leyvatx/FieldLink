@@ -83,7 +83,7 @@ class PublicLandingSerializer(serializers.ModelSerializer):
             return ''
         normalized = slugify(value or '')
         if not normalized:
-            raise serializers.ValidationError('Ingresa un slug v\u00e1lido para la landing.')
+            raise serializers.ValidationError('Ingresa un slug válido para la landing.')
         return normalized
 
     def _resolve_company(self):
@@ -118,7 +118,7 @@ class PublicLandingSerializer(serializers.ModelSerializer):
             if self.instance is not None:
                 queryset = queryset.exclude(pk=self.instance.pk)
             if queryset.exists():
-                raise serializers.ValidationError({'slug': 'Este slug de landing ya est\u00e1 en uso.'})
+                raise serializers.ValidationError({'slug': 'Este slug de landing ya está en uso.'})
 
         is_default = attrs.get('is_default', getattr(self.instance, 'is_default', False))
         is_active = attrs.get('is_active', getattr(self.instance, 'is_active', True))
@@ -156,25 +156,25 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         trim_whitespace=True,
         allow_blank=False,
         error_messages={
-            'blank': 'El tel\u00e9fono es obligatorio.',
-            'required': 'El tel\u00e9fono es obligatorio.',
-            'max_length': 'El tel\u00e9fono no puede exceder 20 caracteres.',
+            'blank': 'El teléfono es obligatorio.',
+            'required': 'El teléfono es obligatorio.',
+            'max_length': 'El teléfono no puede exceder 20 caracteres.',
         },
     )
     email = serializers.EmailField(
         required=False,
         allow_blank=True,
         error_messages={
-            'invalid': 'Ingresa un correo electr\u00f3nico v\u00e1lido.',
-            'max_length': 'El correo electr\u00f3nico no puede exceder 254 caracteres.',
+            'invalid': 'Ingresa un correo electrónico válido.',
+            'max_length': 'El correo electrónico no puede exceder 254 caracteres.',
         },
     )
     address = serializers.CharField(
         trim_whitespace=True,
         allow_blank=False,
         error_messages={
-            'blank': 'La direcci\u00f3n es obligatoria.',
-            'required': 'La direcci\u00f3n es obligatoria.',
+            'blank': 'La dirección es obligatoria.',
+            'required': 'La dirección es obligatoria.',
         },
     )
     service_type = serializers.CharField(

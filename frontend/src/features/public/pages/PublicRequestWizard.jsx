@@ -13,10 +13,10 @@ import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
 
 const SERVICE_TYPES = [
-  { value: "instalacion", label: "Instalaci\u00f3n" },
+  { value: "instalacion", label: "Instalación" },
   { value: "mantenimiento", label: "Mantenimiento" },
-  { value: "reparacion", label: "Reparaci\u00f3n" },
-  { value: "diagnostico", label: "Diagn\u00f3stico" },
+  { value: "reparacion", label: "Reparación" },
+  { value: "diagnostico", label: "Diagnóstico" },
 ];
 
 const RESERVED_SUBDOMAINS = new Set(["www", "api", "admin", "app", "auth"]);
@@ -41,11 +41,11 @@ const PUBLIC_REQUEST_RULES = {
     {
       required: true,
       transform: trimValue,
-      message: "Ingresa tu tel\u00e9fono.",
+      message: "Ingresa tu teléfono.",
     },
     {
       max: 20,
-      message: "El tel\u00e9fono no puede exceder 20 caracteres.",
+      message: "El teléfono no puede exceder 20 caracteres.",
     },
     {
       validator(_, value) {
@@ -55,7 +55,7 @@ const PUBLIC_REQUEST_RULES = {
         }
 
         if (!PHONE_ALLOWED_PATTERN.test(normalized) || countDigits(normalized) < 7) {
-          return Promise.reject(new Error("Ingresa un tel\u00e9fono v\u00e1lido."));
+          return Promise.reject(new Error("Ingresa un teléfono válido."));
         }
 
         return Promise.resolve();
@@ -66,18 +66,18 @@ const PUBLIC_REQUEST_RULES = {
     {
       type: "email",
       transform: trimValue,
-      message: "Ingresa un correo electr\u00f3nico v\u00e1lido.",
+      message: "Ingresa un correo electrónico válido.",
     },
     {
       max: 254,
-      message: "El correo electr\u00f3nico no puede exceder 254 caracteres.",
+      message: "El correo electrónico no puede exceder 254 caracteres.",
     },
   ],
   address: [
     {
       required: true,
       transform: trimValue,
-      message: "Ingresa la direcci\u00f3n del servicio.",
+      message: "Ingresa la dirección del servicio.",
     },
   ],
   service_type: [
@@ -187,7 +187,7 @@ const PublicRequestWizard = () => {
         fields: ["address", "service_type", "description"],
       },
       {
-        title: "Confirmaci\u00f3n",
+        title: "Confirmación",
         fields: [],
       },
     ],
@@ -290,17 +290,17 @@ const PublicRequestWizard = () => {
   const header = (
     <div className="portal-hero">
       <span className="portal-kicker">
-        {landing?.company_name ? `Solicitud para ${landing.company_name}` : "Solicitud expr\u00e9s"}
+        {landing?.company_name ? `Solicitud para ${landing.company_name}` : "Solicitud exprés"}
       </span>
       <h1 className="portal-title">
         {landing?.headline ||
           (landing?.company_name
             ? `Agenda tu visita con ${landing.company_name}`
-            : "Agenda tu visita t\u00e9cnica en minutos")}
+            : "Agenda tu visita técnica en minutos")}
       </h1>
       <p className="portal-subtitle">
         {landing?.subtitle ||
-          "Completa este formulario r\u00e1pido. No necesitas registrarte y recibir\u00e1s confirmaci\u00f3n por WhatsApp."}
+          "Completa este formulario rápido. No necesitas registrarte y recibirás confirmación por WhatsApp."}
       </p>
     </div>
   );
@@ -377,7 +377,7 @@ const PublicRequestWizard = () => {
                       <Input placeholder="Nombre y apellido" maxLength={150} />
                     </Form.Item>
                     <Form.Item
-                      label="Tel\u00e9fono"
+                      label="Teléfono"
                       name="phone"
                       rules={PUBLIC_REQUEST_RULES.phone}
                     >
@@ -396,11 +396,11 @@ const PublicRequestWizard = () => {
                 {current === 1 ? (
                   <>
                     <Form.Item
-                      label="Direcci\u00f3n del servicio"
+                      label="Dirección del servicio"
                       name="address"
                       rules={PUBLIC_REQUEST_RULES.address}
                     >
-                      <Input placeholder="Calle, n\u00famero, colonia, ciudad" />
+                      <Input placeholder="Calle, número, colonia, ciudad" />
                     </Form.Item>
                     <Form.Item
                       label="Tipo de servicio"
@@ -409,7 +409,7 @@ const PublicRequestWizard = () => {
                     >
                       <Select options={SERVICE_TYPES} placeholder="Selecciona" />
                     </Form.Item>
-                    <Form.Item label="Descripci\u00f3n" name="description">
+                    <Form.Item label="Descripción" name="description">
                       <Input.TextArea rows={3} placeholder="Describe el problema" maxLength={1000} showCount />
                     </Form.Item>
                   </>
@@ -417,15 +417,15 @@ const PublicRequestWizard = () => {
                 {current === 2 ? (
                   <div className="grid gap-3 text-sm portal-muted">
                     <p>
-                      Revisa la informaci\u00f3n antes de enviar. Nuestro equipo te confirmar\u00e1 la
-                      visita y compartir\u00e1 el enlace de rastreo.
+                      Revisa la información antes de enviar. Nuestro equipo te confirmará la
+                      visita y compartirá el enlace de rastreo.
                     </p>
                   </div>
                 ) : null}
               </Form>
               <div className="mt-6 flex items-center justify-between">
                 <Button disabled={current === 0} onClick={handleBack} type="text">
-                  Atr\u00e1s
+                  Atrás
                 </Button>
                 {current < steps.length - 1 ? (
                   <Button type="primary" onClick={handleNext}>
@@ -442,7 +442,7 @@ const PublicRequestWizard = () => {
         </Card>
         <Card className="portal-card" bordered={false}>
           <div className="portal-pill">Seguro y sin registro</div>
-          <h2 className="mt-4 text-xl font-semibold">Qu\u00e9 ocurre despu\u00e9s de enviar</h2>
+          <h2 className="mt-4 text-xl font-semibold">Qué ocurre después de enviar</h2>
           <div className="portal-divider" />
           <div className="grid gap-4 text-sm portal-muted">
             {landing?.company_name ? (
@@ -462,16 +462,16 @@ const PublicRequestWizard = () => {
               </div>
             ) : null}
             <div>
-              <strong className="text-base">Validaci\u00f3n r\u00e1pida</strong>
+              <strong className="text-base">Validación rápida</strong>
               <p>Revisamos tu solicitud y confirmamos disponibilidad.</p>
             </div>
             <div>
-              <strong className="text-base">T\u00e9cnico asignado</strong>
-              <p>Recibir\u00e1s por WhatsApp el enlace de seguimiento en tiempo real.</p>
+              <strong className="text-base">Técnico asignado</strong>
+              <p>Recibirás por WhatsApp el enlace de seguimiento en tiempo real.</p>
             </div>
             <div>
               <strong className="text-base">Seguimiento seguro</strong>
-              <p>El rastreo se desactiva autom\u00e1ticamente al llegar el t\u00e9cnico.</p>
+              <p>El rastreo se desactiva automáticamente al llegar el técnico.</p>
             </div>
           </div>
         </Card>

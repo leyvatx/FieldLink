@@ -211,7 +211,7 @@ const LandingManager = () => {
       await navigator.clipboard.writeText(linkValue);
       success(`${label} copiado`);
     } catch {
-      warning(`No se pudo copiar autom\u00e1ticamente: ${linkValue}`);
+      warning(`No se pudo copiar automáticamente: ${linkValue}`);
     }
   };
 
@@ -223,7 +223,7 @@ const LandingManager = () => {
         {
           key: "query",
           label: "Buscar",
-          placeholder: "Nombre, slug o t\u00edtulo",
+          placeholder: "Nombre, slug o título",
         },
         {
           key: "status",
@@ -325,11 +325,11 @@ const LandingManager = () => {
   ];
 
   return (
-    <PageLayout title="Landings p\u00fablicas" searchConfig={searchConfig}>
+    <PageLayout title="Landings públicas" searchConfig={searchConfig}>
       <div className="grid gap-4">
         <ModuleStatStrip
           badge="Portal clientes"
-          description="Crea landings por empresa, comparte los enlaces y recibe solicitudes para convertirlas en \u00f3rdenes."
+          description="Crea landings por empresa, comparte los enlaces y recibe solicitudes para convertirlas en órdenes."
           stats={[
             {
               label: "Total",
@@ -361,7 +361,7 @@ const LandingManager = () => {
                 {editingLanding ? "Editar landing" : "Crear landing"}
               </div>
               <div className="mt-1 text-sm ui-text-muted">
-                Define nombre, slug y texto visible para el formulario p\u00fablico.
+                Define nombre, slug y texto visible para el formulario público.
               </div>
             </div>
 
@@ -377,7 +377,7 @@ const LandingManager = () => {
               <Form.Item
                 label="Slug"
                 name="slug"
-                extra="Opcional. Si lo dejas vac\u00edo, se genera autom\u00e1ticamente."
+                extra="Opcional. Si lo dejas vacío, se genera automáticamente."
               >
                 <Input placeholder="principal" />
               </Form.Item>
@@ -387,17 +387,17 @@ const LandingManager = () => {
                 name="headline"
                 extra="Texto principal visible para el cliente."
               >
-                <Input placeholder="Agenda tu visita t\u00e9cnica en minutos" />
+                <Input placeholder="Agenda tu visita técnica en minutos" />
               </Form.Item>
 
-              <Form.Item label="Subt\u00edtulo" name="subtitle">
-                <Input.TextArea rows={3} placeholder="Describe en pocas l\u00edneas c\u00f3mo funciona." />
+              <Form.Item label="Subtítulo" name="subtitle">
+                <Input.TextArea rows={3} placeholder="Describe en pocas líneas cómo funciona." />
               </Form.Item>
 
               <Form.Item
-                label="Texto del bot\u00f3n"
+                label="Texto del botón"
                 name="cta_text"
-                rules={[{ required: true, message: "Ingresa el texto del bot\u00f3n." }]}
+                rules={[{ required: true, message: "Ingresa el texto del botón." }]}
               >
                 <Input placeholder="Enviar solicitud" maxLength={80} />
               </Form.Item>
@@ -419,12 +419,12 @@ const LandingManager = () => {
               <Form.Item
                 label="Default"
                 name="is_default"
-                rules={[{ required: true, message: "Selecciona si ser\u00e1 la principal." }]}
+                rules={[{ required: true, message: "Selecciona si será la principal." }]}
               >
                 <Select
                   options={[
                     { value: false, label: "No" },
-                    { value: true, label: "S\u00ed, usar como principal" },
+                    { value: true, label: "Sí, usar como principal" },
                   ]}
                   showSearch={false}
                 />
