@@ -144,6 +144,8 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
             'name': service_request.customer_name,
             'email': service_request.email,
             'address': service_request.address,
+            'latitude': service_request.latitude,
+            'longitude': service_request.longitude,
             'validation_status': Customer.ValidationStatus.VALIDATED,
         }
         customer, _ = Customer.objects.get_or_create(
@@ -152,10 +154,18 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
             defaults=customer_defaults,
         )
 
+        previous_address = (customer.address or '').strip()
+        next_address = (service_request.address or '').strip()
         customer.name = service_request.customer_name
         customer.email = service_request.email
-        customer.address = service_request.address
+        customer.address = next_address
         customer.validation_status = Customer.ValidationStatus.VALIDATED
+        if service_request.latitude is not None and service_request.longitude is not None:
+            customer.latitude = service_request.latitude
+            customer.longitude = service_request.longitude
+        elif previous_address != next_address:
+            customer.latitude = None
+            customer.longitude = None
         customer.save()
         return customer
 
@@ -211,6 +221,8 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
                 'customer_phone': service_request.phone,
                 'customer_email': service_request.email,
                 'service_location_address': service_request.address,
+                'customer_latitude': customer.latitude,
+                'customer_longitude': customer.longitude,
                 'notes': service_request.description,
                 'status': WorkOrder.Status.PENDING,
             }
@@ -226,6 +238,8 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
             work_order.customer_phone = service_request.phone
             work_order.customer_email = service_request.email
             work_order.service_location_address = service_request.address
+            work_order.customer_latitude = customer.latitude
+            work_order.customer_longitude = customer.longitude
             work_order.notes = service_request.description
 
             if technician:
@@ -408,6 +422,8 @@ def _create_public_service_request(request, company, landing=None):
         'phone': request.data.get('phone', '').strip(),
         'email': request.data.get('email', '').strip(),
         'address': request.data.get('address', '').strip(),
+        'latitude': request.data.get('latitude') or None,
+        'longitude': request.data.get('longitude') or None,
         'description': request.data.get('description', '').strip(),
         'service_type': request.data.get('service_type', '').strip(),
     }

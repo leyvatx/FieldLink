@@ -8,6 +8,7 @@ import {
   createPublicServiceRequestByLanding,
   getPublicLanding,
 } from "@api/serviceRequestService";
+import LocationPicker from "@/common/components/location/LocationPicker";
 import formatErrors from "@lib/formatErrors";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
@@ -158,6 +159,9 @@ const PublicRequestWizard = () => {
   const [current, setCurrent] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const address = Form.useWatch("address", form);
+  const latitude = Form.useWatch("latitude", form);
+  const longitude = Form.useWatch("longitude", form);
 
   const {
     data: landing,
@@ -232,6 +236,8 @@ const PublicRequestWizard = () => {
         phone: trimValue(values.phone) || "",
         email: trimValue(values.email) || "",
         address: trimValue(values.address) || "",
+        latitude: values.latitude !== "" && values.latitude != null ? Number(values.latitude) : undefined,
+        longitude: values.longitude !== "" && values.longitude != null ? Number(values.longitude) : undefined,
         service_type: trimValue(values.service_type) || "",
         description: trimValue(values.description) || "",
         ...(resolvedLandingSlug ? { landing_slug: resolvedLandingSlug } : {}),
@@ -399,8 +405,25 @@ const PublicRequestWizard = () => {
                       label="Dirección del servicio"
                       name="address"
                       rules={PUBLIC_REQUEST_RULES.address}
+                      extra="Busca la dirección y ajusta el punto exacto en el mapa."
                     >
-                      <Input placeholder="Calle, número, colonia, ciudad" />
+                      <LocationPicker
+                        value={address}
+                        latitude={latitude}
+                        longitude={longitude}
+                        onLocationSelect={(location) => {
+                          form.setFieldsValue({
+                            latitude: location?.latitude ?? "",
+                            longitude: location?.longitude ?? "",
+                          });
+                        }}
+                      />
+                    </Form.Item>
+                    <Form.Item hidden name="latitude">
+                      <input type="hidden" />
+                    </Form.Item>
+                    <Form.Item hidden name="longitude">
+                      <input type="hidden" />
                     </Form.Item>
                     <Form.Item
                       label="Tipo de servicio"
