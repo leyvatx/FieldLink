@@ -272,7 +272,7 @@ const WorkOrders = () => {
 
   const searchConfig = useMemo(
     () => ({
-      title: "Filtros de ordenes",
+      title: "Filtros de órdenes",
       values: filters,
       fields: [
         {
@@ -383,7 +383,7 @@ const WorkOrders = () => {
 
   return (
     <PageLayout
-      title="Ordenes de trabajo"
+      title="Órdenes de trabajo"
       searchConfig={searchConfig}
       topbarOptions={
         <Button
@@ -398,13 +398,13 @@ const WorkOrders = () => {
       <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.88fr)]">
         <div className="2xl:col-span-2">
           <ModuleStatStrip
-            badge="Ordenes"
+            badge="Órdenes"
             description="La tabla queda al frente y el panel lateral concentra asignación, estado y contexto de la orden elegida."
             stats={[
               {
                 label: "Visibles",
                 value: orderMetrics.total,
-                help: "ordenes filtradas",
+                help: "órdenes filtradas",
               },
               {
                 label: "Pendientes",
@@ -429,7 +429,7 @@ const WorkOrders = () => {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-base font-semibold text-[var(--ui-foreground)]">
-                Base de ordenes
+                Base de órdenes
               </div>
               <div className="mt-1 text-sm ui-text-muted">
                 Selecciona una fila para asignarla, revisarla o cancelarla sin perder la tabla.
@@ -489,7 +489,7 @@ const WorkOrders = () => {
                   </div>
                 </div>
                 <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
-                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Programacion</div>
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Programación</div>
                   <div className="mt-2 font-medium text-[var(--ui-foreground)]">
                     {formatDateTime(selectedOrder.scheduled_date)}
                   </div>
@@ -561,7 +561,7 @@ const WorkOrders = () => {
             </div>
           ) : (
             <div className="text-sm ui-text-muted">
-              No hay ordenes disponibles con los filtros actuales.
+              No hay órdenes disponibles con los filtros actuales.
             </div>
           )}
         </Card>
@@ -668,7 +668,7 @@ const WorkOrders = () => {
               </Form.Item>
 
               <Form.Item label="Notas" name="notes">
-                <Input.TextArea rows={4} placeholder="Detalles utiles para la visita" />
+                <Input.TextArea rows={4} placeholder="Detalles útiles para la visita" />
               </Form.Item>
             </div>
 

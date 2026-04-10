@@ -77,7 +77,7 @@ const CreateCustomerForm = ({ onCreated }) => {
         label="Correo"
         name="email"
         rules={[
-          { type: "email", message: "Ingresa un correo valido" },
+          { type: "email", message: "Ingresa un correo válido" },
           { max: 254, message: "El correo no puede exceder 254 caracteres" },
         ]}
       >

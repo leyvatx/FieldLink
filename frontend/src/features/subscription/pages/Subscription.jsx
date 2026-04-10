@@ -49,7 +49,7 @@ const getPlanFeatures = (plan) => [
   },
   {
     key: "orders",
-    label: `${plan.max_work_orders_per_month} ordenes al mes`,
+    label: `${plan.max_work_orders_per_month} órdenes al mes`,
     enabled: true,
     icon: PiPackageFill,
   },
@@ -97,11 +97,11 @@ const Subscription = () => {
   const isAdmin = isCompanyAdmin(user);
 
   const blockedView = !isAdmin ? (
-    <PageLayout title="Suscripcion y planes">
+    <PageLayout title="Suscripción y planes">
       <Result
         status="403"
         title="Acceso restringido"
-        subTitle="Solo la empresa puede gestionar la suscripcion."
+        subTitle="Solo la empresa puede gestionar la suscripción."
       />
     </PageLayout>
   ) : null;
@@ -121,7 +121,7 @@ const Subscription = () => {
             plan.name,
             plan.description,
             `${plan.max_technicians} técnicos`,
-            `${plan.max_work_orders_per_month} ordenes`,
+            `${plan.max_work_orders_per_month} órdenes`,
             plan.realtime_tracking ? "tracking en tiempo real" : "",
             plan.material_approval_workflow ? "flujo de materiales" : "",
           ],
@@ -176,7 +176,7 @@ const Subscription = () => {
       value: currentPlanDetails?.max_technicians ?? "-",
     },
     {
-      label: "Ordenes / mes",
+      label: "Órdenes / mes",
       value: currentPlanDetails?.max_work_orders_per_month ?? "-",
     },
   ];
@@ -186,7 +186,7 @@ const Subscription = () => {
   }
 
   return (
-    <PageLayout title="Suscripcion y planes" searchConfig={searchConfig}>
+    <PageLayout title="Suscripción y planes" searchConfig={searchConfig}>
       <div className="grid gap-5">
         <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.4fr))]">
           {compactStats.map((stat, index) => (
@@ -241,7 +241,7 @@ const Subscription = () => {
                         {isCurrent ? <Tag color="green">Actual</Tag> : null}
                       </div>
                       <p className="mt-2 text-sm ui-text-muted">
-                        {plan.description || "Sin descripcion registrada."}
+                        {plan.description || "Sin descripción registrada."}
                       </p>
                     </div>
                     <div className="grid h-11 w-11 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] text-[var(--ui-highlight)]">

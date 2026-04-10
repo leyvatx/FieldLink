@@ -213,7 +213,7 @@ class TechnicianInventoryViewSet(viewsets.ModelViewSet):
             restock_type=RestockHistory.RestockType.ADJUSTMENT,
             quantity_change=-quantity,
             performed_by=request_user,
-            notes=notes or f'Entrega a tecnico {technician.name}',
+            notes=notes or f'Entrega a técnico {technician.name}',
         )
 
         return inventory

@@ -61,16 +61,16 @@ const LoginForm = () => {
       </Form.Item>
 
       <Form.Item
-        label="Correo electronico"
+        label="Correo electrónico"
         name="email"
         rules={[
           {
             required: true,
-            message: "Por favor, ingresa tu correo electronico.",
+            message: "Por favor, ingresa tu correo electrónico.",
           },
           {
             type: "email",
-            message: "Ingresa un correo valido.",
+            message: "Ingresa un correo válido.",
           },
         ]}
       >

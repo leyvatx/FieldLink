@@ -17,9 +17,9 @@ const ReleaseNotes = () => {
       <div className="grid gap-6">
         <ModuleOverview
           badge="Versiones"
-          title="Notas de version"
-          subtitle="Cambios, version y publicacion."
-          tags={["Versiones", "Cambios", "Publicacion"]}
+          title="Notas de versión"
+          subtitle="Cambios, versión y publicación."
+          tags={["Versiones", "Cambios", "Publicación"]}
         />
         <ReleaseNotesTable filters={filters} />
       </div>

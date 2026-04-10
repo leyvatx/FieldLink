@@ -161,7 +161,7 @@ const Customers = () => {
         {
           key: "phone",
           label: "Teléfono",
-          placeholder: "Numero o parte del numero",
+          placeholder: "Número o parte del número",
         },
         {
           key: "email",
@@ -222,7 +222,7 @@ const Customers = () => {
         <div className="2xl:col-span-2">
           <ModuleStatStrip
             badge="Clientes"
-            description="La tabla queda al frente y el historial solo acompana al cliente que selecciones."
+            description="La tabla queda al frente y el historial solo acompaña al cliente que selecciones."
             stats={[
               {
                 label: "Visibles",
@@ -293,7 +293,7 @@ const Customers = () => {
                 </div>
               ) : (
                 <div className="mt-1 text-sm ui-text-muted">
-                  Selecciona un cliente para ver sus ordenes recientes.
+                  Selecciona un cliente para ver sus órdenes recientes.
                 </div>
               )}
             </div>

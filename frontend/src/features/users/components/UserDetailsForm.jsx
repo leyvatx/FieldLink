@@ -30,19 +30,19 @@ const UserDetailsForm = ({ id }) => {
       </DetailItem>
       <DetailItem label="Nombre">{user?.name || "-"}</DetailItem>
       <DetailItem label="Correo">{user?.email || "-"}</DetailItem>
-      <DetailItem label="Telefono">{user?.phone || "-"}</DetailItem>
-      <DetailItem label="Fecha de creacion">
+      <DetailItem label="Teléfono">{user?.phone || "-"}</DetailItem>
+      <DetailItem label="Fecha de creación">
         {user?.created_at
           ? dayjs(user.created_at).isValid()
             ? dayjs(user.created_at).format("DD/MM/YYYY")
-            : "Fecha invalida"
+            : "Fecha inválida"
           : "Sin fecha"}
       </DetailItem>
-      <DetailItem label="Ultima actualizacion">
+      <DetailItem label="Última actualización">
         {user?.updated_at
           ? dayjs(user.updated_at).isValid()
             ? dayjs(user.updated_at).format("DD/MM/YYYY")
-            : "Fecha invalida"
+            : "Fecha inválida"
           : "Sin fecha"}
       </DetailItem>
     </div>

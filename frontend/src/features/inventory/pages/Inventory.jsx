@@ -42,7 +42,7 @@ const MOVEMENT_LABELS = {
   PURCHASE: "Entrada",
   ADJUSTMENT: "Salida",
   CONSUMPTION: "Consumo",
-  RETURN: "Devolucion",
+  RETURN: "Devolución",
 };
 
 const getShortage = (record) =>
@@ -446,7 +446,7 @@ const Inventory = () => {
         <div className="grid gap-1">
           <div className="font-semibold text-[var(--ui-foreground)]">{record.name}</div>
           <div className="line-clamp-2 text-sm ui-text-muted">
-            {record.description || "Sin descripcion"}
+            {record.description || "Sin descripción"}
           </div>
         </div>
       ),
@@ -693,7 +693,7 @@ const Inventory = () => {
 
   return (
     <PageLayout
-      title="Almacen"
+      title="Almacén"
       searchConfig={searchConfig}
       topbarOptions={
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -721,7 +721,7 @@ const Inventory = () => {
     >
       <div className="grid gap-4">
         <ModuleStatStrip
-          badge="Almacen"
+          badge="Almacén"
           description="Recibe material, detecta faltantes y entrega a técnicos desde una misma mesa de trabajo."
           stats={[
             {
@@ -792,7 +792,7 @@ const Inventory = () => {
                 })
               ) : (
                 <div className="rounded-[22px] border border-dashed border-[var(--ui-border)] px-4 py-6 text-sm ui-text-muted">
-                  No hay materiales por debajo del minimo.
+                  No hay materiales por debajo del mínimo.
                 </div>
               )}
             </div>
@@ -860,7 +860,7 @@ const Inventory = () => {
                 Stock central, entregas y trazabilidad
               </div>
               <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                Primero revisas stock, luego surtido y despues movimientos.
+                Primero revisas stock, luego surtido y después movimientos.
               </div>
 
             </div>
@@ -875,7 +875,7 @@ const Inventory = () => {
                 label: (
                   <span className="inline-flex items-center gap-2">
                     <PiPackageBold size={16} />
-                    <span>Catalogo</span>
+                    <span>Catálogo</span>
                   </span>
                 ),
                 children: (
@@ -885,11 +885,11 @@ const Inventory = () => {
                         Base de materiales
                       </div>
                       <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
-                        Todo el catalogo en una tabla compacta
+                        Todo el catálogo en una tabla compacta
                       </div>
                       <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
                         Revisa nombre, SKU, unidad y estado sin perder legibilidad en
-                        anchos medios o moviles.
+                        anchos medios o móviles.
                       </div>
                     </div>
 
@@ -910,7 +910,7 @@ const Inventory = () => {
                 label: (
                   <span className="inline-flex items-center gap-2">
                     <PiArrowDownBold size={16} />
-                    <span>Almacen</span>
+                    <span>Almacén</span>
                   </span>
                 ),
                 children: (
@@ -925,7 +925,7 @@ const Inventory = () => {
                             Entrada visible y estado por referencia
                           </div>
                           <div className="mt-1 text-sm text-[var(--ui-muted-foreground)]">
-                            Cada fila deja clara la accion para recibir stock sin depender del clic derecho.
+                            Cada fila deja clara la acción para recibir stock sin depender del clic derecho.
                           </div>
                         </div>
                         <Tag color={inventoryMetrics.warehouseAlerts ? "red" : "green"}>
@@ -1078,8 +1078,8 @@ const Inventory = () => {
               </div>
             </div>
           </div>
-          <Form.Item label="Descripcion" name="description">
-            <Input.TextArea rows={3} placeholder="Descripcion opcional" />
+          <Form.Item label="Descripción" name="description">
+            <Input.TextArea rows={3} placeholder="Descripción opcional" />
           </Form.Item>
         </Form>
       </Modal>
@@ -1156,9 +1156,9 @@ const Inventory = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <Form.Item
-                label="Minimo"
+                label="Mínimo"
                 name="minimum_threshold"
-                rules={[{ required: true, message: "Ingresa el minimo" }]}
+                rules={[{ required: true, message: "Ingresa el mínimo" }]}
               >
                 <InputNumber className="w-full" min={0} />
               </Form.Item>
@@ -1258,7 +1258,7 @@ const Inventory = () => {
                 <InputNumber className="w-full" min={1} />
               </Form.Item>
               <Form.Item label="Notas" name="notes">
-                <Input.TextArea rows={3} placeholder="Entrega para ruta, reposicion o ajuste" />
+                <Input.TextArea rows={3} placeholder="Entrega para ruta, reposición o ajuste" />
               </Form.Item>
             </div>
           </Form>

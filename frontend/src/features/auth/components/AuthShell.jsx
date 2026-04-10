@@ -41,7 +41,7 @@ const AuthShell = ({
 
           {!!panelItems.length && (
             <div className="auth-panel">
-              <div className="auth-panel-badge">{panelTitle || "Operacion"}</div>
+              <div className="auth-panel-badge">{panelTitle || "Operación"}</div>
               <div className="auth-panel-title">Acceso limpio y listo para cualquier pantalla.</div>
               <div className="auth-panel-list">
                 {panelItems.map((item) => (

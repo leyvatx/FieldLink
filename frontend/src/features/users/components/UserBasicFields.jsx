@@ -24,7 +24,7 @@ const UserBasicFields = ({ roleOptions = [], hideRole = false }) => {
         </Form.Item>
 
         <Form.Item
-          label="Telefono"
+          label="Teléfono"
           name="phone"
           tooltip={FIELD_TOOLTIPS.phone}
           rules={USER_VALIDATION_RULES.phone}

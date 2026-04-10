@@ -110,7 +110,7 @@ const Simulator = () => {
       fields: [
         {
           key: "description",
-          label: "Descripcion",
+          label: "Descripción",
           placeholder: "Tipo, descripción o estado",
         },
         {

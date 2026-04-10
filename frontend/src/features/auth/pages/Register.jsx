@@ -38,7 +38,7 @@ const Register = () => {
       cardDescription="Registra la empresa y el usuario principal."
       footer={
         <>
-          Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
+          ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
         </>
       }
     >

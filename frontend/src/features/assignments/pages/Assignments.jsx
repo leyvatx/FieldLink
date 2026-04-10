@@ -528,7 +528,7 @@ const Assignments = () => {
                     Sin asignar
                   </div>
                   <div className="mt-1 text-sm ui-text-muted">
-                    Ordenes listas para mandar a campo.
+                    Órdenes listas para mandar a campo.
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -553,7 +553,7 @@ const Assignments = () => {
               <div className="mt-4 grid gap-3">
                 {!unassignedOrders.length ? (
                   <div className="rounded-[22px] border border-dashed border-[var(--ui-border)] px-4 py-6 text-sm ui-text-muted">
-                    No hay ordenes pendientes de asignación.
+                    No hay órdenes pendientes de asignación.
                   </div>
                 ) : null}
                 {unassignedOrders.map(renderOrderCard)}
@@ -654,7 +654,7 @@ const Assignments = () => {
                       <div className="rounded-[22px] border border-dashed border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] px-4 py-6 text-sm ui-text-muted">
                         {draggedOrderId
                           ? "Suelta aquí la orden arrastrada."
-                          : "Este técnico no tiene ordenes visibles con el filtro actual."}
+                          : "Este técnico no tiene órdenes visibles con el filtro actual."}
                       </div>
                     ) : null}
                     {laneOrders.map(renderOrderCard)}

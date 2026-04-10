@@ -417,7 +417,7 @@ const ServiceRequests = () => {
                 {selectedRequest.description ? (
                   <>
                     <div className="mt-4 text-sm font-medium text-[var(--ui-foreground)]">
-                      Descripcion
+                      Descripción
                     </div>
                     <div className="mt-2 text-sm leading-6 ui-text-muted">
                       {selectedRequest.description}

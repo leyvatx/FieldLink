@@ -161,12 +161,12 @@ const Companies = () => {
       width: 240,
       render: (_, company) => (
         <div className="grid gap-1">
-          <span>{company.active_orders || 0} ordenes activas</span>
+          <span>{company.active_orders || 0} órdenes activas</span>
           <span className="text-xs ui-text-muted">
             {(company.user_count || 0) + " usuarios"} · {(company.technician_count || 0) + " técnicos"}
           </span>
           <span className="text-xs ui-text-muted">
-            {company.city || "Sin ciudad"}, {company.country || "Sin pais"}
+            {company.city || "Sin ciudad"}, {company.country || "Sin país"}
           </span>
         </div>
       ),
@@ -211,8 +211,8 @@ const Companies = () => {
         },
         {
           key: "city",
-          label: "Ciudad / pais",
-          placeholder: "Ciudad o pais",
+          label: "Ciudad / país",
+          placeholder: "Ciudad o país",
         },
         {
           key: "status",
@@ -268,7 +268,7 @@ const Companies = () => {
               help: "acumulados",
             },
             {
-              label: "Ordenes",
+              label: "Órdenes",
               value: metrics.activeOrders,
               help: "activas",
             },
@@ -282,7 +282,7 @@ const Companies = () => {
                 Operación por empresa
               </div>
               <div className="mt-1 text-sm ui-text-muted">
-                Las acciones ya estan visibles en cada fila y el clic derecho sigue disponible.
+                Las acciones ya están visibles en cada fila y el clic derecho sigue disponible.
               </div>
             </div>
             <Tag color="purple">{filteredCompanies.length} visibles</Tag>

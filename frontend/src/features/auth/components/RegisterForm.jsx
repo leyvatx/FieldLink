@@ -78,11 +78,11 @@ const RegisterForm = () => {
         <Form.Item
           label="Slug de la empresa"
           name="company_slug"
-          extra="Opcional. Si lo dejas vacio, se genera automaticamente."
+          extra="Opcional. Si lo dejas vacío, se genera automáticamente."
           rules={[
             {
               pattern: /^[a-z0-9-]*$/,
-              message: "Usa solo minusculas, numeros y guiones.",
+              message: "Usa solo minúsculas, números y guiones.",
             },
           ]}
         >
@@ -125,16 +125,16 @@ const RegisterForm = () => {
       </div>
 
       <Form.Item
-        label="Correo electronico"
+        label="Correo electrónico"
         name="email"
         rules={[
           {
             required: true,
-            message: "Ingresa tu correo electronico.",
+            message: "Ingresa tu correo electrónico.",
           },
           {
             type: "email",
-            message: "Ingresa un correo valido.",
+            message: "Ingresa un correo válido.",
           },
         ]}
       >
@@ -162,7 +162,7 @@ const RegisterForm = () => {
         >
           <Input.Password
             autoComplete="new-password"
-            placeholder="Minimo 8 caracteres"
+            placeholder="Mínimo 8 caracteres"
             prefix={<PiLockKeyBold size={16} />}
           />
         </Form.Item>
