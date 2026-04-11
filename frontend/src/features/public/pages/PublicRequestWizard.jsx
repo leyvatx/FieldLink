@@ -230,7 +230,8 @@ const PublicRequestWizard = () => {
     try {
       setSubmitting(true);
       clearFormFeedback(["customer_name", "phone", "email", "address", "service_type", "description"]);
-      const values = await form.validateFields();
+      const allFields = Array.from(new Set(steps.flatMap((step) => step.fields)));
+      const values = await form.validateFields(allFields);
       const payload = {
         customer_name: trimValue(values.customer_name) || "",
         phone: trimValue(values.phone) || "",
