@@ -49,7 +49,7 @@ const Sidebar = () => {
         <div className="sidebar-surface">
           <div className="sidebar-header">
             <Link
-              to="/"
+              to="/home"
               className="sidebar-brand-link"
               onClick={isMobile ? closeMobileSidebar : undefined}
             >

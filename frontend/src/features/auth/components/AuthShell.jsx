@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card } from "@/lib/antd-compat";
 import AppLogo from "@components/AppLogo";
 
@@ -10,11 +11,21 @@ const AuthShell = ({
   panelItems = [],
   cardTitle,
   cardDescription,
+  backTo,
+  backLabel,
   footer,
   children,
 }) => {
   return (
     <div className="login-content auth-screen">
+      {backTo && (
+        <Link to={backTo} className="auth-back-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          {backLabel || "Volver"}
+        </Link>
+      )}
       <div className="auth-shell">
         <section className="auth-brand">
           <div className="auth-brand-block">

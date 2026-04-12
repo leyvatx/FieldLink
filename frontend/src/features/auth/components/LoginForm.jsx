@@ -17,7 +17,7 @@ const LoginForm = () => {
       { email, password },
       {
         onSuccess: () => {
-          navigate("/");
+          navigate("/home");
         },
         onError: (requestError) => {
           const formErrors = requestError?.response?.data

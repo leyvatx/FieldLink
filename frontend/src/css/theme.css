@@ -117,6 +117,33 @@ body {
   z-index: 1;
 }
 
+.auth-back-link {
+  position: absolute;
+  top: clamp(16px, 3vw, 28px);
+  left: clamp(16px, 3vw, 28px);
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--login-card-border-color);
+  background: color-mix(in srgb, var(--login-card-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  color: var(--sk-color-text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.auth-back-link:hover {
+  color: var(--sk-color-primary);
+  border-color: color-mix(in srgb, var(--ui-highlight) 24%, var(--login-card-border-color));
+  background: color-mix(in srgb, var(--login-card-bg) 95%, transparent);
+}
+
 .auth-shell {
   width: min(1120px, 100%);
   margin: 0 auto;

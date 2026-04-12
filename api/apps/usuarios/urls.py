@@ -18,7 +18,8 @@ from .views import (
     release_notes_pagination_view, release_notes_collection_view, release_notes_detail_view,
     release_notes_current_view, release_notes_current_version_view,
     release_notes_status_options_view, release_notes_update_status_view,
-    release_sections_create_view
+    release_sections_create_view,
+    public_companies_view,
 )
 
 router = DefaultRouter()
@@ -72,6 +73,9 @@ urlpatterns = [
     path('release-notes/<int:note_id>', release_notes_detail_view, name='release_notes_detail'),
     path('release-notes', release_notes_collection_view, name='release_notes_collection'),
     
+    # Public (no auth)
+    path('public/companies/', public_companies_view, name='public_companies'),
+
     # Router endpoints
     path('', include(router.urls)),
 ]

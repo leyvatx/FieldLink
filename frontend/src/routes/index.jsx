@@ -21,6 +21,7 @@ const PublicRequestWizard = lazy(() =>
 );
 const LandingManager = lazy(() => import("@features/public/pages/LandingManager"));
 const PublicTracking = lazy(() => import("@features/public/pages/PublicTracking"));
+const Landing = lazy(() => import("@features/public/pages/Landing"));
 const Dashboard = lazy(() => import("@features/dashboard/pages/Dashboard"));
 const WorkOrders = lazy(() => import("@features/work-orders/pages/WorkOrders"));
 const Assignments = lazy(() =>
@@ -76,6 +77,23 @@ const HomeRedirect = () => {
 };
 
 const routes = [
+  // ── Public routes (no auth) ──
+  {
+    path: "/",
+    element: suspense(<Landing />),
+  },
+  {
+    path: "/login",
+    element: suspense(<Login />),
+  },
+  {
+    path: "/register",
+    element: suspense(<Register />),
+  },
+  {
+    path: "/not-authorized",
+    element: suspense(<NotAuthorized />),
+  },
   {
     path: "/solicitud",
     element: suspense(<PublicRequestWizard />),
@@ -96,66 +114,54 @@ const routes = [
     path: "/rastreo/:trackingToken",
     element: suspense(<PublicTracking />),
   },
+
+  // ── Authenticated routes ──
   {
-    path: "/",
     element: <AuthGuard />,
     children: [
       {
-        path: "/login",
-        element: suspense(<Login />),
-      },
-      {
-        path: "/register",
-        element: suspense(<Register />),
-      },
-      {
-        path: "/not-authorized",
-        element: suspense(<NotAuthorized />),
-      },
-      {
-        path: "/",
         element: <AuthLayout />,
         children: [
           {
-            index: true,
+            path: "/home",
             element: <HomeRedirect />,
           },
           {
-            path: "profile",
+            path: "/profile",
             element: suspense(<Profile />),
           },
+          // Platform admin routes
           {
-            path: "/",
             element: <RoleGuard superuserOnly />,
             children: [
               {
-                path: "companies",
+                path: "/companies",
                 element: suspense(<Companies />),
               },
               {
-                path: "roles-permissions",
+                path: "/roles-permissions",
                 element: suspense(<RolesAndPermissions />),
               },
               {
-                path: "release-notes",
+                path: "/release-notes",
                 element: suspense(<ReleaseNotes />),
               },
               {
-                path: "release-notes/:id/view",
+                path: "/release-notes/:id/view",
                 element: suspense(<ViewReleaseNote />),
               },
               {
-                path: "release-notes/:id/edit",
+                path: "/release-notes/:id/edit",
                 element: suspense(<EditReleaseNote />),
               },
               {
-                path: "log",
+                path: "/log",
                 element: suspense(<Log />),
               },
             ],
           },
+          // Company operation routes
           {
-            path: "/",
             element: (
               <RoleGuard
                 allowedRoles={COMPANY_OPERATION_ROLES}
@@ -164,19 +170,19 @@ const routes = [
             ),
             children: [
               {
-                path: "dashboard",
+                path: "/dashboard",
                 element: suspense(<Dashboard />),
               },
               {
-                path: "inventory",
+                path: "/inventory",
                 element: suspense(<Inventory />),
               },
               {
-                path: "customers",
+                path: "/customers",
                 element: suspense(<Customers />),
               },
               {
-                path: "users",
+                path: "/users",
                 element: (
                   <PermissionGuard permission="view.users.option">
                     {suspense(<Users />)}
@@ -184,29 +190,29 @@ const routes = [
                 ),
               },
               {
-                path: "work-orders",
+                path: "/work-orders",
                 element: suspense(<WorkOrders />),
               },
               {
-                path: "assignments",
+                path: "/assignments",
                 element: suspense(<Assignments />),
               },
               {
-                path: "service-requests",
+                path: "/service-requests",
                 element: suspense(<ServiceRequests />),
               },
               {
-                path: "landings",
+                path: "/landings",
                 element: suspense(<LandingManager />),
               },
               {
-                path: "materials-approval",
+                path: "/materials-approval",
                 element: suspense(<MaterialApprovals />),
               },
             ],
           },
+          // Company admin only
           {
-            path: "/",
             element: (
               <RoleGuard
                 allowedRoles={[COMPANY_ROLE]}
@@ -215,13 +221,13 @@ const routes = [
             ),
             children: [
               {
-                path: "subscription",
+                path: "/subscription",
                 element: suspense(<Subscription />),
               },
             ],
           },
+          // Technician only
           {
-            path: "/",
             element: (
               <RoleGuard
                 allowedRoles={[TECHNICIAN_ROLE]}
@@ -230,7 +236,7 @@ const routes = [
             ),
             children: [
               {
-                path: "agenda",
+                path: "/agenda",
                 element: suspense(<Agenda />),
               },
             ],

@@ -1012,3 +1012,22 @@ def release_sections_create_view(request, note_id):
     }
     note["sections"].append(section)
     return Response(section, status=status.HTTP_201_CREATED)
+
+
+# ============================================================================
+# PUBLIC LANDING — COMPANIES DIRECTORY
+# ============================================================================
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_companies_view(request):
+    """
+    Public endpoint that returns active companies for the FieldLink landing page.
+    Only exposes non-sensitive fields: name, slug, email, phone.
+    """
+    companies = Company.objects.filter(
+        is_active=True,
+        deleted_at__isnull=True,
+    ).order_by('name').values('name', 'slug', 'email', 'phone')
+
+    return Response(list(companies))

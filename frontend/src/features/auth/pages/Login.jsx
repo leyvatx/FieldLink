@@ -36,6 +36,8 @@ const Login = () => {
       ]}
       cardTitle="Iniciar sesión"
       cardDescription="Usa tu cuenta para entrar al panel."
+      backTo="/"
+      backLabel="Volver al inicio"
       footer={
         <>
           ¿Aún no tienes cuenta? <Link to="/register">Crea tu registro</Link>

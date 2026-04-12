@@ -15,6 +15,7 @@
 @import "./css/main.css";
 @import "./css/public-portal.css";
 @import "./css/ui.css";
+@import "./css/landing.css";
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
