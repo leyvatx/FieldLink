@@ -54,6 +54,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
         read_only_fields = ['id', 'created_at']
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('latitude') is not None:
+            data['latitude'] = float(data['latitude'])
+        if data.get('longitude') is not None:
+            data['longitude'] = float(data['longitude'])
+        return data
 
 
 class PublicLandingSerializer(serializers.ModelSerializer):
@@ -217,9 +225,23 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     def get_suspicious_reasons(self, obj):
         return self._get_suspicious_reasons(obj)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Ensure coordinates are always returned as floats
+        if data.get('latitude') is not None:
+            data['latitude'] = float(data['latitude'])
+        if data.get('longitude') is not None:
+            data['longitude'] = float(data['longitude'])
+        return data
+
 
 class BlacklistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Blacklist
         fields = '__all__'
         read_only_fields = ['id', 'blocked_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Blacklist doesn't have coordinates, but maintaining consistent pattern
+        return data

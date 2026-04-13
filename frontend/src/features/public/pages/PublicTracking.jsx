@@ -63,16 +63,29 @@ const PublicTracking = () => {
     ) {
       return null;
     }
+    const techLat = Number(technicianLocation.latitude);
+    const techLng = Number(technicianLocation.longitude);
+    const serviceLat = Number(serviceLocation.latitude);
+    const serviceLng = Number(serviceLocation.longitude);
+    if (isNaN(techLat) || isNaN(techLng) || isNaN(serviceLat) || isNaN(serviceLng)) {
+      console.warn('Invalid coordinates detected:', { techLat, techLng, serviceLat, serviceLng });
+      return null;
+    }
+    
     const distanceKm = haversineKm(
-      { lat: Number(technicianLocation.latitude), lon: Number(technicianLocation.longitude) },
-      { lat: Number(serviceLocation.latitude), lon: Number(serviceLocation.longitude) }
+      { lat: techLat, lon: techLng },
+      { lat: serviceLat, lon: serviceLng }
     );
     return estimateEtaMinutes(distanceKm);
   }, [technicianLocation, serviceLocation]);
 
   const mapPoints = useMemo(() => {
     const points = [];
-    if (serviceLocation?.latitude != null && serviceLocation?.longitude != null) {
+    
+    if (serviceLocation?.latitude != null && 
+        serviceLocation?.longitude != null &&
+        !isNaN(Number(serviceLocation.latitude)) && 
+        !isNaN(Number(serviceLocation.longitude))) {
       points.push({
         id: "service",
         lat: Number(serviceLocation.latitude),
@@ -83,7 +96,9 @@ const PublicTracking = () => {
     if (
       trackingActive &&
       technicianLocation?.latitude != null &&
-      technicianLocation?.longitude != null
+      technicianLocation?.longitude != null &&
+      !isNaN(Number(technicianLocation.latitude)) && 
+      !isNaN(Number(technicianLocation.longitude))
     ) {
       points.push({
         id: "tech",

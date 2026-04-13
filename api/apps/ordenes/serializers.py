@@ -53,6 +53,14 @@ class WorkOrderSerializer(serializers.ModelSerializer):
 
         return attrs
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('customer_latitude') is not None:
+            data['customer_latitude'] = float(data['customer_latitude'])
+        if data.get('customer_longitude') is not None:
+            data['customer_longitude'] = float(data['customer_longitude'])
+        return data
+
     class Meta:
         model = WorkOrder
         fields = ['id', 'customer', 'customer_name', 'technician', 'technician_name',
@@ -74,6 +82,14 @@ class WorkOrderListSerializer(serializers.ModelSerializer):
                   'status', 'priority', 'scheduled_date', 'offline_flag',
                   'service_location_address', 'customer_latitude', 'customer_longitude',
                   'customer_phone', 'tracking_token', 'arrived_at']
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('customer_latitude') is not None:
+            data['customer_latitude'] = float(data['customer_latitude'])
+        if data.get('customer_longitude') is not None:
+            data['customer_longitude'] = float(data['customer_longitude'])
+        return data
 
 
 class SimulationEventSerializer(serializers.ModelSerializer):

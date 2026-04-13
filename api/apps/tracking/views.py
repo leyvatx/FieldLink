@@ -135,8 +135,8 @@ def public_tracking_view(request, tracking_token):
         'tracking_active': tracking_active,
         'service_location': {
             'address': work_order.service_location_address,
-            'latitude': work_order.customer_latitude,
-            'longitude': work_order.customer_longitude,
+            'latitude': float(work_order.customer_latitude) if work_order.customer_latitude is not None else None,
+            'longitude': float(work_order.customer_longitude) if work_order.customer_longitude is not None else None,
         }
     }
     
@@ -145,8 +145,8 @@ def public_tracking_view(request, tracking_token):
         latest_location = work_order.technician_locations.order_by('-timestamp').first()
         if latest_location:
             data['technician_location'] = {
-                'latitude': latest_location.latitude,
-                'longitude': latest_location.longitude,
+                'latitude': float(latest_location.latitude),
+                'longitude': float(latest_location.longitude),
                 'timestamp': latest_location.timestamp,
                 'accuracy_meters': latest_location.accuracy_meters,
             }

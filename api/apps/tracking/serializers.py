@@ -14,6 +14,14 @@ class TechnicianLocationSerializer(serializers.ModelSerializer):
             'mobile_id', 'sync_status', 'synced_at'
         ]
         read_only_fields = ['id', 'timestamp', 'synced_at']
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('latitude') is not None:
+            data['latitude'] = float(data['latitude'])
+        if data.get('longitude') is not None:
+            data['longitude'] = float(data['longitude'])
+        return data
 
 
 class LocationGeoFenceSerializer(serializers.ModelSerializer):
@@ -33,3 +41,11 @@ class LocationGeoFenceSerializer(serializers.ModelSerializer):
             'id': str(obj.work_order.id),
             'customer': obj.work_order.customer.name
         }
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if data.get('expected_latitude') is not None:
+            data['expected_latitude'] = float(data['expected_latitude'])
+        if data.get('expected_longitude') is not None:
+            data['expected_longitude'] = float(data['expected_longitude'])
+        return data
