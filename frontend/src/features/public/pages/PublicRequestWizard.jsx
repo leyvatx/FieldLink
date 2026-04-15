@@ -9,6 +9,7 @@ import {
   getPublicLanding,
 } from "@api/serviceRequestService";
 import LocationPicker from "@/common/components/location/LocationPicker";
+import PhoneInput from "@/common/components/phone/PhoneInput";
 import formatErrors from "@lib/formatErrors";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
@@ -21,7 +22,7 @@ const SERVICE_TYPES = [
 ];
 
 const RESERVED_SUBDOMAINS = new Set(["www", "api", "admin", "app", "auth"]);
-const PHONE_ALLOWED_PATTERN = /^[0-9+\s()\-]+$/;
+const PHONE_ALLOWED_PATTERN = /^[0-9+\s()-]+$/;
 
 const trimValue = (value) => (typeof value === "string" ? value.trim() : value);
 const countDigits = (value) => String(value || "").replace(/\D/g, "").length;
@@ -388,12 +389,7 @@ const PublicRequestWizard = () => {
                       name="phone"
                       rules={PUBLIC_REQUEST_RULES.phone}
                     >
-                      <Input
-                        autoComplete="tel"
-                        inputMode="tel"
-                        placeholder="Ej: +52 55 1234 5678"
-                        maxLength={20}
-                      />
+                      <PhoneInput placeholder="10 dígitos" />
                     </Form.Item>
                     <Form.Item label="Correo" name="email" rules={PUBLIC_REQUEST_RULES.email}>
                       <Input autoComplete="email" placeholder="correo@ejemplo.com" maxLength={254} />

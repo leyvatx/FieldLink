@@ -131,6 +131,46 @@
   text-transform: uppercase;
 }
 
+.phone-prefix-select .fd-select__control {
+  min-height: 30px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.phone-prefix-select {
+  margin: 0 -8px;
+}
+
+.phone-prefix-select .fd-select__control--is-focused {
+  border: none;
+  box-shadow: none;
+}
+
+.phone-prefix-select .fd-select__value-container {
+  padding: 0 2px;
+}
+
+.phone-prefix-select .fd-select__single-value {
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.phone-prefix-select .fd-select__indicators {
+  gap: 0;
+  padding-right: 0;
+}
+
+.phone-prefix-select .fd-select__indicator {
+  padding: 2px;
+}
+
+.phone-prefix-select .fd-select__indicator-separator {
+  display: none;
+}
+
 .ant-card {
   position: relative;
   isolation: isolate;

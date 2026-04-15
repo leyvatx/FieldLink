@@ -6,9 +6,10 @@ Creates a complete test dataset for the Flink mobile app:
   - 1 Owner  (owner@flink.test / 1234)
   - 1 Supervisor (supervisor@flink.test / 1234)
   - 3 Technicians (tecnico1-3@flink.test / 1234)
-  - 3 Materials + warehouse stock + technician inventory
-  - 5 Customers (with coordinates in CDMX)
-  - 3 Service Requests (PENDING / VALIDATED / REJECTED)
+  - 3 Public Landings (default + specialties)
+  - 5 Materials + warehouse stock + technician inventory
+  - 5 Customers (with coordinates in Tijuana)
+  - 5 Service Requests (PENDING / VALIDATED / REJECTED, linked to landings)
   - 5 Work Orders (various statuses, with coordinates)
   - Used materials + approval records on finished orders
   - Technician location pings (so the map shows data)
@@ -26,7 +27,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.usuarios.models import Company, CompanyConfiguration, User
-from apps.clientes.models import Customer, ServiceRequest
+from apps.clientes.models import Customer, PublicLanding, ServiceRequest
 from apps.ordenes.models import WorkOrder
 from apps.inventario.models import (
     Material, CentralWarehouse, TechnicianInventory,
@@ -77,6 +78,37 @@ TECH_LOCATIONS = [
     {'email': 'tecnico3@flink.test', 'lat': '32.5220', 'lon': '-117.0150'},
 ]
 
+# Landings publicas (la primera se marca como default)
+LANDINGS = [
+    {
+        'slug':       'general',
+        'name':       'Landing general',
+        'headline':   'Solicita tu servicio con FieldLink',
+        'subtitle':   'Atendemos instalaciones, reparaciones y mantenimientos en Tijuana y Zona Rio. Llena el formulario y uno de nuestros tecnicos te contactara en minutos.',
+        'cta_text':   'Solicitar servicio',
+        'is_default': True,
+        'is_active':  True,
+    },
+    {
+        'slug':       'electricidad',
+        'name':       'Servicio electrico',
+        'headline':   'Reparaciones electricas en el dia',
+        'subtitle':   'Cortos, apagones, instalaciones de tomacorrientes o tableros. Nuestro equipo certificado atiende emergencias 24/7.',
+        'cta_text':   'Pedir electricista',
+        'is_default': False,
+        'is_active':  True,
+    },
+    {
+        'slug':       'redes',
+        'name':       'Instalacion de redes',
+        'headline':   'Cableado estructurado para tu negocio',
+        'subtitle':   'Diseno e instalacion de redes UTP Cat6, racks, patch panels y enlaces WiFi empresariales.',
+        'cta_text':   'Solicitar cotizacion',
+        'is_default': False,
+        'is_active':  True,
+    },
+]
+
 
 class Command(BaseCommand):
     help = 'Seed completo de prueba: empresa, usuarios, clientes, ordenes, materiales, aprobaciones'
@@ -95,9 +127,10 @@ class Command(BaseCommand):
         with transaction.atomic():
             company   = self._seed_company()
             users     = self._seed_users(company)
+            landings  = self._seed_landings(company, users)
             materials = self._seed_materials(company, users)
             customers = self._seed_customers(company)
-            self._seed_service_requests(company, customers)
+            self._seed_service_requests(company, customers, landings)
             orders    = self._seed_work_orders(company, customers, users)
             self._seed_used_materials(orders, materials, users)
             self._seed_tech_locations(users)
@@ -146,6 +179,30 @@ class Command(BaseCommand):
                 user.save(update_fields=['password'])
             self._log(data['role'], data['email'], created)
             result[data['email']] = user
+        return result
+
+    # ── Public landings ───────────────────────────────────────────────────────
+
+    def _seed_landings(self, company, users):
+        owner = users.get('owner@flink.test')
+        result = {}
+        for data in LANDINGS:
+            landing, created = PublicLanding.objects.get_or_create(
+                company=company,
+                slug=data['slug'],
+                defaults={
+                    'name':       data['name'],
+                    'headline':   data['headline'],
+                    'subtitle':   data['subtitle'],
+                    'cta_text':   data['cta_text'],
+                    'is_active':  data['is_active'],
+                    'is_default': data['is_default'],
+                    'created_by': owner,
+                    'updated_by': owner,
+                },
+            )
+            self._log('Landing', f'{data["slug"]} ({"default" if data["is_default"] else "extra"})', created)
+            result[data['slug']] = landing
         return result
 
     # ── Materials + stock ─────────────────────────────────────────────────────
@@ -229,26 +286,68 @@ class Command(BaseCommand):
 
     # ── Service requests ──────────────────────────────────────────────────────
 
-    def _seed_service_requests(self, company, customers):
+    def _seed_service_requests(self, company, customers, landings):
+        general      = landings.get('general')
+        electricidad = landings.get('electricidad')
+        redes        = landings.get('redes')
+
         requests_data = [
-            {'customer_name': customers[0].name, 'phone': customers[0].phone,
-             'address': customers[0].address, 'status': 'PENDING',
-             'service_type': 'instalacion', 'description': 'Instalar red ethernet en salon principal'},
-            {'customer_name': customers[1].name, 'phone': customers[1].phone,
-             'address': customers[1].address, 'status': 'VALIDATED',
-             'service_type': 'mantenimiento', 'description': 'Revision periodica de instalacion electrica'},
-            {'customer_name': customers[2].name, 'phone': customers[2].phone,
-             'address': customers[2].address, 'status': 'REJECTED',
-             'service_type': 'reparacion', 'description': 'Falla en contacto electrico'},
+            {
+                'customer': customers[0], 'landing': redes,
+                'status': 'PENDING', 'service_type': 'instalacion',
+                'description': 'Instalar red ethernet Cat6 en salon principal (5 puntos)',
+                'otp_validated': True,
+            },
+            {
+                'customer': customers[1], 'landing': electricidad,
+                'status': 'VALIDATED', 'service_type': 'mantenimiento',
+                'description': 'Revision periodica de instalacion electrica y tablero',
+                'otp_validated': True,
+            },
+            {
+                'customer': customers[2], 'landing': electricidad,
+                'status': 'REJECTED', 'service_type': 'reparacion',
+                'description': 'Falla en contacto electrico - cliente cancelo la cita',
+                'otp_validated': False,
+            },
+            {
+                'customer': customers[3], 'landing': general,
+                'status': 'PENDING', 'service_type': 'instalacion',
+                'description': 'Instalar 2 tomacorrientes adicionales en consultorio',
+                'otp_validated': True,
+            },
+            {
+                'customer': customers[4], 'landing': general,
+                'status': 'VALIDATED', 'service_type': 'reparacion',
+                'description': 'Cambio de interruptor principal del local',
+                'otp_validated': True,
+            },
         ]
+
         for data in requests_data:
+            customer = data['customer']
             sr, created = ServiceRequest.objects.get_or_create(
                 company=company,
-                phone=data['phone'],
+                phone=customer.phone,
                 status=data['status'],
-                defaults=data,
+                defaults={
+                    'landing':       data['landing'],
+                    'customer_name': customer.name,
+                    'email':         '',
+                    'address':       customer.address,
+                    'latitude':      customer.latitude,
+                    'longitude':     customer.longitude,
+                    'service_type':  data['service_type'],
+                    'description':   data['description'],
+                    'otp_validated': data['otp_validated'],
+                },
             )
-            self._log(f'Solicitud ({data["status"]})', sr.customer_name, created)
+            landing_label = data['landing'].slug if data['landing'] else '—'
+            self._log(
+                f'Solicitud ({data["status"]})',
+                f'{sr.customer_name} / landing: {landing_label}',
+                created,
+            )
 
     # ── Work orders ───────────────────────────────────────────────────────────
 
@@ -410,12 +509,14 @@ class Command(BaseCommand):
         d_used,   _ = UsedMaterial.objects.filter(work_order__company__slug=COMPANY_DATA['slug']).delete()
         d_orders, _ = WorkOrder.objects.filter(company__slug=COMPANY_DATA['slug']).delete()
         d_sr,     _ = ServiceRequest.objects.filter(company__slug=COMPANY_DATA['slug']).delete()
+        d_landings, _ = PublicLanding.objects.filter(company__slug=COMPANY_DATA['slug']).delete()
         d_custs,  _ = Customer.objects.filter(company__slug=COMPANY_DATA['slug']).delete()
         d_tinv,   _ = TechnicianInventory.objects.filter(technician__email__in=emails).delete()
         d_wh,     _ = CentralWarehouse.objects.filter(company__slug=COMPANY_DATA['slug']).delete()
         d_users,  _ = User.objects.filter(email__in=emails).delete()
         d_comp,   _ = Company.objects.filter(slug=COMPANY_DATA['slug']).delete()
         self.stdout.write(self.style.WARNING(
-            f'Reset: {d_comp} empresa, {d_users} usuarios, {d_custs} clientes, '
-            f'{d_orders} ordenes, {d_sr} solicitudes, {d_approvals} aprobaciones eliminados.'
+            f'Reset: {d_comp} empresa, {d_users} usuarios, {d_landings} landings, '
+            f'{d_custs} clientes, {d_orders} ordenes, {d_sr} solicitudes, '
+            f'{d_approvals} aprobaciones eliminados.'
         ))

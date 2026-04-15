@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.utils.text import slugify
 from django.conf import settings
 from .models import Customer, ServiceRequest, Blacklist, PublicLanding
+from apps.usuarios.validators import normalize_phone_e164
 
 
 def _normalize_host(raw_host):
@@ -54,7 +55,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = '__all__'
         read_only_fields = ['id', 'created_at']
-    
+
+    def validate_phone(self, value):
+        return normalize_phone_e164(value, allow_blank=False, field_label='El teléfono')
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if data.get('latitude') is not None:
@@ -204,6 +208,9 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         model = ServiceRequest
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'otp_validated']
+
+    def validate_phone(self, value):
+        return normalize_phone_e164(value, allow_blank=False, field_label='El teléfono')
 
     def _get_suspicious_reasons(self, obj):
         if obj.status == ServiceRequest.Status.VALIDATED:

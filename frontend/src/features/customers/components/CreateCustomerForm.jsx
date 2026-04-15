@@ -4,6 +4,7 @@ import { useDialog } from "@context/DialogProvider";
 import { useMessage } from "@context/MessageProvider";
 import { createCustomer } from "@api/customerService";
 import LocationPicker from "@/common/components/location/LocationPicker";
+import PhoneInput from "@/common/components/phone/PhoneInput";
 import { formatErrors } from "@lib/formatErrors";
 import queryClient from "@lib/queryClient";
 
@@ -66,10 +67,23 @@ const CreateCustomerForm = ({ onCreated }) => {
           name="phone"
           rules={[
             { required: true, message: "El teléfono es obligatorio" },
-            { max: 20, message: "El teléfono no puede exceder 20 caracteres" },
+            {
+              validator(_, value) {
+                if (!value) {
+                  return Promise.resolve();
+                }
+                const digits = value.replace(/[^0-9]/g, "");
+                if (digits.length < 7) {
+                  return Promise.reject(
+                    new Error("Ingresa un teléfono válido.")
+                  );
+                }
+                return Promise.resolve();
+              },
+            },
           ]}
         >
-          <Input maxLength={20} placeholder="Teléfono de contacto" showCount />
+          <PhoneInput placeholder="10 dígitos" />
         </Form.Item>
       </div>
 

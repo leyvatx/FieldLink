@@ -505,6 +505,29 @@
   border-color: color-mix(in srgb, var(--landing-primary) 28%, var(--sk-color-border-secondary));
 }
 
+.landing-company-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.landing-company-btn--whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-color: color-mix(in srgb, #25d366 24%, var(--sk-color-border-secondary));
+  background: color-mix(in srgb, #25d366 8%, var(--sk-color-bg-container));
+  color: #128c7e;
+  text-decoration: none;
+}
+
+.landing-company-btn--whatsapp:hover {
+  background: color-mix(in srgb, #25d366 16%, var(--sk-color-bg-container));
+  border-color: color-mix(in srgb, #25d366 40%, var(--sk-color-border-secondary));
+}
+
 .landing-companies-loading {
   display: flex;
   flex-direction: column;

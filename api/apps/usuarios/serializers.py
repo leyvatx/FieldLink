@@ -4,6 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import transaction
 from django.utils.text import slugify
 from .models import User, Company, SubscriptionPlan, CompanyPlan, CompanyConfiguration
+from .validators import normalize_phone_e164
 
 
 ROLE_PERMISSIONS = {
@@ -279,6 +280,9 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     password_confirm = serializers.CharField(write_only=True, min_length=8)
 
+    def validate_phone(self, value):
+        return normalize_phone_e164(value, allow_blank=True)
+
     def validate_company_name(self, value):
         normalized_value = value.strip()
         if not normalized_value:
@@ -398,6 +402,9 @@ class CompanySerializer(serializers.ModelSerializer):
             'active_orders', 'subscription_plan', 'plan_start_date', 'plan_end_date', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate_phone(self, value):
+        return normalize_phone_e164(value, allow_blank=True)
 
 
 class CompanyConfigurationSerializer(serializers.ModelSerializer):

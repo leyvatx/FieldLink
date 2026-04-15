@@ -3,13 +3,13 @@ import {
   PiBuildingsBold,
   PiHashBold,
   PiLockKeyBold,
-  PiPhoneBold,
   PiUserBold,
 } from "react-icons/pi";
 import { Alert, Button, Form, Input } from "@/lib/antd-compat";
 import { useMessage } from "@context/MessageProvider";
 import useRegister from "@features/auth/hooks/useRegister";
 import formatErrors from "@lib/formatErrors";
+import PhoneInput from "@/common/components/phone/PhoneInput";
 
 const RegisterForm = () => {
   const [form] = Form.useForm();
@@ -115,12 +115,24 @@ const RegisterForm = () => {
         <Form.Item
           label="Teléfono"
           name="phone"
+          rules={[
+            {
+              validator(_, value) {
+                if (!value) {
+                  return Promise.resolve();
+                }
+                const digits = value.replace(/[^0-9]/g, "");
+                if (digits.length < 7) {
+                  return Promise.reject(
+                    new Error("Ingresa un teléfono válido.")
+                  );
+                }
+                return Promise.resolve();
+              },
+            },
+          ]}
         >
-          <Input
-            autoComplete="tel"
-            placeholder="+1 555 123 4567"
-            prefix={<PiPhoneBold size={16} />}
-          />
+          <PhoneInput placeholder="10 dígitos" />
         </Form.Item>
       </div>
 
