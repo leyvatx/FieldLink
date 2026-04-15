@@ -170,7 +170,7 @@ export function Select({
       className={className}
       styles={{
         container: (base) => ({ ...base, width: "100%", ...style }),
-        menuPortal: (base) => ({ ...base, zIndex: 1200 }),
+        menuPortal: (base) => ({ ...base, zIndex: 1305, pointerEvents: "auto" }),
       }}
       menuPortalTarget={resolvedMenuPortalTarget}
       menuPosition={menuPosition ?? (resolvedMenuPortalTarget ? "fixed" : "absolute")}

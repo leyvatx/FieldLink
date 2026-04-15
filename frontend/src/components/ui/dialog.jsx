@@ -3,6 +3,13 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { PiXBold } from "react-icons/pi";
 import { cn } from "@/lib/utils";
 
+function isSelectPortalTarget(target) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(".fd-select__menu-portal, .fd-select__menu"))
+  );
+}
+
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
@@ -24,7 +31,7 @@ const DialogOverlay = React.forwardRef(function DialogOverlay({ className, ...pr
 });
 
 const DialogContent = React.forwardRef(function DialogContent(
-  { className, children, showClose = true, ...props },
+  { className, children, showClose = true, onInteractOutside, ...props },
   ref
 ) {
   return (
@@ -39,6 +46,14 @@ const DialogContent = React.forwardRef(function DialogContent(
           "fixed left-1/2 top-1/2 z-[1101] flex w-[min(calc(100vw-1rem),36rem)] max-h-[min(90vh,calc(100dvh-1rem))] max-w-[calc(100vw-1rem)] min-h-0 -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden overscroll-contain rounded-[1.5rem] border border-[var(--ui-border)] bg-[var(--ui-card)] text-[var(--ui-card-foreground)] shadow-[var(--ui-shadow-dialog)] will-change-[opacity,transform] transition-[opacity,transform] duration-220 ease-out sm:rounded-[1.75rem] data-[state=closed]:translate-y-[calc(-50%+14px)] data-[state=closed]:scale-[0.965] data-[state=closed]:opacity-0 data-[state=open]:translate-y-[-50%] data-[state=open]:scale-100 data-[state=open]:opacity-100",
           className
         )}
+        onInteractOutside={(event) => {
+          if (isSelectPortalTarget(event.target)) {
+            event.preventDefault();
+            return;
+          }
+
+          onInteractOutside?.(event);
+        }}
         {...props}
       >
         {children}

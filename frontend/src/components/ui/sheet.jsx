@@ -4,6 +4,13 @@ import { cva } from "class-variance-authority";
 import { PiXBold } from "react-icons/pi";
 import { cn } from "@/lib/utils";
 
+function isSelectPortalTarget(target) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(".fd-select__menu-portal, .fd-select__menu"))
+  );
+}
+
 const Sheet = ({ children, ...props }) => (
   <DialogPrimitive.Root modal={false} {...props}>
     {children}
@@ -46,7 +53,7 @@ const sheetVariants = cva(
 );
 
 const SheetContent = React.forwardRef(function SheetContent(
-  { className, children, side = "right", showClose = true, ...props },
+  { className, children, side = "right", showClose = true, onInteractOutside, ...props },
   ref
 ) {
   return (
@@ -58,6 +65,14 @@ const SheetContent = React.forwardRef(function SheetContent(
         data-slot="sheet-content"
         data-side={side}
         className={cn(sheetVariants({ side }), className)}
+        onInteractOutside={(event) => {
+          if (isSelectPortalTarget(event.target)) {
+            event.preventDefault();
+            return;
+          }
+
+          onInteractOutside?.(event);
+        }}
         {...props}
       >
         {children}
