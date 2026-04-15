@@ -22,6 +22,12 @@ const PublicRequestWizard = lazy(() =>
 const LandingManager = lazy(() => import("@features/public/pages/LandingManager"));
 const PublicTracking = lazy(() => import("@features/public/pages/PublicTracking"));
 const Landing = lazy(() => import("@features/public/pages/Landing"));
+const TermsOfService = lazy(() =>
+  import("@features/public/pages/TermsOfService")
+);
+const PrivacyPolicy = lazy(() =>
+  import("@features/public/pages/PrivacyPolicy")
+);
 const Dashboard = lazy(() => import("@features/dashboard/pages/Dashboard"));
 const WorkOrders = lazy(() => import("@features/work-orders/pages/WorkOrders"));
 const Assignments = lazy(() =>
@@ -113,6 +119,14 @@ const routes = [
   {
     path: "/rastreo/:trackingToken",
     element: suspense(<PublicTracking />),
+  },
+  {
+    path: "/terminos",
+    element: suspense(<TermsOfService />),
+  },
+  {
+    path: "/privacidad",
+    element: suspense(<PrivacyPolicy />),
   },
 
   // ── Authenticated routes ──

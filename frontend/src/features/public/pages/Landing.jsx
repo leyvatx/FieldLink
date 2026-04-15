@@ -331,10 +331,10 @@ const Landing = () => {
             <p>© 2026 FieldLink. La Infraestructura Digital de Gestión de Campo.</p>
           </div>
           <div className="landing-footer-links">
-            <a href="#">Privacidad</a>
-            <a href="#">Términos</a>
-            <a href="#">Contacto</a>
-            <a href="#">Soporte</a>
+            <Link to="/privacidad">Privacidad</Link>
+            <Link to="/terminos">Términos</Link>
+            <a href="mailto:soporte@fieldlink.mx">Contacto</a>
+            <a href="mailto:soporte@fieldlink.mx">Soporte</a>
           </div>
         </div>
       </footer>

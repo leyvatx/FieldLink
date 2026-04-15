@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Button, Card, DatePicker, Form, Input, Modal, Select, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { PiPlusBold } from "react-icons/pi";
+import { PiPlusBold, PiWhatsappLogoBold } from "react-icons/pi";
 import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
 import {
@@ -138,6 +138,88 @@ function buildCreateOrderErrorMessage(requestError) {
 function getConfiguredRate(config, key) {
   const value = config?.[key];
   return value == null ? 0 : Number(value);
+}
+
+const WHATSAPP_EMOJIS_MOBILE = {
+  wave: "\u{1F44B}",
+  order: "\u{1F4CB}",
+  status: "\u{1F4CC}",
+  priority: "\u26A1",
+  location: "\u{1F4CD}",
+  calendar: "\u{1F4C5}",
+  technician: "\u{1F477}",
+  link: "\u{1F517}",
+};
+
+const WHATSAPP_MARKERS_DESKTOP = {
+  wave: "",
+  order: "-",
+  status: "-",
+  priority: "-",
+  location: "-",
+  calendar: "-",
+  technician: "-",
+  link: "-",
+};
+
+function getWhatsAppIconSet() {
+  if (typeof navigator === "undefined") {
+    return WHATSAPP_EMOJIS_MOBILE;
+  }
+
+  const userAgent = navigator.userAgent || "";
+  const isDesktop = /Windows NT|Macintosh|Linux/i.test(userAgent) && !/Android|iPhone|iPad|iPod/i.test(userAgent);
+
+  return isDesktop ? WHATSAPP_MARKERS_DESKTOP : WHATSAPP_EMOJIS_MOBILE;
+}
+
+function buildOrderWhatsAppLink(order) {
+  const rawPhone = (order?.customer_phone || "").toString();
+  const digits = rawPhone.replace(/[^0-9]/g, "");
+  if (!digits) {
+    return null;
+  }
+
+  const icons = getWhatsAppIconSet();
+
+  const shortId = String(order?.id || "").slice(0, 8).toUpperCase();
+  const statusLabel = STATUS_LABELS[order?.status] || order?.status || "";
+  const priorityLabel = PRIORITY_LABELS[order?.priority] || order?.priority || "";
+  const greetingSuffix = icons.wave ? ` ${icons.wave}` : "";
+
+  const lines = [
+    `Hola ${order?.customer_name || ""}, le saluda FieldLink${greetingSuffix}`,
+    "",
+    "Le compartimos los detalles de su orden de servicio:",
+    "",
+    `${icons.order} Orden: #${shortId}`,
+    `${icons.status} Estado: ${statusLabel}`,
+    `${icons.priority} Prioridad: ${priorityLabel}`,
+  ];
+
+  if (order?.service_location_address) {
+    lines.push(`${icons.location} Dirección: ${order.service_location_address}`);
+  }
+  if (order?.scheduled_date) {
+    lines.push(`${icons.calendar} Programada: ${formatDateTime(order.scheduled_date)}`);
+  }
+  if (order?.technician_name) {
+    lines.push(`${icons.technician} Técnico asignado: ${order.technician_name}`);
+  }
+  if (order?.tracking_token && typeof window !== "undefined") {
+    lines.push("");
+    lines.push(`${icons.link} Siga el estado en tiempo real:`);
+    lines.push(`${window.location.origin}/rastreo/${order.tracking_token}`);
+  }
+
+  lines.push("");
+  lines.push("Cualquier duda, estamos para atenderle. ¡Gracias!");
+
+  const normalizedText = lines.join("\n").normalize("NFC");
+  const whatsappUrl = new URL("https://api.whatsapp.com/send");
+  whatsappUrl.searchParams.set("phone", digits);
+  whatsappUrl.searchParams.set("text", normalizedText);
+  return whatsappUrl.toString();
 }
 
 const WorkOrders = () => {
@@ -719,6 +801,25 @@ const WorkOrders = () => {
                 >
                   Cancelar orden
                 </Button>
+                {(() => {
+                  const whatsappLink = buildOrderWhatsAppLink(selectedOrder);
+                  return (
+                    <Button
+                      className="wo-whatsapp-btn sm:col-span-2"
+                      icon={<PiWhatsappLogoBold />}
+                      disabled={!whatsappLink}
+                      onClick={() => {
+                        if (whatsappLink) {
+                          window.open(whatsappLink, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                    >
+                      {whatsappLink
+                        ? "Avisar al cliente por WhatsApp"
+                        : "Cliente sin teléfono"}
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
           ) : (

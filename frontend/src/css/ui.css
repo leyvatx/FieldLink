@@ -389,3 +389,16 @@
     max-height: calc(100dvh - 1.5rem) !important;
   }
 }
+
+.wo-whatsapp-btn:not(:disabled) {
+  background-color: #25d366 !important;
+  border-color: #25d366 !important;
+  color: #ffffff !important;
+}
+
+.wo-whatsapp-btn:not(:disabled):hover,
+.wo-whatsapp-btn:not(:disabled):focus {
+  background-color: #128c7e !important;
+  border-color: #128c7e !important;
+  color: #ffffff !important;
+}
