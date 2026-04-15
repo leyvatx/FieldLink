@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.db.models import F, OuterRef, Subquery
 from .models import TechnicianLocation, LocationGeoFence
 from .serializers import TechnicianLocationSerializer, LocationGeoFenceSerializer
 from apps.usuarios.permissions import IsSameCompany, IsDispatcherOrOwner
@@ -37,6 +38,15 @@ class TechnicianLocationViewSet(viewsets.ReadOnlyModelViewSet):
         work_order = self.request.query_params.get('work_order')
         if work_order:
             queryset = queryset.filter(work_order_id=work_order)
+
+        latest = self.request.query_params.get('latest')
+        if latest and latest.lower() in {'1', 'true', 'yes'}:
+            latest_location = queryset.filter(
+                technician_id=OuterRef('technician_id')
+            ).order_by('-timestamp', '-created_at').values('pk')[:1]
+            queryset = queryset.annotate(
+                latest_location_id=Subquery(latest_location)
+            ).filter(pk=F('latest_location_id'))
         
         return queryset.order_by('-timestamp')
 

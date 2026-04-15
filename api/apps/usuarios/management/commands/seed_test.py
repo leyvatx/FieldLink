@@ -25,7 +25,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.usuarios.models import Company, User
+from apps.usuarios.models import Company, CompanyConfiguration, User
 from apps.clientes.models import Customer, ServiceRequest
 from apps.ordenes.models import WorkOrder
 from apps.inventario.models import (
@@ -54,11 +54,11 @@ USERS = [
 ]
 
 MATERIALS = [
-    {'name': 'Cable UTP Cat6',         'unit': 'metros',  'sku': 'CAB-UTP-CAT6'},
-    {'name': 'Tomacorriente doble',    'unit': 'piezas',  'sku': 'TOM-DOBLE'},
-    {'name': 'Cinta aislante',         'unit': 'rollos',  'sku': 'CIN-AIS'},
-    {'name': 'Interruptor simple',     'unit': 'piezas',  'sku': 'INT-SIMPLE'},   # stock BAJO
-    {'name': 'Caja conduit 1/2"',      'unit': 'piezas',  'sku': 'CAJ-COND'},    # SIN STOCK
+    {'name': 'Cable UTP Cat6',         'unit': 'metros',  'sku': 'CAB-UTP-CAT6', 'unit_cost': 18.50},
+    {'name': 'Tomacorriente doble',    'unit': 'piezas',  'sku': 'TOM-DOBLE', 'unit_cost': 42.00},
+    {'name': 'Cinta aislante',         'unit': 'rollos',  'sku': 'CIN-AIS', 'unit_cost': 15.00},
+    {'name': 'Interruptor simple',     'unit': 'piezas',  'sku': 'INT-SIMPLE', 'unit_cost': 37.50},   # stock BAJO
+    {'name': 'Caja conduit 1/2"',      'unit': 'piezas',  'sku': 'CAJ-COND', 'unit_cost': 29.00},    # SIN STOCK
 ]
 
 # (lat, lon) — puntos en Tijuana, BC
@@ -116,6 +116,19 @@ class Command(BaseCommand):
             slug=COMPANY_DATA['slug'],
             defaults=COMPANY_DATA,
         )
+        CompanyConfiguration.objects.get_or_create(
+            company=company,
+            defaults={
+                'support_email': company.email,
+                'support_phone': company.phone,
+                'labor_basic_rate': 200,
+                'labor_medium_rate': 350,
+                'labor_advanced_rate': 500,
+                'transport_near_rate': 100,
+                'transport_medium_rate': 150,
+                'transport_far_rate': 250,
+            }
+        )
         self._log('Empresa', company.name, created)
         return company
 
@@ -155,7 +168,11 @@ class Command(BaseCommand):
         for i, mat_data in enumerate(MATERIALS):
             mat, created = Material.objects.get_or_create(
                 sku=mat_data['sku'],
-                defaults={'name': mat_data['name'], 'unit': mat_data['unit']},
+                defaults={
+                    'name': mat_data['name'],
+                    'unit': mat_data['unit'],
+                    'unit_cost': mat_data['unit_cost'],
+                },
             )
             self._log('Material', mat.name, created)
             result[mat_data['sku']] = mat

@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
+import {
+  CircleMarker,
+  MapContainer,
+  Polyline,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_CENTER = [22.5, -102.0];
@@ -10,7 +17,10 @@ function FitToPoints({ points }) {
 
   useEffect(() => {
     if (!points.length) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true, duration: 0.35 });
+      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, {
+        animate: true,
+        duration: 0.35,
+      });
       return;
     }
 
@@ -36,16 +46,45 @@ function FitToPoints({ points }) {
 
 const pointStyles = {
   technician: {
-    color: "var(--sk-color-blue)",
-    fillColor: "var(--sk-color-blue)",
+    color: "#2563eb",
+    fillColor: "#60a5fa",
+    radius: 10,
+    fillOpacity: 0.92,
+    weight: 3,
   },
-  assignment: {
-    color: "var(--sk-color-yellow)",
-    fillColor: "var(--sk-color-yellow)",
+  destination: {
+    color: "#d97706",
+    fillColor: "#facc15",
+    radius: 8,
+    fillOpacity: 0.9,
+    weight: 3,
   },
 };
 
-const OperationsLiveMap = ({ points = [], className }) => {
+const connectionStyles = {
+  ASSIGNED: {
+    color: "#a855f7",
+    dashArray: "6 10",
+  },
+  IN_TRANSIT: {
+    color: "#0891b2",
+    dashArray: "10 10",
+  },
+  IN_SERVICE: {
+    color: "#16a34a",
+    dashArray: "3 10",
+  },
+  default: {
+    color: "#64748b",
+    dashArray: "8 10",
+  },
+};
+
+const OperationsLiveMap = ({
+  points = [],
+  connections = [],
+  className,
+}) => {
   return (
     <MapContainer
       center={DEFAULT_CENTER}
@@ -58,6 +97,24 @@ const OperationsLiveMap = ({ points = [], className }) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <FitToPoints points={points} />
+
+      {connections.map((connection) => {
+        const tone = connectionStyles[connection.status] || connectionStyles.default;
+
+        return (
+          <Polyline
+            key={connection.id}
+            positions={[connection.from, connection.to]}
+            pathOptions={{
+              color: tone.color,
+              dashArray: tone.dashArray,
+              opacity: 0.72,
+              weight: 4,
+            }}
+          />
+        );
+      })}
+
       {points.map((point) => {
         const tone = pointStyles[point.type] || pointStyles.technician;
 
@@ -65,12 +122,12 @@ const OperationsLiveMap = ({ points = [], className }) => {
           <CircleMarker
             key={point.id}
             center={[point.latitude, point.longitude]}
-            radius={10}
+            radius={point.radius ?? tone.radius}
             pathOptions={{
               color: tone.color,
               fillColor: tone.fillColor,
-              fillOpacity: 0.9,
-              weight: 3,
+              fillOpacity: tone.fillOpacity,
+              weight: tone.weight,
             }}
           >
             <Popup>

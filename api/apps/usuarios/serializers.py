@@ -402,10 +402,26 @@ class CompanySerializer(serializers.ModelSerializer):
 
 class CompanyConfigurationSerializer(serializers.ModelSerializer):
     """Company configuration for white-label setup"""
+    labor_basic_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    labor_medium_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    labor_advanced_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    transport_near_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    transport_medium_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    transport_far_rate = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True, coerce_to_string=False)
+    repair_pricing_ready = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = CompanyConfiguration
-        fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        fields = [
+            'id', 'company', 'logo', 'primary_color', 'secondary_color',
+            'whatsapp_number', 'support_email', 'support_phone',
+            'enable_customer_tracking', 'enable_offline_mode', 'enable_material_approval',
+            'max_offline_sync_days', 'notify_on_completion', 'notify_on_technician_arrived',
+            'labor_basic_rate', 'labor_medium_rate', 'labor_advanced_rate',
+            'transport_near_rate', 'transport_medium_rate', 'transport_far_rate',
+            'repair_pricing_ready', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'company', 'created_at', 'updated_at']
 
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):

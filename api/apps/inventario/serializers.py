@@ -6,9 +6,11 @@ from .models import (
 
 
 class MaterialSerializer(serializers.ModelSerializer):
+    unit_cost = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=False)
+
     class Meta:
         model = Material
-        fields = ['id', 'name', 'description', 'unit', 'sku', 'is_active', 'created_at']
+        fields = ['id', 'name', 'description', 'unit', 'sku', 'unit_cost', 'is_active', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -56,12 +58,15 @@ class UsedMaterialSerializer(serializers.ModelSerializer):
     approval_status = serializers.CharField(source='approval.status', read_only=True, allow_null=True)
     approval_id = serializers.CharField(source='approval.id', read_only=True, allow_null=True)
     photos = serializers.SerializerMethodField(read_only=True)
+    unit_cost_snapshot = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True, coerce_to_string=False)
+    line_total = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = UsedMaterial
         fields = [
             'id', 'work_order', 'work_order_id', 'material', 'material_name',
-            'material_unit', 'quantity_used', 'approval_status', 'approval_id',
+            'material_unit', 'quantity_used', 'unit_cost_snapshot', 'line_total',
+            'approval_status', 'approval_id',
             'mobile_id', 'photos',
             'created_at', 'updated_at'
         ]
@@ -76,6 +81,9 @@ class UsedMaterialSerializer(serializers.ModelSerializer):
                 'captured_at': photo.captured_at,
             })
         return photos
+
+    def get_line_total(self, obj):
+        return float(obj.get_line_total())
 
 
 class MaterialApprovalSerializer(serializers.ModelSerializer):

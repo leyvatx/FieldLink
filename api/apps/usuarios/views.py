@@ -322,6 +322,13 @@ class CompanyConfigurationViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CompanyConfigurationSerializer
     permission_classes = [IsAuthenticated, IsPlatformAdminOrCompanyAdmin]
+
+    def get_permissions(self):
+        if self.action == 'my_config':
+            if self.request.method == 'GET':
+                return [IsAuthenticated()]
+            return [IsAuthenticated(), IsPlatformAdminOrCompanyAdmin()]
+        return super().get_permissions()
     
     def get_queryset(self):
         """Platform admins can inspect all configs, company admins only their own."""
@@ -337,14 +344,15 @@ class CompanyConfigurationViewSet(viewsets.ModelViewSet):
                 {'error': 'This user is not linked to a company.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        try:
-            config = CompanyConfiguration.objects.get(company=request.user.company)
-        except CompanyConfiguration.DoesNotExist:
-            return Response(
-                {'error': 'Configuration not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
+
+        config, _ = CompanyConfiguration.objects.get_or_create(
+            company=request.user.company,
+            defaults={
+                'support_email': request.user.company.email,
+                'support_phone': request.user.company.phone,
+            }
+        )
+
         if request.method == 'GET':
             serializer = self.get_serializer(config)
             return Response(serializer.data)

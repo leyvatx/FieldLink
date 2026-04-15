@@ -6,6 +6,7 @@ import ProfileHeaderSection from "./sections/ProfileHeaderSection";
 import BasicInfoSection from "./sections/BasicInfoSection";
 import AdditionalDetailsSection from "./sections/AdditionalDetailsSection";
 import PreferencesSection from "./sections/PreferencesSection";
+import RepairPricingSection from "./sections/RepairPricingSection";
 
 const ProfileMain = forwardRef(({ isEditing }, ref) => {
   const { mode, toggleTheme } = useTheme();
@@ -43,6 +44,7 @@ const ProfileMain = forwardRef(({ isEditing }, ref) => {
           isEditing={isEditing}
         />
         <div className="grid gap-6">
+          {profile.role === "COMPANY" ? <RepairPricingSection /> : null}
           <AdditionalDetailsSection profile={profile} />
           <PreferencesSection
             profile={profile}

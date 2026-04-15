@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from apps.usuarios.models import User
 from apps.ordenes.models import WorkOrder
 import uuid
+from decimal import Decimal
 
 
 class Material(models.Model):
@@ -12,6 +13,7 @@ class Material(models.Model):
     description = models.TextField(blank=True)
     unit = models.CharField(max_length=20)  # "unit", "meter", "kg", etc.
     sku = models.CharField(max_length=50, unique=True, blank=True)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
@@ -116,6 +118,7 @@ class UsedMaterial(models.Model):
     )
     material = models.ForeignKey(Material, on_delete=models.PROTECT, related_name='usages')
     quantity_used = models.IntegerField()
+    unit_cost_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     
     # Mobile sync tracking
     mobile_id = models.CharField(max_length=100, blank=True)
@@ -139,6 +142,33 @@ class UsedMaterial(models.Model):
 
     def __str__(self):
         return f"Order #{self.work_order.pk} - {self.material.name}: {self.quantity_used}"
+
+    def get_billable_quantity(self):
+        approval = getattr(self, 'approval', None)
+
+        if approval is None:
+            return self.quantity_used
+
+        if approval.status == 'REJECTED':
+            return 0
+
+        if approval.status in ['APPROVED', 'ADJUSTED'] and approval.approved_quantity is not None:
+            return approval.approved_quantity
+
+        return self.quantity_used
+
+    def get_line_total(self):
+        return (self.unit_cost_snapshot or Decimal('0.00')) * Decimal(self.get_billable_quantity())
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            previous = type(self).objects.filter(pk=self.pk).only('material_id').first()
+            if previous and previous.material_id != self.material_id:
+                self.unit_cost_snapshot = self.material.unit_cost
+        else:
+            self.unit_cost_snapshot = self.material.unit_cost
+
+        super().save(*args, **kwargs)
 
 
 class MaterialApproval(models.Model):

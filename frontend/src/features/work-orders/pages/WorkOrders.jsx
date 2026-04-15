@@ -11,6 +11,7 @@ import {
   createWorkOrder,
   getWorkOrders,
 } from "@api/workOrderService";
+import { getMyCompanyConfig } from "@api/companyConfigService";
 import LocationPicker from "@/common/components/location/LocationPicker";
 import { getCustomers } from "@api/customerService";
 import { getTechnicians } from "@api/userService";
@@ -57,8 +58,86 @@ const PRIORITY_COLORS = {
   URGENT: "red",
 };
 
+const LABOR_OPTIONS = [
+  { value: "BASIC", label: "Básico" },
+  { value: "MEDIUM", label: "Medio" },
+  { value: "ADVANCED", label: "Avanzado" },
+];
+
+const LABOR_LABELS = {
+  BASIC: "Básico",
+  MEDIUM: "Medio",
+  ADVANCED: "Avanzado",
+};
+
+const TRANSPORT_OPTIONS = [
+  { value: "NEAR", label: "Cercano" },
+  { value: "MEDIUM", label: "Medio" },
+  { value: "FAR", label: "Lejano" },
+];
+
+const TRANSPORT_LABELS = {
+  NEAR: "Cercano",
+  MEDIUM: "Medio",
+  FAR: "Lejano",
+};
+
+const LABOR_RATE_KEYS = {
+  BASIC: "labor_basic_rate",
+  MEDIUM: "labor_medium_rate",
+  ADVANCED: "labor_advanced_rate",
+};
+
+const TRANSPORT_RATE_KEYS = {
+  NEAR: "transport_near_rate",
+  MEDIUM: "transport_medium_rate",
+  FAR: "transport_far_rate",
+};
+
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 function formatDateTime(value) {
   return value ? dayjs(value).format("DD MMM YYYY HH:mm") : "Sin programar";
+}
+
+function formatCurrency(value) {
+  return currencyFormatter.format(Number(value || 0));
+}
+
+function resolveApiMessage(value) {
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return null;
+}
+
+function buildCreateOrderErrorMessage(requestError) {
+  const data = requestError.response?.data || {};
+
+  return (
+    resolveApiMessage(data.error) ||
+    resolveApiMessage(data.detail) ||
+    resolveApiMessage(data.service_location_address) ||
+    resolveApiMessage(data.customer) ||
+    resolveApiMessage(data.labor_tier) ||
+    resolveApiMessage(data.transport_tier) ||
+    "No se pudo crear la orden"
+  );
+}
+
+function getConfiguredRate(config, key) {
+  const value = config?.[key];
+  return value == null ? 0 : Number(value);
 }
 
 const WorkOrders = () => {
@@ -76,6 +155,8 @@ const WorkOrders = () => {
   const [assignTechnicianId, setAssignTechnicianId] = useState(undefined);
   const [form] = Form.useForm();
   const selectedCustomerId = Form.useWatch("customer", form);
+  const selectedLaborTier = Form.useWatch("labor_tier", form);
+  const selectedTransportTier = Form.useWatch("transport_tier", form);
   const serviceAddress = Form.useWatch("service_location_address", form);
   const serviceLatitude = Form.useWatch("customer_latitude", form);
   const serviceLongitude = Form.useWatch("customer_longitude", form);
@@ -93,6 +174,15 @@ const WorkOrders = () => {
   const { data: technicians = [] } = useQuery({
     queryKey: ["technicians"],
     queryFn: getTechnicians,
+  });
+
+  const {
+    data: companyConfig,
+    isLoading: loadingCompanyConfig,
+    refetch: refetchCompanyConfig,
+  } = useQuery({
+    queryKey: ["company-config", "my-config"],
+    queryFn: getMyCompanyConfig,
   });
 
   const selectedCustomer = useMemo(
@@ -113,6 +203,8 @@ const WorkOrders = () => {
       const payload = {
         customer: values.customer,
         priority: values.priority,
+        labor_tier: values.labor_tier,
+        transport_tier: values.transport_tier,
         notes: values.notes || "",
         service_location_address: resolvedAddress,
         customer_phone: customer?.phone || "",
@@ -163,13 +255,7 @@ const WorkOrders = () => {
       form.resetFields();
       refreshOrders();
     },
-    onError: (requestError) =>
-      error(
-        requestError.response?.data?.error ||
-          requestError.response?.data?.service_location_address?.[0] ||
-          requestError.response?.data?.customer?.[0] ||
-          "No se pudo crear la orden"
-      ),
+    onError: (requestError) => error(buildCreateOrderErrorMessage(requestError)),
   });
 
   const assignMutation = useMutation({
@@ -326,11 +412,34 @@ const WorkOrders = () => {
     [filters]
   );
 
+  const selectedDraftCosts = useMemo(() => {
+    const laborCost = getConfiguredRate(companyConfig, LABOR_RATE_KEYS[selectedLaborTier]);
+    const transportCost = getConfiguredRate(companyConfig, TRANSPORT_RATE_KEYS[selectedTransportTier]);
+
+    return {
+      laborCost,
+      transportCost,
+      initialTotal: laborCost + transportCost,
+    };
+  }, [companyConfig, selectedLaborTier, selectedTransportTier]);
+
+  const handleOpenCreateModal = async () => {
+    const resolvedConfig = companyConfig || (await refetchCompanyConfig()).data;
+
+    if (!resolvedConfig?.repair_pricing_ready) {
+      error("Debes configurar tus tarifas antes de continuar");
+      return;
+    }
+
+    form.resetFields();
+    setModalOpen(true);
+  };
+
   const columns = [
     {
       title: "Cliente",
       key: "customer",
-      width: 240,
+      width: 230,
       render: (_, record) => (
         <div className="grid gap-1">
           <div className="font-semibold text-[var(--ui-foreground)]">{record.customer_name}</div>
@@ -341,7 +450,7 @@ const WorkOrders = () => {
     {
       title: "Servicio",
       key: "service",
-      width: 420,
+      width: 340,
       render: (_, record) => (
         <div className="grid gap-1">
           <div className="line-clamp-2 text-sm leading-5 text-[var(--ui-foreground)]">
@@ -379,6 +488,21 @@ const WorkOrders = () => {
         </div>
       ),
     },
+    {
+      title: "Reparacion",
+      key: "repair_total",
+      width: 190,
+      render: (_, record) => (
+        <div className="grid gap-1">
+          <div className="font-semibold text-[var(--ui-foreground)]">
+            {formatCurrency(record.repair_total)}
+          </div>
+          <div className="text-sm ui-text-muted">
+            {LABOR_LABELS[record.labor_tier] || "Sin mano de obra"} / {TRANSPORT_LABELS[record.transport_tier] || "Sin transporte"}
+          </div>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -389,7 +513,8 @@ const WorkOrders = () => {
         <Button
           type="primary"
           icon={<PiPlusBold size={16} />}
-          onClick={() => setModalOpen(true)}
+          onClick={handleOpenCreateModal}
+          loading={loadingCompanyConfig}
         >
           Crear orden
         </Button>
@@ -448,7 +573,7 @@ const WorkOrders = () => {
               cancelMutation.isPending
             }
             pagination={{ pageSize: 8 }}
-            scroll={{ x: 980 }}
+            scroll={{ x: 1160 }}
             onRow={(record) => ({
               onClick: () => setSelectedOrderId(record.id),
               className:
@@ -509,12 +634,49 @@ const WorkOrders = () => {
                   <Tag color={selectedOrder.technician_name ? "blue" : "default"}>
                     {selectedOrder.technician_name || "Sin técnico"}
                   </Tag>
+                  <Tag>{LABOR_LABELS[selectedOrder.labor_tier] || "Sin mano de obra"}</Tag>
+                  <Tag>{TRANSPORT_LABELS[selectedOrder.transport_tier] || "Sin transporte"}</Tag>
                 </div>
                 <div className="mt-3 text-sm font-medium text-[var(--ui-foreground)]">
                   Dirección del servicio
                 </div>
                 <div className="mt-2 text-sm leading-6 ui-text-muted">
                   {selectedOrder.service_location_address || "Sin dirección registrada"}
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Material</div>
+                  <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
+                    {formatCurrency(selectedOrder.material_cost_total)}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">Se actualiza con el material usado.</div>
+                </div>
+                <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Mano de obra</div>
+                  <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
+                    {formatCurrency(selectedOrder.labor_cost_total)}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">
+                    {LABOR_LABELS[selectedOrder.labor_tier] || "No definida"}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Transporte</div>
+                  <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
+                    {formatCurrency(selectedOrder.transport_cost_total)}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">
+                    {TRANSPORT_LABELS[selectedOrder.transport_tier] || "No definido"}
+                  </div>
+                </div>
+                <div className="rounded-[22px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] px-4 py-3">
+                  <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Total reparación</div>
+                  <div className="mt-2 text-lg font-semibold text-[var(--ui-foreground)]">
+                    {formatCurrency(selectedOrder.repair_total)}
+                  </div>
+                  <div className="mt-1 text-sm ui-text-muted">Material + mano de obra + transporte.</div>
                 </div>
               </div>
 
@@ -575,12 +737,13 @@ const WorkOrders = () => {
         okText="Crear orden"
         cancelText="Cancelar"
         confirmLoading={createMutation.isPending}
-        width={980}
+        width={1080}
       >
         <Form
           form={form}
           layout="vertical"
           className="grid gap-5"
+          initialValues={{ priority: "MEDIUM" }}
           onValuesChange={(changedValues) => {
             if (!Object.prototype.hasOwnProperty.call(changedValues, "customer")) {
               return;
@@ -593,7 +756,7 @@ const WorkOrders = () => {
           }}
           onFinish={(values) => createMutation.mutate(values)}
         >
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(16rem,0.82fr)]">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(17rem,0.82fr)]">
             <div className="grid gap-4">
               <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
                 <Form.Item
@@ -610,7 +773,6 @@ const WorkOrders = () => {
                 <Form.Item
                   label="Prioridad"
                   name="priority"
-                  initialValue="MEDIUM"
                   rules={[{ required: true, message: "Selecciona la prioridad" }]}
                 >
                   <Select options={PRIORITY_OPTIONS} />
@@ -632,6 +794,23 @@ const WorkOrders = () => {
                     format="YYYY-MM-DD HH:mm"
                     placeholder="Selecciona fecha y hora"
                   />
+                </Form.Item>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Form.Item
+                  label="Mano de obra"
+                  name="labor_tier"
+                  rules={[{ required: true, message: "Selecciona la mano de obra" }]}
+                >
+                  <Select options={LABOR_OPTIONS} placeholder="Selecciona el nivel" />
+                </Form.Item>
+                <Form.Item
+                  label="Transporte"
+                  name="transport_tier"
+                  rules={[{ required: true, message: "Selecciona el transporte" }]}
+                >
+                  <Select options={TRANSPORT_OPTIONS} placeholder="Selecciona la distancia" />
                 </Form.Item>
               </div>
 
@@ -688,8 +867,21 @@ const WorkOrders = () => {
               </div>
               <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] p-4">
                 <div className="text-sm font-medium text-[var(--ui-foreground)]">Antes de crear</div>
+                <div className="mt-3 grid gap-2 text-sm">
+                  <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                    Mano de obra: {formatCurrency(selectedDraftCosts.laborCost)}{" "}
+                    ({LABOR_LABELS[selectedLaborTier] || "pendiente"})
+                  </div>
+                  <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                    Transporte: {formatCurrency(selectedDraftCosts.transportCost)}{" "}
+                    ({TRANSPORT_LABELS[selectedTransportTier] || "pendiente"})
+                  </div>
+                  <div className="rounded-[18px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] px-4 py-3 font-medium text-[var(--ui-foreground)]">
+                    Total inicial: {formatCurrency(selectedDraftCosts.initialTotal)}
+                  </div>
+                </div>
                 <div className="mt-2 text-sm leading-6 ui-text-muted">
-                  Define dirección, prioridad y técnico solo si ya sabes quién tomará la orden.
+                  Si faltan tarifas de mano de obra o transporte, la orden se bloquea hasta que la empresa las configure en Perfil.
                 </div>
               </div>
             </div>

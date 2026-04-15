@@ -465,6 +465,13 @@ const Inventory = () => {
       width: 140,
     },
     {
+      title: "Costo unitario",
+      dataIndex: "unit_cost",
+      key: "unit_cost",
+      width: 150,
+      render: (value) => `$${Number(value || 0).toFixed(2)}`,
+    },
+    {
       title: "Estado",
       dataIndex: "is_active",
       key: "is_active",
@@ -1071,11 +1078,18 @@ const Inventory = () => {
             >
               <Input placeholder="Ej. pieza, metro, paquete" />
             </Form.Item>
-            <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
-              <div className="text-sm font-medium text-[var(--ui-foreground)]">Consejo</div>
-              <div className="mt-1 text-sm ui-text-muted">
-                Usa nombres cortos y un SKU consistente para buscar rápido en almacén.
-              </div>
+            <Form.Item
+              label="Costo unitario"
+              name="unit_cost"
+              rules={[{ required: true, message: "Ingresa el costo unitario" }]}
+            >
+              <InputNumber className="w-full" min={0} step={0.01} placeholder="Ej. 42.50" />
+            </Form.Item>
+          </div>
+          <div className="rounded-[22px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_96%,transparent)] px-4 py-3">
+            <div className="text-sm font-medium text-[var(--ui-foreground)]">Consejo</div>
+            <div className="mt-1 text-sm ui-text-muted">
+              Usa nombres cortos, un SKU consistente y el costo real para que la reparación se calcule sola.
             </div>
           </div>
           <Form.Item label="Descripción" name="description">

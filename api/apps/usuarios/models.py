@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import uuid
+from decimal import Decimal
 
 
 class Company(models.Model):
@@ -76,6 +77,14 @@ class CompanyConfiguration(models.Model):
     # Notifications
     notify_on_completion = models.BooleanField(default=True)
     notify_on_technician_arrived = models.BooleanField(default=True)
+
+    # Repair pricing
+    labor_basic_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    labor_medium_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    labor_advanced_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    transport_near_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    transport_medium_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    transport_far_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -85,6 +94,34 @@ class CompanyConfiguration(models.Model):
 
     def __str__(self):
         return f"Config - {self.company.name}"
+
+    @property
+    def repair_pricing_ready(self):
+        required_fields = (
+            self.labor_basic_rate,
+            self.labor_medium_rate,
+            self.labor_advanced_rate,
+            self.transport_near_rate,
+            self.transport_medium_rate,
+            self.transport_far_rate,
+        )
+        return all(value is not None for value in required_fields)
+
+    def get_labor_rate(self, labor_tier):
+        rate_map = {
+            'BASIC': self.labor_basic_rate,
+            'MEDIUM': self.labor_medium_rate,
+            'ADVANCED': self.labor_advanced_rate,
+        }
+        return rate_map.get(labor_tier) or Decimal('0.00')
+
+    def get_transport_rate(self, transport_tier):
+        rate_map = {
+            'NEAR': self.transport_near_rate,
+            'MEDIUM': self.transport_medium_rate,
+            'FAR': self.transport_far_rate,
+        }
+        return rate_map.get(transport_tier) or Decimal('0.00')
 
 
 class UserManager(BaseUserManager):

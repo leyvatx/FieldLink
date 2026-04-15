@@ -1,8 +1,9 @@
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from apps.usuarios.models import User
 from apps.clientes.models import Customer, ServiceRequest
 import uuid
+from decimal import Decimal
 
 
 class WorkOrder(models.Model):
@@ -23,6 +24,16 @@ class WorkOrder(models.Model):
         MEDIUM = 'MEDIUM', 'Medium'
         HIGH = 'HIGH', 'High'
         URGENT = 'URGENT', 'Urgent'
+
+    class LaborTier(models.TextChoices):
+        BASIC = 'BASIC', 'Basic'
+        MEDIUM = 'MEDIUM', 'Medium'
+        ADVANCED = 'ADVANCED', 'Advanced'
+
+    class TransportTier(models.TextChoices):
+        NEAR = 'NEAR', 'Near'
+        MEDIUM = 'MEDIUM', 'Medium'
+        FAR = 'FAR', 'Far'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     company = models.ForeignKey(
@@ -70,6 +81,8 @@ class WorkOrder(models.Model):
     # Status and priority
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
+    labor_tier = models.CharField(max_length=10, choices=LaborTier.choices, blank=True)
+    transport_tier = models.CharField(max_length=10, choices=TransportTier.choices, blank=True)
     
     # Scheduling
     scheduled_date = models.DateTimeField(null=True, blank=True)
@@ -80,6 +93,10 @@ class WorkOrder(models.Model):
     arrived_at = models.DateTimeField(null=True, blank=True)
     
     notes = models.TextField(blank=True)
+    material_cost_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    labor_cost_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    transport_cost_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    repair_total = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     
     # Offline sync
     mobile_id = models.CharField(max_length=100, blank=True)
@@ -118,6 +135,49 @@ class WorkOrder(models.Model):
 
     def __str__(self):
         return f"Order #{self.pk} - {self.customer.name} ({self.get_status_display()})"
+
+    def _normalize_money(self, value):
+        return (value or Decimal('0.00')).quantize(Decimal('0.01'))
+
+    def calculate_material_cost_total(self):
+        material_total = Decimal('0.00')
+
+        if not self.pk:
+            return material_total
+
+        for used_material in self.used_materials.select_related('approval').all():
+            material_total += used_material.get_line_total()
+
+        return self._normalize_money(material_total)
+
+    def refresh_pricing(self, configuration=None, save=False):
+        config = configuration
+        if config is None and self.company_id and self.company:
+            try:
+                config = self.company.configuration
+            except ObjectDoesNotExist:
+                config = None
+
+        self.material_cost_total = self.calculate_material_cost_total()
+        self.labor_cost_total = self._normalize_money(
+            config.get_labor_rate(self.labor_tier) if config and self.labor_tier else Decimal('0.00')
+        )
+        self.transport_cost_total = self._normalize_money(
+            config.get_transport_rate(self.transport_tier) if config and self.transport_tier else Decimal('0.00')
+        )
+        self.repair_total = self._normalize_money(
+            self.material_cost_total + self.labor_cost_total + self.transport_cost_total
+        )
+
+        if save and self.pk:
+            type(self).objects.filter(pk=self.pk).update(
+                material_cost_total=self.material_cost_total,
+                labor_cost_total=self.labor_cost_total,
+                transport_cost_total=self.transport_cost_total,
+                repair_total=self.repair_total,
+            )
+
+        return self.repair_total
 
     def clean(self):
         """Validate state transitions and completion requirements"""
