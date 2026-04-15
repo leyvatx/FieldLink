@@ -7,9 +7,13 @@ from .base import *  # noqa: F401,F403
 
 DEBUG = False
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '108.175.9.159,localhost').split(',')
 
-# Database — Docker PostgreSQL service
+ALLOWED_HOSTS = env_list(
+    'ALLOWED_HOSTS',
+    'fieldlinkapp.com,www.fieldlinkapp.com,108.175.9.159,localhost,127.0.0.1'
+)
+
+# Database - Docker PostgreSQL service
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -21,13 +25,23 @@ DATABASES = {
     }
 }
 
-# CORS — restrict in production
-CORS_ALLOWED_ORIGINS = os.environ.get(
+# Browser origins:
+# - keep production domain(s) explicit
+# - allow localhost / 127.0.0.1 on any port for local web clients
+CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
-    'http://108.175.9.159:8000'
-).split(',')
+    'https://fieldlinkapp.com,https://www.fieldlinkapp.com'
+)
+CORS_ALLOWED_ORIGIN_REGEXES = env_list(
+    'CORS_ALLOWED_ORIGIN_REGEXES',
+    r'^https?://(localhost|127\.0\.0\.1)(:\d+)?$'
+)
+CSRF_TRUSTED_ORIGINS = env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://fieldlinkapp.com,https://www.fieldlinkapp.com,http://localhost,http://127.0.0.1'
+)
 
-# Swagger — admin only in production
+# Swagger - admin only in production
 SPECTACULAR_SETTINGS['SERVE_PERMISSIONS'] = ['rest_framework.permissions.IsAdminUser']
 
 # Security hardening

@@ -16,6 +16,14 @@ load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fieldlink-dev-key-change-in-production')
 
+
+def env_list(name, default=''):
+    return [
+        item.strip()
+        for item in os.environ.get(name, default).split(',')
+        if item.strip()
+    ]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -133,10 +141,9 @@ SPECTACULAR_SETTINGS = {
 PUBLIC_WEB_BASE_URL = os.environ.get('PUBLIC_WEB_BASE_URL', '').strip().rstrip('/')
 PUBLIC_ROOT_DOMAIN = os.environ.get('PUBLIC_ROOT_DOMAIN', '').strip().lower()
 PUBLIC_RESERVED_SUBDOMAINS = [
-    item.strip().lower()
-    for item in os.environ.get(
+    item.lower()
+    for item in env_list(
         'PUBLIC_RESERVED_SUBDOMAINS',
         'www,api,admin,app,auth,static,media'
-    ).split(',')
-    if item.strip()
+    )
 ]
