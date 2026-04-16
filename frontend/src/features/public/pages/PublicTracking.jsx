@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getPublicTracking } from "@api/trackingService";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
+import { normalizeCoordinates } from "@/lib/locationCoordinates";
 
 const toRad = (value) => (value * Math.PI) / 180;
 
@@ -54,56 +55,43 @@ const PublicTracking = () => {
   const trackingActive = data?.tracking_active;
   const serviceLocation = data?.service_location;
   const technicianLocation = data?.technician_location;
+  const safeServiceLocation = normalizeCoordinates(
+    serviceLocation?.latitude,
+    serviceLocation?.longitude
+  );
+  const safeTechnicianLocation = normalizeCoordinates(
+    technicianLocation?.latitude,
+    technicianLocation?.longitude
+  );
 
   const eta = useMemo(() => {
-    if (
-      !technicianLocation ||
-      serviceLocation?.latitude == null ||
-      serviceLocation?.longitude == null
-    ) {
+    if (!safeTechnicianLocation || !safeServiceLocation) {
       return null;
     }
-    const techLat = Number(technicianLocation.latitude);
-    const techLng = Number(technicianLocation.longitude);
-    const serviceLat = Number(serviceLocation.latitude);
-    const serviceLng = Number(serviceLocation.longitude);
-    if (isNaN(techLat) || isNaN(techLng) || isNaN(serviceLat) || isNaN(serviceLng)) {
-      console.warn('Invalid coordinates detected:', { techLat, techLng, serviceLat, serviceLng });
-      return null;
-    }
-    
+
     const distanceKm = haversineKm(
-      { lat: techLat, lon: techLng },
-      { lat: serviceLat, lon: serviceLng }
+      { lat: safeTechnicianLocation.latitude, lon: safeTechnicianLocation.longitude },
+      { lat: safeServiceLocation.latitude, lon: safeServiceLocation.longitude }
     );
     return estimateEtaMinutes(distanceKm);
-  }, [technicianLocation, serviceLocation]);
+  }, [safeServiceLocation, safeTechnicianLocation]);
 
   const mapPoints = useMemo(() => {
     const points = [];
-    
-    if (serviceLocation?.latitude != null && 
-        serviceLocation?.longitude != null &&
-        !isNaN(Number(serviceLocation.latitude)) && 
-        !isNaN(Number(serviceLocation.longitude))) {
+
+    if (safeServiceLocation) {
       points.push({
         id: "service",
-        lat: Number(serviceLocation.latitude),
-        lon: Number(serviceLocation.longitude),
+        lat: safeServiceLocation.latitude,
+        lon: safeServiceLocation.longitude,
         type: "service",
       });
     }
-    if (
-      trackingActive &&
-      technicianLocation?.latitude != null &&
-      technicianLocation?.longitude != null &&
-      !isNaN(Number(technicianLocation.latitude)) && 
-      !isNaN(Number(technicianLocation.longitude))
-    ) {
+    if (trackingActive && safeTechnicianLocation) {
       points.push({
         id: "tech",
-        lat: Number(technicianLocation.latitude),
-        lon: Number(technicianLocation.longitude),
+        lat: safeTechnicianLocation.latitude,
+        lon: safeTechnicianLocation.longitude,
         type: "tech",
       });
     }
@@ -111,7 +99,7 @@ const PublicTracking = () => {
       return [];
     }
     return normalizePoints(points);
-  }, [serviceLocation, technicianLocation, trackingActive]);
+  }, [safeServiceLocation, safeTechnicianLocation, trackingActive]);
 
   const header = (
     <div className="portal-hero">

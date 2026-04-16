@@ -20,6 +20,7 @@ import { getServiceRequests } from "@api/serviceRequestService";
 import { getUsedMaterials } from "@api/materialApprovalService";
 import { isSupervisor } from "@utils/constants/roles";
 import { matchesText } from "@/lib/filtering";
+import { normalizeCoordinates } from "@/lib/locationCoordinates";
 import OperationsLiveMap from "@/common/components/location/OperationsLiveMap";
 
 const STATUS_LABELS = {
@@ -128,11 +129,6 @@ function buildLatestLocationMap(locations) {
 
 function toRad(value) {
   return (value * Math.PI) / 180;
-}
-
-function toNumberOrNull(value) {
-  const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : null;
 }
 
 function haversineKm(start, end) {
@@ -317,25 +313,32 @@ const Dashboard = () => {
           );
           const primaryOrder = getPrimaryOrder(activeOrders);
           const lastLocation = latestLocations.get(technician.id) || null;
-          const freshness = getLocationFreshness(lastLocation?.timestamp);
-          const technicianLatitude = toNumberOrNull(lastLocation?.latitude);
-          const technicianLongitude = toNumberOrNull(lastLocation?.longitude);
-          const destinationLatitude = toNumberOrNull(primaryOrder?.customer_latitude);
-          const destinationLongitude = toNumberOrNull(primaryOrder?.customer_longitude);
-          const destination =
-            destinationLatitude != null && destinationLongitude != null
-              ? {
-                  latitude: destinationLatitude,
-                  longitude: destinationLongitude,
-                }
-              : null;
+          const technicianCoordinates = normalizeCoordinates(
+            lastLocation?.latitude,
+            lastLocation?.longitude
+          );
+          const destination = normalizeCoordinates(
+            primaryOrder?.customer_latitude,
+            primaryOrder?.customer_longitude
+          );
+          const freshness = technicianCoordinates
+            ? getLocationFreshness(lastLocation?.timestamp)
+            : {
+                state: "missing",
+                label: "Sin GPS",
+                color: "default",
+                sortRank: 3,
+              };
+          const technicianLatitude = technicianCoordinates?.latitude ?? null;
+          const technicianLongitude = technicianCoordinates?.longitude ?? null;
 
           const routeDistanceKm =
-            technicianLatitude != null &&
-            technicianLongitude != null &&
-            destination
+            technicianCoordinates && destination
               ? haversineKm(
-                  { lat: technicianLatitude, lon: technicianLongitude },
+                  {
+                    lat: technicianCoordinates.latitude,
+                    lon: technicianCoordinates.longitude,
+                  },
                   { lat: destination.latitude, lon: destination.longitude }
                 )
               : null;
@@ -346,6 +349,7 @@ const Dashboard = () => {
             primaryOrder,
             lastLocation,
             freshness,
+            technicianCoordinates,
             technicianLatitude,
             technicianLongitude,
             destination,
@@ -377,7 +381,7 @@ const Dashboard = () => {
   );
 
   const trackedTechnicians = useMemo(
-    () => technicianBoard.filter((technician) => technician.lastLocation),
+    () => technicianBoard.filter((technician) => technician.technicianCoordinates),
     [technicianBoard]
   );
 
@@ -386,7 +390,7 @@ const Dashboard = () => {
     [technicianBoard]
   );
 
-  const routesWithGps = activeRoutes.filter((route) => route.lastLocation).length;
+  const routesWithGps = activeRoutes.filter((route) => route.technicianCoordinates).length;
   const routesWithoutGps = activeRoutes.length - routesWithGps;
   const routesWithoutDestination = activeRoutes.filter((route) => !route.destination).length;
   const trackedCoverageRate = technicians.length

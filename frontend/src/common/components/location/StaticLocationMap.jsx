@@ -1,6 +1,7 @@
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { normalizeCoordinates } from "@/lib/locationCoordinates";
 
 const DEFAULT_ZOOM = 15;
 
@@ -26,13 +27,15 @@ const StaticLocationMap = ({
   address,
   className,
 }) => {
-  if (latitude == null || longitude == null) {
+  const coordinates = normalizeCoordinates(latitude, longitude);
+
+  if (!coordinates) {
     return null;
   }
 
   return (
     <MapContainer
-      center={[latitude, longitude]}
+      center={[coordinates.latitude, coordinates.longitude]}
       zoom={DEFAULT_ZOOM}
       className={cn("location-picker-map h-[320px] w-full", className)}
       scrollWheelZoom
@@ -41,9 +44,12 @@ const StaticLocationMap = ({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapViewport latitude={latitude} longitude={longitude} />
+      <MapViewport
+        latitude={coordinates.latitude}
+        longitude={coordinates.longitude}
+      />
       <CircleMarker
-        center={[latitude, longitude]}
+        center={[coordinates.latitude, coordinates.longitude]}
         radius={10}
         pathOptions={{
           color: "var(--ui-ring-strong)",

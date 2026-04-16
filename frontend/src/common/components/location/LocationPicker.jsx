@@ -4,18 +4,16 @@ import { PiMagnifyingGlassBold, PiMapPinAreaBold, PiSpinnerGapBold, PiTrashBold 
 import { Button, Input, Tag } from "@/lib/antd-compat";
 import { searchLocations, reverseGeocode } from "@/api/locationService";
 import { cn } from "@/lib/utils";
+import { normalizeCoordinates } from "@/lib/locationCoordinates";
 
 const DEFAULT_CENTER = [37.0902, -95.7129];
 const DEFAULT_ZOOM = 4;
 const LOCATION_ZOOM = 16;
 
 function normalizeLocation(address, latitude, longitude) {
-  if (
-    latitude == null ||
-    longitude == null ||
-    latitude === "" ||
-    longitude === ""
-  ) {
+  const coordinates = normalizeCoordinates(latitude, longitude);
+
+  if (!coordinates) {
     return address
       ? {
           address,
@@ -27,8 +25,8 @@ function normalizeLocation(address, latitude, longitude) {
 
   return {
     address: address || "",
-    latitude: Number(latitude),
-    longitude: Number(longitude),
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
   };
 }
 

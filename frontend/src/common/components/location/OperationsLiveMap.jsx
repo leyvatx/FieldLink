@@ -8,6 +8,7 @@ import {
   useMap,
 } from "react-leaflet";
 import { cn } from "@/lib/utils";
+import { normalizeCoordinates } from "@/lib/locationCoordinates";
 
 const DEFAULT_CENTER = [22.5, -102.0];
 const DEFAULT_ZOOM = 4;
@@ -85,6 +86,42 @@ const OperationsLiveMap = ({
   connections = [],
   className,
 }) => {
+  const safePoints = points.flatMap((point) => {
+    const coordinates = normalizeCoordinates(point.latitude, point.longitude);
+
+    if (!coordinates) {
+      return [];
+    }
+
+    return [
+      {
+        ...point,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      },
+    ];
+  });
+  const safeConnections = connections.flatMap((connection) => {
+    if (!Array.isArray(connection.from) || !Array.isArray(connection.to)) {
+      return [];
+    }
+
+    const from = normalizeCoordinates(connection.from[0], connection.from[1]);
+    const to = normalizeCoordinates(connection.to[0], connection.to[1]);
+
+    if (!from || !to) {
+      return [];
+    }
+
+    return [
+      {
+        ...connection,
+        from: [from.latitude, from.longitude],
+        to: [to.latitude, to.longitude],
+      },
+    ];
+  });
+
   return (
     <MapContainer
       center={DEFAULT_CENTER}
@@ -96,9 +133,9 @@ const OperationsLiveMap = ({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <FitToPoints points={points} />
+      <FitToPoints points={safePoints} />
 
-      {connections.map((connection) => {
+      {safeConnections.map((connection) => {
         const tone = connectionStyles[connection.status] || connectionStyles.default;
 
         return (
@@ -115,7 +152,7 @@ const OperationsLiveMap = ({
         );
       })}
 
-      {points.map((point) => {
+      {safePoints.map((point) => {
         const tone = pointStyles[point.type] || pointStyles.technician;
 
         return (
