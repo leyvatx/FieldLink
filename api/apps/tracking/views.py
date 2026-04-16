@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import F, OuterRef, Subquery
@@ -112,6 +112,7 @@ from rest_framework import serializers as drf_serializers
 
 @extend_schema(responses={200: inline_serializer('PublicTrackingResponse', fields={'id': drf_serializers.CharField(), 'status': drf_serializers.CharField(), 'status_display': drf_serializers.CharField(), 'customer_name': drf_serializers.CharField(), 'technician_name': drf_serializers.CharField()})})
 @api_view(['GET'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def public_tracking_view(request, tracking_token):
     """
@@ -121,7 +122,7 @@ def public_tracking_view(request, tracking_token):
     Returns: current status, technician location, arrival time
     """
     from apps.ordenes.models import WorkOrder
-    
+
     try:
         work_order = WorkOrder.objects.get(tracking_token=tracking_token)
     except WorkOrder.DoesNotExist:
@@ -129,9 +130,16 @@ def public_tracking_view(request, tracking_token):
             {'error': 'Order not found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    
-    # Return public information only
-    tracking_active = work_order.status == WorkOrder.Status.IN_TRANSIT and not work_order.arrived_at
+
+    trackable_statuses = {
+        WorkOrder.Status.ASSIGNED,
+        WorkOrder.Status.IN_TRANSIT,
+    }
+    tracking_active = (
+        work_order.technician_id is not None
+        and work_order.status in trackable_statuses
+        and not work_order.arrived_at
+    )
 
     data = {
         'id': str(work_order.id),
@@ -149,10 +157,15 @@ def public_tracking_view(request, tracking_token):
             'longitude': float(work_order.customer_longitude) if work_order.customer_longitude is not None else None,
         }
     }
-    
-    # Only show location while tracking is active (before arrival)
+
     if tracking_active:
-        latest_location = work_order.technician_locations.order_by('-timestamp').first()
+        latest_location = (
+            work_order.technician_locations.order_by('-timestamp').first()
+            or TechnicianLocation.objects
+                .filter(technician_id=work_order.technician_id)
+                .order_by('-timestamp')
+                .first()
+        )
         if latest_location:
             data['technician_location'] = {
                 'latitude': float(latest_location.latitude),
@@ -160,5 +173,5 @@ def public_tracking_view(request, tracking_token):
                 'timestamp': latest_location.timestamp,
                 'accuracy_meters': latest_location.accuracy_meters,
             }
-    
+
     return Response(data)
