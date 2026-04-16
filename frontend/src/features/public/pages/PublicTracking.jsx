@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Card, Spin, Tag } from "@/lib/antd-compat";
 import { useQuery } from "@tanstack/react-query";
 import { getPublicTracking } from "@api/trackingService";
+import OperationsLiveMap from "@/common/components/location/OperationsLiveMap";
 import PublicLayout from "@layouts/public-layout/PublicLayout";
 import useDocumentTitle from "@hooks/useDocumentTitle";
 import { normalizeCoordinates } from "@/lib/locationCoordinates";
@@ -23,23 +24,6 @@ const haversineKm = (start, end) => {
 
 const estimateEtaMinutes = (distanceKm, speedKmh = 32) =>
   Math.max(3, Math.round((distanceKm / speedKmh) * 60));
-
-const normalizePoints = (points) => {
-  const lats = points.map((point) => point.lat);
-  const lons = points.map((point) => point.lon);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons);
-  const maxLon = Math.max(...lons);
-  const latRange = maxLat - minLat || 1;
-  const lonRange = maxLon - minLon || 1;
-
-  return points.map((point) => ({
-    ...point,
-    x: ((point.lon - minLon) / lonRange) * 100,
-    y: 100 - ((point.lat - minLat) / latRange) * 100,
-  }));
-};
 
 const PublicTracking = () => {
   const { trackingToken } = useParams();
@@ -82,24 +66,59 @@ const PublicTracking = () => {
     if (safeServiceLocation) {
       points.push({
         id: "service",
-        lat: safeServiceLocation.latitude,
-        lon: safeServiceLocation.longitude,
-        type: "service",
+        latitude: safeServiceLocation.latitude,
+        longitude: safeServiceLocation.longitude,
+        type: "destination",
+        title: "Destino del servicio",
+        subtitle: serviceLocation?.address || "Ubicación confirmada",
+        meta: [
+          { label: "Cliente", value: data?.customer_name || "Sin cliente" },
+          { label: "Estado", value: data?.status_display || data?.status || "Sin estado" },
+        ],
       });
     }
+
     if (trackingActive && safeTechnicianLocation) {
       points.push({
         id: "tech",
-        lat: safeTechnicianLocation.latitude,
-        lon: safeTechnicianLocation.longitude,
-        type: "tech",
+        latitude: safeTechnicianLocation.latitude,
+        longitude: safeTechnicianLocation.longitude,
+        type: "technician",
+        title: data?.technician_name || "Técnico",
+        subtitle: "Posición GPS más reciente",
+        meta: technicianLocation?.timestamp
+          ? [{ label: "Actualizado", value: new Date(technicianLocation.timestamp).toLocaleString() }]
+          : [],
       });
     }
-    if (points.length === 0) {
+
+    return points;
+  }, [
+    data?.customer_name,
+    data?.status,
+    data?.status_display,
+    data?.technician_name,
+    safeServiceLocation,
+    safeTechnicianLocation,
+    serviceLocation?.address,
+    technicianLocation?.timestamp,
+    trackingActive,
+  ]);
+
+  const mapConnections = useMemo(() => {
+    if (!trackingActive || !safeServiceLocation || !safeTechnicianLocation) {
       return [];
     }
-    return normalizePoints(points);
-  }, [safeServiceLocation, safeTechnicianLocation, trackingActive]);
+
+    return [
+      {
+        id: "tracking-route",
+        status: data?.status || "IN_TRANSIT",
+        from: [safeTechnicianLocation.latitude, safeTechnicianLocation.longitude],
+        to: [safeServiceLocation.latitude, safeServiceLocation.longitude],
+      },
+    ];
+  }, [data?.status, safeServiceLocation, safeTechnicianLocation, trackingActive]);
 
   const header = (
     <div className="portal-hero">
@@ -134,15 +153,24 @@ const PublicTracking = () => {
                 </span>
               </div>
               <div className="portal-divider" />
-              <div className="portal-map">
-                {mapPoints.map((point) => (
-                  <span
-                    key={point.id}
-                    className={`map-marker ${point.type === "tech" ? "tech" : ""}`}
-                    style={{ left: `${point.x}%`, top: `${point.y}%` }}
+              <div className="portal-map-shell">
+                {mapPoints.length ? (
+                  <OperationsLiveMap
+                    points={mapPoints}
+                    connections={mapConnections}
+                    className="portal-live-map"
                   />
-                ))}
+                ) : (
+                  <div className="portal-map-fallback">
+                    No hay coordenadas válidas para esta orden.
+                  </div>
+                )}
               </div>
+              {trackingActive && !safeTechnicianLocation ? (
+                <div className="text-sm portal-muted mt-3">
+                  La orden ya tiene rastreo público, pero aún no llega una posición GPS del técnico.
+                </div>
+              ) : null}
             </>
           )}
         </Card>

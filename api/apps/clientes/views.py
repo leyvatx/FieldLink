@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.conf import settings
@@ -15,6 +16,7 @@ from .serializers import (
 from apps.usuarios.permissions import IsSameCompany, IsDispatcherOrOwner
 from apps.usuarios.models import Company, User
 from apps.ordenes.models import WorkOrder
+from apps.ordenes.serializers import WorkOrderSerializer
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
@@ -182,6 +184,112 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             raise ValueError('Technician not found or not in your company')
 
+    def _normalize_text(self, value):
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    def _build_work_order_payload(self, service_request, customer, existing_order=None):
+        request_data = self.request.data
+        service_request_address = (service_request.address or '').strip()
+        existing_address = (
+            (existing_order.service_location_address or '').strip()
+            if existing_order is not None
+            else ''
+        )
+        requested_address = self._normalize_text(request_data.get('service_location_address'))
+        resolved_address = requested_address or existing_address or service_request_address
+
+        payload = {
+            'customer': customer.id,
+            'priority': (
+                self._normalize_text(request_data.get('priority'))
+                or getattr(existing_order, 'priority', WorkOrder.Priority.MEDIUM)
+            ),
+            'service_location_address': resolved_address,
+            'customer_phone': (
+                self._normalize_text(request_data.get('customer_phone'))
+                or service_request.phone
+            ),
+            'customer_email': (
+                self._normalize_text(request_data.get('customer_email'))
+                or service_request.email
+            ),
+        }
+
+        if 'notes' in request_data:
+            payload['notes'] = self._normalize_text(request_data.get('notes')) or ''
+        else:
+            payload['notes'] = (
+                getattr(existing_order, 'notes', '') or service_request.description or ''
+            )
+
+        labor_tier = (
+            self._normalize_text(request_data.get('labor_tier'))
+            or getattr(existing_order, 'labor_tier', '')
+        )
+        if labor_tier:
+            payload['labor_tier'] = labor_tier
+
+        transport_tier = (
+            self._normalize_text(request_data.get('transport_tier'))
+            or getattr(existing_order, 'transport_tier', '')
+        )
+        if transport_tier:
+            payload['transport_tier'] = transport_tier
+
+        scheduled_date = request_data.get('scheduled_date')
+        if scheduled_date not in (None, ''):
+            payload['scheduled_date'] = scheduled_date
+        elif existing_order is not None and existing_order.scheduled_date is not None:
+            payload['scheduled_date'] = existing_order.scheduled_date.isoformat()
+
+        latitude = request_data.get('customer_latitude')
+        longitude = request_data.get('customer_longitude')
+        has_latitude = latitude not in (None, '')
+        has_longitude = longitude not in (None, '')
+
+        if has_latitude != has_longitude:
+            raise DRFValidationError({
+                'customer_latitude': 'Confirma ambas coordenadas para la orden.',
+                'customer_longitude': 'Confirma ambas coordenadas para la orden.',
+            })
+
+        if has_latitude and has_longitude:
+            payload['customer_latitude'] = latitude
+            payload['customer_longitude'] = longitude
+            return payload
+
+        if (
+            resolved_address == service_request_address
+            and service_request.latitude is not None
+            and service_request.longitude is not None
+        ):
+            payload['customer_latitude'] = service_request.latitude
+            payload['customer_longitude'] = service_request.longitude
+            return payload
+
+        customer_address = (customer.address or '').strip()
+        if (
+            resolved_address == customer_address
+            and customer.latitude is not None
+            and customer.longitude is not None
+        ):
+            payload['customer_latitude'] = customer.latitude
+            payload['customer_longitude'] = customer.longitude
+            return payload
+
+        if (
+            existing_order is not None
+            and resolved_address == existing_address
+            and existing_order.customer_latitude is not None
+            and existing_order.customer_longitude is not None
+        ):
+            payload['customer_latitude'] = existing_order.customer_latitude
+            payload['customer_longitude'] = existing_order.customer_longitude
+
+        return payload
+
     @action(detail=True, methods=['post'])
     def validate_otp(self, request, pk=None):
         """Simulates OTP validation"""
@@ -196,6 +304,10 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
         Approves the request, creates a work order, and optionally assigns it.
         Payload:
           - technician_id (optional)
+          - priority (required on first order creation)
+          - labor_tier / transport_tier (required on first order creation)
+          - scheduled_date / notes / service_location_address (optional)
+          - customer_latitude / customer_longitude (optional but must come together)
         """
         service_request = self.get_object()
         technician_id = request.data.get('technician_id')
@@ -213,34 +325,32 @@ class ServiceRequestViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             customer = self._get_or_create_customer(service_request)
+            existing_work_order = getattr(service_request, 'work_order', None)
 
-            order_defaults = {
-                'company': self.request.user.company,
-                'customer': customer,
-                'customer_name': service_request.customer_name,
-                'customer_phone': service_request.phone,
-                'customer_email': service_request.email,
-                'service_location_address': service_request.address,
-                'customer_latitude': customer.latitude,
-                'customer_longitude': customer.longitude,
-                'notes': service_request.description,
-                'status': WorkOrder.Status.PENDING,
-            }
+            try:
+                work_order_payload = self._build_work_order_payload(
+                    service_request=service_request,
+                    customer=customer,
+                    existing_order=existing_work_order,
+                )
+                serializer = WorkOrderSerializer(
+                    instance=existing_work_order,
+                    data=work_order_payload,
+                    partial=existing_work_order is not None,
+                    context={'request': request},
+                )
+                serializer.is_valid(raise_exception=True)
+            except DRFValidationError as exc:
+                return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 
-            work_order, _ = WorkOrder.objects.get_or_create(
+            work_order = serializer.save(
+                company=self.request.user.company,
+                customer=customer,
                 service_request=service_request,
-                defaults=order_defaults,
+                customer_name=service_request.customer_name,
+                customer_phone=work_order_payload.get('customer_phone') or service_request.phone,
+                customer_email=work_order_payload.get('customer_email') or service_request.email,
             )
-
-            work_order.company = self.request.user.company
-            work_order.customer = customer
-            work_order.customer_name = service_request.customer_name
-            work_order.customer_phone = service_request.phone
-            work_order.customer_email = service_request.email
-            work_order.service_location_address = service_request.address
-            work_order.customer_latitude = customer.latitude
-            work_order.customer_longitude = customer.longitude
-            work_order.notes = service_request.description
 
             if technician:
                 work_order.technician = technician

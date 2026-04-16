@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { Button, Card, Select, Table, Tag } from "@/lib/antd-compat";
+import { Button, Card, DatePicker, Select, Table, Tag } from "@/lib/antd-compat";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import ModuleStatStrip from "@components/ModuleStatStrip";
 import PageLayout from "@layouts/page-layout/PageLayout";
+import LocationPicker from "@/common/components/location/LocationPicker";
 import {
   getServiceRequests,
   approveServiceRequest,
   rejectServiceRequest,
 } from "@api/serviceRequestService";
+import { getMyCompanyConfig } from "@api/companyConfigService";
 import { getTechnicians } from "@api/userService";
 import queryClient from "@lib/queryClient";
 import { useMessage } from "@context/MessageProvider";
@@ -44,14 +46,124 @@ const ORDER_STATUS_LABELS = {
   CANCELLED: "Cancelada",
 };
 
+const PRIORITY_OPTIONS = [
+  { value: "LOW", label: "Baja" },
+  { value: "MEDIUM", label: "Media" },
+  { value: "HIGH", label: "Alta" },
+  { value: "URGENT", label: "Urgente" },
+];
+
+const PRIORITY_LABELS = {
+  LOW: "Baja",
+  MEDIUM: "Media",
+  HIGH: "Alta",
+  URGENT: "Urgente",
+};
+
+const PRIORITY_COLORS = {
+  LOW: "default",
+  MEDIUM: "blue",
+  HIGH: "gold",
+  URGENT: "red",
+};
+
+const LABOR_OPTIONS = [
+  { value: "BASIC", label: "Básico" },
+  { value: "MEDIUM", label: "Medio" },
+  { value: "ADVANCED", label: "Avanzado" },
+];
+
+const LABOR_LABELS = {
+  BASIC: "Básico",
+  MEDIUM: "Medio",
+  ADVANCED: "Avanzado",
+};
+
+const TRANSPORT_OPTIONS = [
+  { value: "NEAR", label: "Cercano" },
+  { value: "MEDIUM", label: "Medio" },
+  { value: "FAR", label: "Lejano" },
+];
+
+const TRANSPORT_LABELS = {
+  NEAR: "Cercano",
+  MEDIUM: "Medio",
+  FAR: "Lejano",
+};
+
+const LABOR_RATE_KEYS = {
+  BASIC: "labor_basic_rate",
+  MEDIUM: "labor_medium_rate",
+  ADVANCED: "labor_advanced_rate",
+};
+
+const TRANSPORT_RATE_KEYS = {
+  NEAR: "transport_near_rate",
+  MEDIUM: "transport_medium_rate",
+  FAR: "transport_far_rate",
+};
+
 const SUSPICIOUS_LABELS = {
   otp_unvalidated: "OTP sin validar",
   blacklisted_phone: "Teléfono en lista negra",
 };
 
+const currencyFormatter = new Intl.NumberFormat("es-MX", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
 function formatDateTime(value) {
   return value ? dayjs(value).format("DD MMM YYYY HH:mm") : "Sin fecha";
 }
+
+function formatCurrency(value) {
+  return currencyFormatter.format(Number(value || 0));
+}
+
+function getConfiguredRate(config, key) {
+  const value = config?.[key];
+  return value == null ? 0 : Number(value);
+}
+
+function buildApprovalErrorMessage(mutationError) {
+  const data = mutationError?.response?.data || {};
+
+  if (typeof data?.error === "string" && data.error.trim()) {
+    return data.error;
+  }
+
+  for (const field of [
+    "service_location_address",
+    "customer_latitude",
+    "customer_longitude",
+    "labor_tier",
+    "transport_tier",
+    "priority",
+  ]) {
+    const fieldValue = data?.[field];
+    if (Array.isArray(fieldValue) && fieldValue[0]) {
+      return fieldValue[0];
+    }
+    if (typeof fieldValue === "string" && fieldValue.trim()) {
+      return fieldValue;
+    }
+  }
+
+  return "No se pudo aprobar la solicitud";
+}
+
+const emptyApprovalDraft = {
+  priority: "MEDIUM",
+  labor_tier: "MEDIUM",
+  transport_tier: "NEAR",
+  scheduled_date: null,
+  service_location_address: "",
+  customer_latitude: "",
+  customer_longitude: "",
+};
 
 const ServiceRequests = () => {
   const { success, error } = useMessage();
@@ -64,6 +176,7 @@ const ServiceRequests = () => {
   });
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [assignTechnicianId, setAssignTechnicianId] = useState(undefined);
+  const [approvalDraft, setApprovalDraft] = useState(emptyApprovalDraft);
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["service-requests", filters.status],
@@ -74,6 +187,11 @@ const ServiceRequests = () => {
   const { data: technicians = [] } = useQuery({
     queryKey: ["technicians"],
     queryFn: getTechnicians,
+  });
+
+  const { data: companyConfig, isLoading: loadingCompanyConfig } = useQuery({
+    queryKey: ["company-config", "my-config"],
+    queryFn: getMyCompanyConfig,
   });
 
   const refreshRequests = () => {
@@ -92,11 +210,7 @@ const ServiceRequests = () => {
       queryClient.invalidateQueries({ queryKey: ["work-orders"] });
       queryClient.invalidateQueries({ queryKey: ["customers"] });
     },
-    onError: (mutationError) =>
-      error(
-        mutationError.response?.data?.error ||
-          "No se pudo aprobar la solicitud"
-      ),
+    onError: (mutationError) => error(buildApprovalErrorMessage(mutationError)),
   });
 
   const rejectMutation = useMutation({
@@ -148,6 +262,26 @@ const ServiceRequests = () => {
 
   useEffect(() => {
     setAssignTechnicianId(undefined);
+
+    if (!selectedRequest) {
+      setApprovalDraft(emptyApprovalDraft);
+      return;
+    }
+
+    setApprovalDraft({
+      priority: selectedRequest.work_order_priority || "MEDIUM",
+      labor_tier: selectedRequest.work_order_labor_tier || "MEDIUM",
+      transport_tier: selectedRequest.work_order_transport_tier || "NEAR",
+      scheduled_date: selectedRequest.work_order_scheduled_date
+        ? dayjs(selectedRequest.work_order_scheduled_date)
+        : null,
+      service_location_address:
+        selectedRequest.work_order_service_location_address || selectedRequest.address || "",
+      customer_latitude:
+        selectedRequest.work_order_customer_latitude ?? selectedRequest.latitude ?? "",
+      customer_longitude:
+        selectedRequest.work_order_customer_longitude ?? selectedRequest.longitude ?? "",
+    });
   }, [selectedRequest]);
 
   const requestMetrics = useMemo(
@@ -285,16 +419,56 @@ const ServiceRequests = () => {
     },
   ];
 
+  const draftLaborCost = getConfiguredRate(
+    companyConfig,
+    LABOR_RATE_KEYS[approvalDraft.labor_tier]
+  );
+  const draftTransportCost = getConfiguredRate(
+    companyConfig,
+    TRANSPORT_RATE_KEYS[approvalDraft.transport_tier]
+  );
+  const hasPartialCoordinates =
+    (approvalDraft.customer_latitude !== "" || approvalDraft.customer_longitude !== "") &&
+    (approvalDraft.customer_latitude === "" || approvalDraft.customer_longitude === "");
+  const approvalReady =
+    Boolean(approvalDraft.service_location_address?.trim()) &&
+    Boolean(approvalDraft.priority) &&
+    Boolean(approvalDraft.labor_tier) &&
+    Boolean(approvalDraft.transport_tier) &&
+    !hasPartialCoordinates &&
+    Boolean(companyConfig?.repair_pricing_ready);
+
+  const buildApprovalPayload = (technicianId = undefined) => {
+    const payload = {
+      priority: approvalDraft.priority,
+      labor_tier: approvalDraft.labor_tier,
+      transport_tier: approvalDraft.transport_tier,
+      service_location_address: approvalDraft.service_location_address?.trim() || "",
+      ...(technicianId ? { technician_id: technicianId } : {}),
+    };
+
+    if (approvalDraft.scheduled_date) {
+      payload.scheduled_date = dayjs(approvalDraft.scheduled_date).toISOString();
+    }
+
+    if (
+      approvalDraft.customer_latitude !== "" &&
+      approvalDraft.customer_longitude !== ""
+    ) {
+      payload.customer_latitude = Number(approvalDraft.customer_latitude);
+      payload.customer_longitude = Number(approvalDraft.customer_longitude);
+    }
+
+    return payload;
+  };
+
   return (
-    <PageLayout
-      title="Solicitudes de servicio"
-      searchConfig={searchConfig}
-    >
-      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.5fr)_minmax(22rem,0.9fr)]">
+    <PageLayout title="Solicitudes de servicio" searchConfig={searchConfig}>
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.5fr)_minmax(24rem,0.95fr)]">
         <div className="2xl:col-span-2">
           <ModuleStatStrip
             badge="Solicitudes"
-            description="La mesa de revisión deja la tabla al frente y el panel lateral resuelve aprobación, rechazo y asignación."
+            description="La mesa de revisión deja la tabla al frente y el panel lateral confirma dirección, pricing y asignación antes de convertir a orden."
             stats={[
               {
                 label: "Visibles",
@@ -356,7 +530,7 @@ const ServiceRequests = () => {
                 Revisión activa
               </div>
               <div className="mt-1 text-sm ui-text-muted">
-                Aquí decides si la solicitud se convierte en orden y a quién se le envía.
+                Aquí decides si la solicitud se convierte en orden y con qué precio base sale a operación.
               </div>
             </div>
             {selectedRequest ? (
@@ -407,6 +581,11 @@ const ServiceRequests = () => {
                   ) : (
                     <Tag color="default">Sin orden creada</Tag>
                   )}
+                  {selectedRequest.tracking_token ? (
+                    <Tag color="blue">
+                      Tracking {String(selectedRequest.tracking_token).slice(0, 8)}
+                    </Tag>
+                  ) : null}
                 </div>
                 <div className="mt-3 text-sm font-medium text-[var(--ui-foreground)]">
                   Dirección solicitada
@@ -423,6 +602,147 @@ const ServiceRequests = () => {
                       {selectedRequest.description}
                     </div>
                   </>
+                ) : null}
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                  Punto real del servicio
+                </label>
+                <LocationPicker
+                  value={approvalDraft.service_location_address}
+                  latitude={approvalDraft.customer_latitude}
+                  longitude={approvalDraft.customer_longitude}
+                  onChange={(value) =>
+                    setApprovalDraft((prev) => ({
+                      ...prev,
+                      service_location_address: value,
+                    }))
+                  }
+                  onLocationSelect={(location) =>
+                    setApprovalDraft((prev) => ({
+                      ...prev,
+                      service_location_address: location?.address || "",
+                      customer_latitude: location?.latitude ?? "",
+                      customer_longitude: location?.longitude ?? "",
+                    }))
+                  }
+                />
+                <div className="text-sm ui-text-muted">
+                  {hasPartialCoordinates
+                    ? "Confirma latitud y longitud juntas antes de aprobar."
+                    : approvalDraft.customer_latitude !== "" &&
+                        approvalDraft.customer_longitude !== ""
+                      ? `Coordenadas: ${Number(approvalDraft.customer_latitude).toFixed(5)}, ${Number(
+                          approvalDraft.customer_longitude
+                        ).toFixed(5)}`
+                      : "Si no confirmas el punto, la orden dependerá solo del texto de la dirección."}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Prioridad
+                  </label>
+                  <Select
+                    options={PRIORITY_OPTIONS}
+                    value={approvalDraft.priority}
+                    onChange={(value) =>
+                      setApprovalDraft((prev) => ({ ...prev, priority: value || "MEDIUM" }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Fecha programada
+                  </label>
+                  <DatePicker
+                    showTime
+                    className="w-full"
+                    format="YYYY-MM-DD HH:mm"
+                    value={approvalDraft.scheduled_date}
+                    onChange={(value) =>
+                      setApprovalDraft((prev) => ({ ...prev, scheduled_date: value || null }))
+                    }
+                    placeholder="Opcional"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Mano de obra
+                  </label>
+                  <Select
+                    options={LABOR_OPTIONS}
+                    value={approvalDraft.labor_tier}
+                    onChange={(value) =>
+                      setApprovalDraft((prev) => ({ ...prev, labor_tier: value || "MEDIUM" }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <label className="text-sm font-medium text-[var(--ui-foreground)]">
+                    Transporte
+                  </label>
+                  <Select
+                    options={TRANSPORT_OPTIONS}
+                    value={approvalDraft.transport_tier}
+                    onChange={(value) =>
+                      setApprovalDraft((prev) => ({
+                        ...prev,
+                        transport_tier: value || "NEAR",
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[var(--ui-border)] bg-[color:color-mix(in_srgb,var(--ui-card)_97%,transparent)] p-4">
+                <div className="text-sm font-medium text-[var(--ui-foreground)]">
+                  Costeo inicial de la orden
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Mano de obra</div>
+                    <div className="mt-2 font-semibold text-[var(--ui-foreground)]">
+                      {formatCurrency(draftLaborCost)}
+                    </div>
+                    <div className="mt-1 text-sm ui-text-muted">
+                      {LABOR_LABELS[approvalDraft.labor_tier] || "Pendiente"}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border border-[var(--ui-border)] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Transporte</div>
+                    <div className="mt-2 font-semibold text-[var(--ui-foreground)]">
+                      {formatCurrency(draftTransportCost)}
+                    </div>
+                    <div className="mt-1 text-sm ui-text-muted">
+                      {TRANSPORT_LABELS[approvalDraft.transport_tier] || "Pendiente"}
+                    </div>
+                  </div>
+                  <div className="rounded-[18px] border border-[color:color-mix(in_srgb,var(--ui-highlight)_18%,var(--ui-border))] bg-[color:color-mix(in_srgb,var(--ui-highlight)_8%,var(--ui-card))] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.12em] ui-text-muted">Total base</div>
+                    <div className="mt-2 font-semibold text-[var(--ui-foreground)]">
+                      {formatCurrency(draftLaborCost + draftTransportCost)}
+                    </div>
+                    <div className="mt-1 text-sm ui-text-muted">
+                      Sin material todavía
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Tag color={PRIORITY_COLORS[approvalDraft.priority] || "default"}>
+                    {PRIORITY_LABELS[approvalDraft.priority] || approvalDraft.priority}
+                  </Tag>
+                  <Tag>{LABOR_LABELS[approvalDraft.labor_tier] || "Sin mano de obra"}</Tag>
+                  <Tag>
+                    {TRANSPORT_LABELS[approvalDraft.transport_tier] || "Sin transporte"}
+                  </Tag>
+                </div>
+                {!companyConfig?.repair_pricing_ready ? (
+                  <div className="mt-3 text-sm text-[var(--ui-danger,#b91c1c)]">
+                    Configura las tarifas de la empresa antes de aprobar solicitudes.
+                  </div>
                 ) : null}
               </div>
 
@@ -446,11 +766,11 @@ const ServiceRequests = () => {
                   onClick={() =>
                     approveMutation.mutate({
                       id: selectedRequest.id,
-                      payload: {},
+                      payload: buildApprovalPayload(),
                     })
                   }
-                  disabled={selectedRequest.status === "REJECTED"}
-                  loading={approveMutation.isPending}
+                  disabled={selectedRequest.status === "REJECTED" || !approvalReady}
+                  loading={approveMutation.isPending || loadingCompanyConfig}
                 >
                   {selectedRequest.work_order_id ? "Actualizar orden" : "Aprobar"}
                 </Button>
@@ -458,11 +778,15 @@ const ServiceRequests = () => {
                   onClick={() =>
                     approveMutation.mutate({
                       id: selectedRequest.id,
-                      payload: { technician_id: assignTechnicianId },
+                      payload: buildApprovalPayload(assignTechnicianId),
                     })
                   }
-                  disabled={selectedRequest.status === "REJECTED" || !assignTechnicianId}
-                  loading={approveMutation.isPending}
+                  disabled={
+                    selectedRequest.status === "REJECTED" ||
+                    !assignTechnicianId ||
+                    !approvalReady
+                  }
+                  loading={approveMutation.isPending || loadingCompanyConfig}
                 >
                   {selectedRequest.technician_name ? "Reasignar orden" : "Aprobar y asignar"}
                 </Button>

@@ -150,6 +150,23 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     suspicious_reasons = serializers.SerializerMethodField(read_only=True)
     work_order_id = serializers.UUIDField(source='work_order.id', read_only=True)
     work_order_status = serializers.CharField(source='work_order.status', read_only=True)
+    work_order_priority = serializers.CharField(source='work_order.priority', read_only=True)
+    work_order_labor_tier = serializers.CharField(source='work_order.labor_tier', read_only=True)
+    work_order_transport_tier = serializers.CharField(source='work_order.transport_tier', read_only=True)
+    work_order_scheduled_date = serializers.DateTimeField(source='work_order.scheduled_date', read_only=True)
+    work_order_service_location_address = serializers.CharField(
+        source='work_order.service_location_address',
+        read_only=True,
+    )
+    work_order_customer_latitude = serializers.FloatField(
+        source='work_order.customer_latitude',
+        read_only=True,
+    )
+    work_order_customer_longitude = serializers.FloatField(
+        source='work_order.customer_longitude',
+        read_only=True,
+    )
+    tracking_token = serializers.CharField(source='work_order.tracking_token', read_only=True)
     technician_name = serializers.CharField(source='work_order.technician.name', read_only=True)
     landing_name = serializers.CharField(source='landing.name', read_only=True)
     landing_slug = serializers.CharField(source='landing.slug', read_only=True)

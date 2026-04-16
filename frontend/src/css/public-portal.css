@@ -89,7 +89,8 @@
   padding: 28px;
 }
 
-.public-portal .portal-map {
+.public-portal .portal-map,
+.public-portal .portal-map-shell {
   position: relative;
   border-radius: 24px;
   background: linear-gradient(
@@ -129,6 +130,47 @@
   );
   mix-blend-mode: soft-light;
   opacity: 0.35;
+}
+
+.public-portal .portal-map-shell::before,
+.public-portal .portal-map-shell::after {
+  display: none;
+}
+
+.public-portal .portal-live-map {
+  min-height: 320px;
+  height: 320px;
+  border-radius: 24px;
+}
+
+.public-portal .portal-live-map.leaflet-container {
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--portal-accent-2) 24%, transparent), transparent 58%),
+    var(--sk-color-bg-container);
+}
+
+.public-portal .portal-live-map .leaflet-popup-content-wrapper,
+.public-portal .portal-live-map .leaflet-popup-tip {
+  background: color-mix(in srgb, var(--portal-card) 96%, transparent);
+  color: var(--portal-ink);
+  border: 1px solid var(--sk-color-border-secondary);
+  box-shadow: var(--portal-shadow);
+}
+
+.public-portal .portal-live-map .leaflet-control-attribution,
+.public-portal .portal-live-map .leaflet-control-zoom a {
+  background: color-mix(in srgb, var(--portal-card) 94%, transparent);
+  color: var(--portal-ink);
+  border-color: var(--sk-color-border-secondary);
+}
+
+.public-portal .portal-map-fallback {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--portal-muted);
+  text-align: center;
 }
 
 .public-portal .map-marker {
