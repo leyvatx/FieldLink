@@ -5,9 +5,7 @@ import { resetAppQueries } from "@lib/queryClient";
 const PUBLIC_AUTH_PATHS = new Set(["/login", "/register"]);
 const PUBLIC_ROUTE_PREFIXES = ["/rastreo", "/solicitud"];
 const PUBLIC_API_URL_FRAGMENTS = [
-  "/tracking/public/",
-  "/public/companies/",
-  "/public/landings/",
+  "/public/",
 ];
 
 const isPublicApiUrl = (url = "") =>
